@@ -1,0 +1,89 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Maintenance extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = [
+        'maintenance_plan_id', // NEW: For category-based scheduling
+        'maintenance_schedule_id',
+        'scheduled_date',
+        'type',
+        'checklist_id',
+        'asset_id',
+        'technician_id',
+        'schedule_date',
+        'status',
+        'notes',
+        'result_data',
+        'checklist_template_id', // For direct template usage
+    ];
+
+    protected $casts = [
+        'schedule_date' => 'date',
+        'scheduled_date' => 'date',
+        'result_data' => 'array',
+    ];
+
+    /**
+     * Relationships
+     */
+    public function asset()
+    {
+        return $this->belongsTo(Asset::class);
+    }
+
+    public function checklist()
+    {
+        return $this->belongsTo(Checklist::class);
+    }
+
+    public function checklistTemplate()
+    {
+        return $this->belongsTo(ChecklistTemplate::class);
+    }
+
+    public function maintenancePlan()
+    {
+        return $this->belongsTo(MaintenancePlan::class);
+    }
+
+    public function technician()
+    {
+        return $this->belongsTo(User::class, 'technician_id');
+    }
+
+    public function maintenanceSchedule()
+    {
+        return $this->belongsTo(MaintenanceSchedule::class);
+    }
+
+    /**
+     * Scopes
+     */
+    public function scopeToday($query)
+    {
+        return $query->whereDate('scheduled_date', now()->toDateString());
+    }
+
+    public function scopePreventive($query)
+    {
+        return $query->where('type', 'preventive');
+    }
+
+    public function scopeCorrective($query)
+    {
+        return $query->where('type', 'corrective');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->whereIn('status', ['OPEN', 'IN_PROGRESS']);
+    }
+}
