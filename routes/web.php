@@ -24,6 +24,38 @@ Route::controller(AuthController::class)->group(function() {
     Route::post('/logout', 'logout')->name('logout');
 });
 
+// Registrasi Publik (Karyawan)
+Route::controller(App\Http\Controllers\Auth\RegisterController::class)->group(function() {
+    Route::get('/register', 'showRegistrationForm')->name('register');
+    Route::post('/register', 'register')->name('register.post');
+});
+
+// Password Setup (Forced Reset)
+Route::middleware(['auth'])->group(function() {
+    Route::get('/password/setup', [App\Http\Controllers\Auth\PasswordSetupController::class, 'show'])->name('password.setup');
+    Route::put('/password/setup', [App\Http\Controllers\Auth\PasswordSetupController::class, 'update'])->name('password.update');
+});
+
+// Email Verification Routes
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect()->route('user.tickets.index')->with('success', 'Email berhasil diverifikasi.');
+    })->middleware('signed')->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('status', 'verification-link-sent');
+    })->middleware('throttle:6,1')->name('verification.send');
+    Route::post('/session/keep-alive', function () {
+        return response()->json(['status' => 'success', 'message' => 'Session extended']);
+    })->name('session.keep-alive');
+});
+
 // Redirect halaman awal ke dashboard admin
 Route::get('/', function () {
     return redirect()->route('admin.dashboard');
@@ -141,6 +173,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     // Aksi Tombol
     Route::put('/work-orders/{id}/assign', [App\Http\Controllers\Admin\WorkOrderController::class, 'assign'])->name('work-orders.assign');
+    Route::post('/work-orders/verify-all', [App\Http\Controllers\Admin\WorkOrderController::class, 'verifyAll'])->name('work-orders.verify-all');
     Route::post('/work-orders/{id}/verify', [App\Http\Controllers\Admin\WorkOrderController::class, 'verify'])->name('work-orders.verify');
 
     // Route::get('/work-orders', function () {
@@ -225,4 +258,22 @@ Route::prefix('technician')->name('technician.')->middleware(['auth'])->group(fu
     // Work Order (LK) Creation Routes
     Route::get('/lk/create', [App\Http\Controllers\Technician\LkController::class, 'create'])->name('lk.create');
     Route::post('/lk', [App\Http\Controllers\Technician\LkController::class, 'store'])->name('lk.store');
+});
+
+// ====================================================
+// GROUP ROUTE USER (PELAPOR / KARYAWAN)
+// ====================================================
+Route::prefix('user')->name('user.')->middleware(['auth', 'verified'])->group(function () {
+    
+    // Dashboard User = List Tiket Saya
+    Route::get('/dashboard', [App\Http\Controllers\User\TicketController::class, 'index'])->name('tickets.index');
+    
+    // Manajemen Tiket (Create Only)
+    Route::get('/tickets/create', [App\Http\Controllers\User\TicketController::class, 'create'])->name('tickets.create');
+    Route::post('/tickets', [App\Http\Controllers\User\TicketController::class, 'store'])->name('tickets.store');
+    
+    // API Helper untuk Cascading Dropdown
+    Route::get('/api/locations/{parentId}', [App\Http\Controllers\User\TicketController::class, 'getLocations'])->name('api.locations');
+    Route::get('/api/assets/{locationId}', [App\Http\Controllers\User\TicketController::class, 'getAssets'])->name('api.assets');
+
 });

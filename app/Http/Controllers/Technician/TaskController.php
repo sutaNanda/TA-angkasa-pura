@@ -28,11 +28,18 @@ class TaskController extends Controller
 
         // 2. TUGAS POOL (Available)
         // Belum ada teknisi (Open) ATAU Handover dari teknisi lain
-        $poolTasks = WorkOrder::with(['asset.location'])
+        // 2. TUGAS POOL (Available)
+        // Belum ada teknisi (Open) ATAU Handover dari teknisi lain
+        $poolTasks = WorkOrder::with(['asset.location', 'reporter'])
             ->where(function($q) use ($user) {
                 $q->whereNull('technician_id')
-                  ->where('status', '!=', 'completed');
-            })
+                  ->where('status', '!=', 'completed')
+                  // Exclude manual_ticket, we want them separate? 
+                  // Or include them but sort differently?
+                  // Let's keep them here but distinguish in View.
+                  // User said "jangan buat jadi handover".
+                  // So we just ensure they show as 'Open' (Laporan Baru), not 'Handover'.
+            ;})
             ->orWhere(function($q) use ($user) {
                 $q->where('status', 'handover')
                   ->where('technician_id', '!=', $user->id); // Handover dari orang lain
@@ -153,6 +160,7 @@ class TaskController extends Controller
             $task->status = 'completed';
             // Simpan foto terakhir di kolom legacy (opsional, jika masih dipakai dashboard lama)
             $task->last_progress_photo = $photoPath; 
+            $task->photo_after = $photoPath; // Simpan di kolom utama
             $task->save();
 
             // Create History

@@ -36,9 +36,26 @@
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari No Tiket, Aset, atau Teknisi..." class="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 w-full text-sm shadow-sm transition">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
         </form>
-        <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center">
-            <i class="fa-solid fa-plus"></i> Buat Tiket Manual
-        </button>
+
+        <div class="flex gap-2">
+            <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center">
+                <i class="fa-solid fa-plus"></i> Buat Tiket Manual
+            </button>
+
+            @if(request('tab') == 'verify')
+                <form action="{{ route('admin.work-orders.verify-all') }}" method="POST" onsubmit="return confirmVerifyAll(event)">
+                    @csrf
+                    <button type="submit" 
+                            {{ $counts['verify'] == 0 ? 'disabled' : '' }}
+                            class="px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-md flex items-center gap-2 w-full md:w-auto justify-center
+                                {{ $counts['verify'] > 0 ? 'bg-green-600 hover:bg-green-700 text-white hover:shadow-lg animate-pulse' : 'bg-gray-300 text-gray-500 cursor-not-allowed' }}">
+                        <i class="fa-solid fa-check-double"></i> Verifikasi Semua ({{ $counts['verify'] }})
+                    </button>
+                </form>
+            @endif
+
+
+        </div>
     </div>
 
     {{-- TABLE --}}
@@ -290,6 +307,26 @@
     </div>
 
     <script>
+        function confirmVerifyAll(event) {
+            event.preventDefault();
+            const form = event.target;
+            
+            Swal.fire({
+                title: 'Verifikasi Semua Tiket?',
+                text: "Semua tiket yang statusnya 'Selesai' akan langsung diverifikasi dan ditutup.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#16a34a', // green-600
+                cancelButtonColor: '#d1d5db',
+                confirmButtonText: 'Ya, Verifikasi Semua!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
+
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); }
         

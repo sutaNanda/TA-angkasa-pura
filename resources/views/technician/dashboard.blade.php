@@ -37,32 +37,56 @@
         </a>
     </div>
 
-    {{-- 2. HANDOVER ALERT SECTION (PRIORITY) --}}
-    @if($poolTasks->count() > 0)
-        <div class="mb-5 bg-yellow-50 border border-yellow-400 rounded-xl p-4 shadow-sm relative overflow-hidden">
+    {{-- 2. ALERT SECTIONS --}}
+    
+    {{-- A. HANDOVER ALERT --}}
+    @if($handoverTasks->count() > 0)
+        <div class="mb-4 bg-yellow-50 border border-yellow-400 rounded-xl p-4 shadow-sm relative overflow-hidden">
             <div class="absolute top-0 right-0 p-2 opacity-10">
                 <i class="fa-solid fa-hand-holding-hand text-6xl text-yellow-600"></i>
             </div>
-            
             <div class="relative z-10">
                 <div class="flex justify-between items-start mb-2">
                     <h3 class="font-bold text-yellow-800 flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        Handover Task!
+                        <i class="fa-solid fa-triangle-exclamation"></i> Handover Task!
                     </h3>
-                    <span class="bg-yellow-200 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {{ $poolTasks->count() }} Tersedia
-                    </span>
+                    <span class="bg-yellow-200 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ $handoverTasks->count() }} Tersedia</span>
                 </div>
-                
-                <p class="text-xs text-yellow-700 mb-3 leading-relaxed">
-                    Ada tugas handover dari shift sebelumnya yang belum dikerjakan. Segera ambil tindakan.
-                </p>
-
-                <a href="{{ route('technician.tasks.index') }}" class="inline-flex items-center gap-2 bg-yellow-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow hover:bg-yellow-600 transition active:scale-95">
-                    Terima Tugas <i class="fa-solid fa-arrow-right"></i>
-                </a>
+                <p class="text-xs text-yellow-700 mb-3">Ada tuga handover dari shift sebelumnya. Segera ambil tindakan.</p>
+                <a href="{{ route('technician.tasks.index', ['tab' => 'pool']) }}" class="inline-flex items-center gap-2 bg-yellow-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow hover:bg-yellow-600 transition active:scale-95">Lihat Handover <i class="fa-solid fa-arrow-right"></i></a>
             </div>
+        </div>
+    @endif
+
+    {{-- B. USER REPORT ALERT --}}
+    @if($userReports->count() > 0)
+        <div class="mb-4 bg-purple-50 border border-purple-400 rounded-xl p-4 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-2 opacity-10">
+                <i class="fa-solid fa-user-clock text-6xl text-purple-600"></i>
+            </div>
+            <div class="relative z-10">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-bold text-purple-800 flex items-center gap-2">
+                        <i class="fa-solid fa-bell"></i> Laporan User Baru!
+                    </h3>
+                    <span class="bg-purple-200 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ $userReports->count() }} Laporan</span>
+                </div>
+                <p class="text-xs text-purple-700 mb-3">Ada keluhan aset dari user/divisi lain yang butuh perbaikan.</p>
+                <a href="{{ route('technician.tasks.index', ['tab' => 'pool']) }}" class="inline-flex items-center gap-2 bg-purple-600 text-white text-xs font-bold px-4 py-2 rounded-lg shadow hover:bg-purple-700 transition active:scale-95">Lihat Laporan <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+    @endif
+
+    {{-- C. GENERIC OPEN TASKS (Optional, low priority) --}}
+    @if($handoverTasks->count() == 0 && $userReports->count() == 0 && $poolTasks->count() > 0)
+        <div class="mb-4 bg-blue-50 border border-blue-300 rounded-xl p-4 shadow-sm relative overflow-hidden">
+             <div class="flex justify-between items-start">
+                <div>
+                     <h3 class="font-bold text-blue-800 text-sm mb-1">Pool Tugas Tersedia</h3>
+                     <p class="text-xs text-blue-600">Ada {{ $poolTasks->count() }} tugas di antrian pool.</p>
+                </div>
+                <a href="{{ route('technician.tasks.index', ['tab' => 'pool']) }}" class="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">Cek Pool</a>
+             </div>
         </div>
     @endif
 

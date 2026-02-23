@@ -42,6 +42,7 @@
                                 'admin' => 'bg-purple-100 text-purple-700 border-purple-200',
                                 'teknisi' => 'bg-blue-100 text-blue-700 border-blue-200',
                                 'manajer' => 'bg-green-100 text-green-700 border-green-200',
+                                'user' => 'bg-gray-100 text-gray-700 border-gray-200',
                                 default => 'bg-gray-100 text-gray-700'
                             };
                             
@@ -138,25 +139,22 @@
                     @csrf
                     <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
                         <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-user-plus text-blue-600 mr-2"></i> Tambah User Baru</h3>
-                        <button type="button" onclick="closeModal('addUserModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        <!-- <button type="button" onclick="closeModal('addUserModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button> -->
                     </div>
                     
                     <div class="bg-white px-6 py-6 space-y-4">
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap</label>
-                            <input type="text" name="name" required class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" placeholder="Contoh: Ahmad Teknisi">
+                            <input type="text" name="name" required class="w-full border-gray-300 border-2 rounded-lg text-sm focus:ring-blue-500 p-2" placeholder="Contoh: Okayana">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Email (Untuk Login)</label>
-                            <input type="email" name="email" required class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" placeholder="nama@email.com">
+                            <input type="email" name="email" required class="w-full border-gray-300 border-2 rounded-lg text-sm focus:ring-blue-500 p-2" placeholder="nama@email.com">
                         </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Password Awal</label>
-                            <input type="password" name="password" required class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" placeholder="********">
-                        </div>
+                        {{-- Password dihapus, auto-generate by system --}}
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Role / Hak Akses</label>
-                            <select name="role" required class="w-full border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500">
+                            <select name="role" required class="w-full border-gray-300 border-2 rounded-lg text-sm bg-white focus:ring-blue-500 p-2">
                                 <option value="teknisi">Teknisi</option>
                                 <option value="admin">Admin</option>
                                 <option value="manajer">Manajer</option>

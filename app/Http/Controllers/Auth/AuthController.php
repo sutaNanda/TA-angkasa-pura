@@ -23,7 +23,7 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();
@@ -35,6 +35,8 @@ class AuthController extends Controller
                 return redirect()->route('technician.dashboard');
             } elseif ($user->role === 'manajer') {
                 // return redirect()->route('manager.dashboard');
+            } elseif ($user->role === 'user') {
+                return redirect()->route('user.tickets.index');
             }
 
             return redirect('/');

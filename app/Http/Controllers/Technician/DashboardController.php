@@ -41,17 +41,35 @@ class DashboardController extends Controller
 
         // 3. POOL TASKS / HANDOVER
         // Tiket status handover/open yang belum ada teknisi ATAU handover khusus ke saya
-        $poolTasks = WorkOrder::with(['asset.location'])
-            ->where(function($query) use ($user) {
-                 $query->whereIn('status', ['handover', 'open'])
-                       ->whereNull('technician_id');
-            })
-            ->orWhere(function($query) use ($user) {
-                 $query->where('status', 'handover')
-                       ->where('technician_id', $user->id);
-            })
-            ->orderBy('created_at', 'desc')
+        // 3. POOL TASKS / HANDOVER
+        // Kita pecah query agar bisa membedakan jenis notifikasi di dashboard
+        $basePoolQuery = WorkOrder::with(['asset.location', 'reporter'])
+            ->where('status', '!=', 'completed')
+            ->orderBy('created_at', 'desc');
+
+        // A. Handover (Prioritas Tinggi)
+        // Status handover (dari siapapun) ATAU status handover yg spesifik ke user ini (logika lama)
+        $handoverTasks = (clone $basePoolQuery)->where(function($q) use ($user) {
+            $q->where('status', 'handover')->whereNull('technician_id') // Handover ke publik
+              ->orWhere(function($sub) use ($user) {
+                  $sub->where('status', 'handover')->where('technician_id', $user->id); // Handover personal
+              });
+        })->get();
+
+        // B. Laporan User (Manual Ticket) - Open & Belum ada teknisi
+        $userReports = (clone $basePoolQuery)->where('status', 'open')
+            ->whereNull('technician_id')
+            ->where('source', 'manual_ticket')
             ->get();
+
+        // C. Laporan Patroli/System (Open & Belum ada teknisi)
+        $poolTasksRaw = (clone $basePoolQuery)->where('status', 'open')
+            ->whereNull('technician_id')
+            ->where('source', '!=', 'manual_ticket')
+            ->get();
+
+        // Gabungkan untuk list di bawah, tapi kita punya variabel terpisah untuk menghitung badge notifikasi
+        $poolTasks = $handoverTasks->merge($userReports)->merge($poolTasksRaw);
 
         // 4. JADWAL PATROLI HARI INI (Using Maintenance Model as requested)
         // Ambil data maintenance (preventive) yang dijadwalkan hari ini dan belum selesai
@@ -77,6 +95,6 @@ class DashboardController extends Controller
             return $item->asset->location_id ?? 0;
         });
 
-        return view('technician.dashboard', compact('greeting', 'user', 'stats', 'poolTasks', 'myTasks', 'patrols'));
+        return view('technician.dashboard', compact('greeting', 'user', 'stats', 'poolTasks', 'myTasks', 'patrols', 'handoverTasks', 'userReports'));
     }
 }

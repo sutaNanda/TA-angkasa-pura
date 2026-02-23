@@ -3,15 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail; // Implement Interface
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\SoftDeletes; // Tambahkan ini
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail // Implement Interface
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes; // Tambahkan SoftDeletes
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,7 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // Pastikan role masuk sini
+        'role',
+        'division_id',
+        'requires_password_reset',
     ];
 
     /**
@@ -43,9 +46,21 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'requires_password_reset' => 'boolean',
     ];
 
+    // --- CUSTOM NOTIFICATION ---
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\CustomVerifyEmail);
+    }
+
     // --- RELASI ---
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
 
     // Teknisi bisa punya banyak riwayat pengecekan rutin
     public function maintenances()

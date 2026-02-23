@@ -49,47 +49,57 @@
         <table class="w-full text-sm text-left text-gray-600">
             <thead class="bg-gray-50 text-gray-700 uppercase font-bold text-xs">
                 <tr>
-                    <th class="px-6 py-4 w-12 text-center">No</th> {{-- KOLOM BARU --}}
+                    <th class="px-6 py-4 w-12 text-center">No</th>
                     <th class="px-6 py-4">Waktu Pengecekan</th>
                     <th class="px-6 py-4">Aset</th>
                     <th class="px-6 py-4">Teknisi</th>
-                    <th class="px-6 py-4">Hasil Cek</th>
+                    <th class="px-6 py-4">Temuan</th> {{-- KOLOM BARU 1 --}}
+                    <th class="px-6 py-4">Status Tindakan</th> {{-- KOLOM BARU 2 --}}
                     <th class="px-6 py-4 text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($logs as $log)
                     @php
-                        // Logika Warna Status & Badge Dinamis
-                        $statusBadge = '';
+                        // 1. LOGIKA BADGE TEMUAN (NORMAL vs ISU)
+                        $findingBadge = '';
                         $rowClass = 'hover:bg-gray-50 border-l-4 border-transparent';
 
                         if ($log->status == 'normal') {
-                            $statusBadge = '<span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200"><i class="fa-solid fa-check-circle"></i> Normal</span>';
+                            $findingBadge = '<span class="inline-flex items-center gap-1 text-green-700 font-bold text-xs"><i class="fa-solid fa-check-circle"></i> Normal</span>';
                         } else {
-                            // Default: Issue Found (Red)
-                            $rowClass = 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500';
-                            $statusBadge = '<span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-semibold border border-red-200"><i class="fa-solid fa-triangle-exclamation"></i> Menunggu Perbaikan</span>';
+                            $rowClass = 'bg-red-50/30 hover:bg-red-50 border-l-4 border-red-400';
+                            $findingBadge = '<span class="inline-flex items-center gap-1 text-red-600 font-bold text-xs"><i class="fa-solid fa-triangle-exclamation"></i> Ada Masalah</span>';
+                        }
 
-                            // Cek Work Order
+                        // 2. LOGIKA BADGE STATUS TINDAKAN (WORK ORDER)
+                        $actionBadge = '-';
+                        if ($log->status != 'normal') {
                             $wo = optional($log->workOrder);
                             
-                            if ($wo->status == 'completed') {
-                                $rowClass = 'bg-white hover:bg-gray-50 border-l-4 border-blue-500'; // Jadi biru/bersih jika selesai
-                                $statusBadge = '<span class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold border border-blue-200"><i class="fa-solid fa-check-double"></i> Selesai Diperbaiki</span>';
-                            } elseif ($wo->status == 'handover') {
-                                $rowClass = 'bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-500';
-                                $statusBadge = '<span class="inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold border border-yellow-200"><i class="fa-solid fa-arrow-right-arrow-left"></i> Status: Handover</span>';
+                            if (!$wo->exists) {
+                                $actionBadge = '<span class="bg-gray-200 text-gray-500 px-2 py-1 rounded text-[10px] font-bold">Belum Ada Tiket</span>';
+                            } elseif ($wo->status == 'verified') {
+                                $rowClass = 'bg-green-50/30 hover:bg-green-50 border-l-4 border-green-500'; // Override jadi hijau kalau sudah verified
+                                $actionBadge = '<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold border border-green-200"><i class="fa-solid fa-check-double"></i> Selesai & Terverifikasi</span>';
+                            } elseif ($wo->status == 'completed') {
+                                $actionBadge = '<span class="bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-bold border border-yellow-200"><i class="fa-solid fa-hourglass-half"></i> Butuh Verifikasi</span>';
                             } elseif ($wo->status == 'in_progress') {
-                                $rowClass = 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-400';
                                 $techName = $wo->technician ? explode(' ', $wo->technician->name)[0] : 'Teknisi';
-                                $statusBadge = '<span class="inline-flex items-center gap-1 bg-cyan-100 text-cyan-800 px-3 py-1 rounded-full text-xs font-semibold border border-cyan-200"><i class="fa-solid fa-person-digging"></i> Dikerjakan: '.$techName.'</span>';
+                                $actionBadge = '<span class="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs font-bold border border-blue-200"><i class="fa-solid fa-person-digging"></i> Dikerjakan: '.$techName.'</span>';
+                            } elseif ($wo->status == 'pending_part') {
+                                $actionBadge = '<span class="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-bold border border-purple-200"><i class="fa-solid fa-box-open"></i> Tunggu Sparepart</span>';
+                            } elseif ($wo->status == 'handover') {
+                                $actionBadge = '<span class="bg-pink-100 text-pink-700 px-2.5 py-1 rounded-full text-xs font-bold border border-pink-200"><i class="fa-solid fa-handshake"></i> Handover Shift</span>';
+                            } else {
+                                // Open
+                                $actionBadge = '<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold border border-red-200"><i class="fa-regular fa-clock"></i> Belum Dikerjakan</span>';
                             }
                         }
                     @endphp
 
                     <tr class="{{ $rowClass }} transition">
-                        {{-- NOMOR URUT DINAMIS (PAGINATION SUPPORT) --}}
+                        {{-- NOMOR --}}
                         <td class="px-6 py-4 text-center font-bold text-gray-400 text-xs">
                             {{ ($logs->currentPage() - 1) * $logs->perPage() + $loop->iteration }}
                         </td>
@@ -114,9 +124,17 @@
                                 <span class="text-gray-400 italic text-xs">Belum dikerjakan</span>
                             @endif
                         </td>
+                        
+                        {{-- KOLOM TEMUAN --}}
                         <td class="px-6 py-4">
-                            {!! $statusBadge !!}
+                            {!! $findingBadge !!}
                         </td>
+
+                        {{-- KOLOM STATUS TINDAKAN --}}
+                        <td class="px-6 py-4">
+                            {!! $actionBadge !!}
+                        </td>
+
                         <td class="px-6 py-4 text-center">
                             <button onclick="showDetailLog({{ $log->id }})" class="text-blue-600 hover:text-blue-800 font-medium text-xs border border-blue-200 hover:bg-blue-50 px-3 py-1 rounded transition">
                                 Lihat Detail
@@ -125,7 +143,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center py-12 text-gray-400">
+                        <td colspan="7" class="text-center py-12 text-gray-400">
                             <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
                             <p>Belum ada riwayat pengecekan.</p>
                         </td>
@@ -179,7 +197,7 @@
                             <i class="fa-solid fa-timeline mr-2 text-blue-600"></i> Kronologi Pengerjaan
                         </h4>
                         
-                        <div class="relative border-l-2 border-gray-200 ml-3 space-y-6" id="modalTimelineBody">
+                        <div class="relative border-l-2 border-gray-200 ml-4 space-y-6" id="modalTimelineBody">
                             {{-- Timeline Items akan di-inject via JS --}}
                         </div>
                     </div>
@@ -244,19 +262,21 @@
                     if(data.work_order && data.work_order.histories && data.work_order.histories.length > 0) {
                         timelineSection.classList.remove('hidden');
                         
-                        // 1. Initial State (Patroli)
+                                // 1. Initial State (Patroli)
                         timelineBody.innerHTML += `
-                            <div class="ml-6">
-                                <span class="absolute -left-2.5 flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full ring-4 ring-white">
+                            <div class="relative mb-8">
+                                <span class="absolute -left-2.5 top-0 flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full ring-4 ring-white z-10">
                                     <i class="fa-solid fa-clipboard-check text-blue-600 text-[10px]"></i>
                                 </span>
-                                <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">Patroli Selesai (Isu Ditemukan)</h3>
-                                <time class="block mb-2 text-xs font-normal leading-none text-gray-400">
-                                    ${new Date(data.created_at).toLocaleString('id-ID')} - Oleh ${data.technician ? data.technician.name : 'Sistem'}
-                                </time>
-                                <p class="mb-4 text-xs text-gray-500">
-                                    Patroli rutin menemukan ketidaknormalan pada aset. Tiket otomatis dibuat.
-                                </p>
+                                <div class="ml-10">
+                                    <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">Patroli Selesai (Isu Ditemukan)</h3>
+                                    <time class="block mb-2 text-xs font-normal leading-none text-gray-400">
+                                        ${new Date(data.created_at).toLocaleString('id-ID')} - Oleh ${data.technician ? data.technician.name : 'Sistem'}
+                                    </time>
+                                    <p class="mb-4 text-xs text-gray-500">
+                                        Patroli rutin menemukan ketidaknormalan pada aset. Tiket otomatis dibuat.
+                                    </p>
+                                </div>
                             </div>
                         `;
 
@@ -282,20 +302,22 @@
                             }
 
                             timelineBody.innerHTML += `
-                                <div class="ml-6">
-                                    <span class="absolute -left-2.5 flex items-center justify-center w-5 h-5 ${color} rounded-full ring-4 ring-white">
+                                <div class="relative mb-8">
+                                    <span class="absolute -left-2.5 top-0 flex items-center justify-center w-5 h-5 ${color} rounded-full ring-4 ring-white z-10">
                                         <i class="fa-solid ${icon} ${iconColor} text-[10px]"></i>
                                     </span>
-                                    <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">
-                                        ${title} 
-                                        ${history.action === 'handover' ? '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded ml-2">Penting</span>' : ''}
-                                    </h3>
-                                    <time class="block mb-2 text-xs font-normal leading-none text-gray-400">
-                                        ${new Date(history.created_at).toLocaleString('id-ID')} - Oleh ${history.user ? history.user.name : '-'}
-                                    </time>
-                                    <p class="mb-2 text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100 italic">
-                                        "${history.description || '-'}"
-                                    </p>
+                                    <div class="ml-10">
+                                        <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">
+                                            ${title} 
+                                            ${history.action === 'handover' ? '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded ml-2">Penting</span>' : ''}
+                                        </h3>
+                                        <time class="block mb-2 text-xs font-normal leading-none text-gray-400">
+                                            ${new Date(history.created_at).toLocaleString('id-ID')} - Oleh ${history.user ? history.user.name : '-'}
+                                        </time>
+                                        <p class="mb-2 text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100 italic">
+                                            "${history.description || '-'}"
+                                        </p>
+                                    </div>
                                 </div>
                             `;
                         });
@@ -304,12 +326,14 @@
                         // Kasus Issue Found tapi belum ada History (Baru dibuat)
                         timelineSection.classList.remove('hidden');
                         timelineBody.innerHTML = `
-                            <div class="ml-6">
-                                <span class="absolute -left-2.5 flex items-center justify-center w-5 h-5 bg-red-100 rounded-full ring-4 ring-white">
+                            <div class="relative mb-8">
+                                <span class="absolute -left-2.5 top-0 flex items-center justify-center w-5 h-5 bg-red-100 rounded-full ring-4 ring-white z-10">
                                     <i class="fa-solid fa-triangle-exclamation text-red-600 text-[10px]"></i>
                                 </span>
-                                <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">Menunggu Tindakan</h3>
-                                <p class="mb-4 text-xs text-gray-500">Tiket perbaikan belum diproses oleh teknisi.</p>
+                                <div class="ml-10">
+                                    <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">Menunggu Tindakan</h3>
+                                    <p class="mb-4 text-xs text-gray-500">Tiket perbaikan belum diproses oleh teknisi.</p>
+                                </div>
                             </div>
                         `;
                     } else {

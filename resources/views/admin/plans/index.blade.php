@@ -7,8 +7,8 @@
     {{-- Header --}}
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Aturan Preventive Maintenance</h1>
-            <p class="text-sm text-gray-500 mt-1">Kelola aturan maintenance berdasarkan kategori aset</p>
+            <h1 class="text-2xl font-bold text-gray-800">Rencana Perawatan Aset</h1>
+            <p class="text-sm text-gray-500 mt-1">Kelola rencana perawatan otomatis berdasarkan kategori aset</p>
         </div>
         <div class="flex gap-2">
             <button onclick="generateTasksNow()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
@@ -171,49 +171,143 @@
 
 <script>
 function toggleActive(id, currentStatus) {
-    fetch(`/admin/plans/${id}/toggle`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    // Determine new status and colors for preview
+    const isActivating = !currentStatus;
+    const actionText = isActivating ? 'aktifkan' : 'nonaktifkan';
+    
+    Swal.fire({
+        title: `Konfirmasi Status`,
+        text: `Apakah Anda yakin ingin meng-${actionText} rencana perawatan ini?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: isActivating ? '#10B981' : '#6B7280', // Green or Gray
+        cancelButtonColor: '#d33',
+        confirmButtonText: isActivating ? 'Ya, Aktifkan!' : 'Ya, Nonaktifkan!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`/admin/plans/${id}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: data.message, // Use message from server
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => location.reload());
+                } else {
+                    throw new Error(data.message || 'Gagal mengubah status');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error'));
         }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        }
-    })
-    .catch(err => alert('Gagal mengubah status'));
+    });
 }
 
 function deletePlan(id) {
-    if (!confirm('Yakin ingin menghapus aturan ini?')) return;
-    
-    fetch(`/admin/plans/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    Swal.fire({
+        title: 'Hapus Rencana Ini?',
+        text: "Data yang dihapus tidak dapat dikembalikan! Aturan ini akan berhenti berjalan.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Menghapus...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`/admin/plans/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(res => {
+                if (res.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Terhapus!',
+                        text: 'Rencana perawatan berhasil dihapus.',
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => location.reload());
+                } else {
+                    throw new Error('Gagal menghapus');
+                }
+            })
+            .catch(err => Swal.fire('Error', 'Gagal menghapus data.', 'error'));
         }
-    })
-    .then(() => location.reload())
-    .catch(err => alert('Gagal menghapus aturan'));
+    });
 }
 
 function generateTasksNow() {
-    if (!confirm('Generate tasks untuk hari ini sekarang?')) return;
-    
-    fetch('/admin/plans/generate-now', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    Swal.fire({
+        title: 'Generate Tasks Sekarang?',
+        text: "Sistem akan memeriksa semua aturan aktif dan membuat tugas maintenance untuk HARI INI jika jadwal sesuai.",
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonColor: '#10B981', // Green
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Ya, Jalankan!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Sedang Memproses...',
+                text: 'Mohon tunggu, ini mungkin butuh beberapa detik tergantung jumlah aset.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch('/admin/plans/generate-now', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(res => {
+                if (res.ok) {
+                    // Note: The controller redirects back with session flash.
+                    // But since we use fetch, we handle UI here.
+                    // Actually, controller returns redirect, fetch follows it.
+                    // But to show sweetalert consistent, we reload.
+                    // Ideally controller should return JSON for AJAX.
+                    // Assuming controller redirects back to index.
+                    location.reload(); 
+                } else {
+                   throw new Error('Gagal generate');
+                }
+            })
+            .catch(err => {
+                // If fetch fails (network) or controller error
+                // The controller currently returns REDIRECT. Fetch transparently follows redirects.
+                // So res.ok is likely true for the redirected page (index).
+                // We reload to see the session flash message handled by layout.
+                location.reload();
+            });
         }
-    })
-    .then(() => {
-        alert('Tasks berhasil di-generate!');
-        location.reload();
-    })
-    .catch(err => alert('Gagal generate tasks'));
+    });
 }
 </script>
 @endsection

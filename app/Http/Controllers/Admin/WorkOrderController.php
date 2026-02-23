@@ -113,6 +113,20 @@ class WorkOrderController extends Controller
     }
 
     /**
+     * Bulk Verify All Completed Tickets
+     */
+    public function verifyAll()
+    {
+        $count = WorkOrder::where('status', 'completed')->update(['status' => 'verified']);
+
+        if ($count > 0) {
+            return back()->with('success', "$count tiket berhasil diverifikasi sekaligus.");
+        }
+
+        return back()->with('info', 'Tidak ada tiket yang perlu diverifikasi.');
+    }
+
+    /**
      * API: Ambil Detail Tiket (Untuk Modal)
      */
     public function show($id)

@@ -51,7 +51,7 @@
             <li>
                 <a href="{{ route('admin.plans.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.plans.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-calendar-check w-5 text-center"></i>
-                    <span class="text-sm font-medium">Aturan PM</span>
+                    <span class="text-sm font-medium">Rencana Perawatan</span>
                 </a>
             </li>
 

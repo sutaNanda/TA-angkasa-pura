@@ -68,6 +68,15 @@
                     </div>
                 </div>
 
+                {{-- Ingat Saya --}}
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+                        <input type="checkbox" name="remember" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition">
+                        <span class="ml-2">Ingat Saya</span>
+                    </label>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-800 font-bold hidden">Lupa Password?</a>
+                </div>
+
                 {{-- Tombol Login --}}
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2">
                     <span>Masuk Aplikasi</span>

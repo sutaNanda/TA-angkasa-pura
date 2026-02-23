@@ -32,19 +32,30 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
-            'role' => 'required|in:admin,teknisi,manajer', // Sesuai ENUM di database
+            'role' => 'required|in:admin,teknisi,manajer', // User removed as per request
+            // Password tidak perlu divalidasi karena auto-generate
         ]);
 
+        // Generate Password Otomatis untuk SEMUA Role
+        $password = \Illuminate\Support\Str::random(10);
+        
         // Simpan Data
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password), // Enkripsi password
+            'password' => Hash::make($password),
             'role' => $request->role,
+            'requires_password_reset' => true, // Paksa reset password
         ]);
 
-        return back()->with('success', 'User berhasil ditambahkan.');
+        // Kirim Email Notifikasi ke Password
+        try {
+            $user->notify(new \App\Notifications\UserCredentialsNotification($password));
+            return back()->with('success', 'User berhasil ditambahkan. Password dikirim ke email ' . $request->email);
+        } catch (\Exception $e) {
+            // Fallback jika email gagal
+            return back()->with('success', 'User dibuat tapi email gagal. Password sementara: ' . $password);
+        }
     }
 
     public function update(Request $request, $id)
@@ -54,7 +65,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)], // Email boleh sama kalau punya sendiri
-            'role' => 'required|in:admin,teknisi,manajer',
+            'role' => 'required|in:admin,teknisi,manajer,user',
             'password' => 'nullable|string|min:6', // Password boleh kosong
         ]);
 

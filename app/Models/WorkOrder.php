@@ -78,4 +78,30 @@ class WorkOrder extends Model
     {
         return $this->hasMany(WorkOrderHistory::class)->orderBy('created_at', 'asc');
     }
+
+    // ==========================================
+    // ACCESSORS (Untuk URL Gambar)
+    // ==========================================
+
+    public function getPhotoBeforeAttribute($value)
+    {
+        // Cek kolom photo_before, jika kosong cek initial_photo
+        $path = $value ?? $this->attributes['initial_photo'] ?? null;
+        return $path ? asset('storage/' . $path) : null;
+    }
+
+    public function getPhotoAfterAttribute($value)
+    {
+        // Cek kolom photo_after, jika kosong cek last_progress_photo (jika ada)
+        // Kita gunakan $this->attributes karena ini accessor
+        $path = $value ?? ($this->attributes['last_progress_photo'] ?? null);
+        
+        // Fallback: Cek history 'completed' terakhir jika null
+        if (!$path) {
+            $history = $this->histories()->where('action', 'completed')->latest()->first();
+            $path = $history ? $history->photo : null;
+        }
+
+        return $path ? asset('storage/' . $path) : null;
+    }
 }

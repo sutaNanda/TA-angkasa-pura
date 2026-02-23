@@ -71,5 +71,7 @@
             @endif
         });
     </script>
+    {{-- Session Warning Component --}}
+    <x-session-warning />
 </body>
 </html>

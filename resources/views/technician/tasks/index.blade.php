@@ -106,7 +106,11 @@
                                 {{ $task->priority }} Priority
                             </span>
                             
-                            @if($task->status == 'handover')
+                            @if($task->source == 'manual_ticket')
+                                <span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                    <i class="fa-solid fa-user-tag"></i> Laporan User
+                                </span>
+                            @elseif($task->status == 'handover')
                                 <span class="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
                                     <i class="fa-solid fa-hand-holding-hand"></i> Handover
                                 </span>
@@ -114,15 +118,29 @@
                         </div>
 
                         <h3 class="font-bold text-gray-800 text-sm mb-1">{{ $task->issue_description }}</h3>
-                        <p class="text-xs text-gray-500 mb-3">{{ $task->asset->location->name }} - {{ $task->asset->name }}</p>
+                            @if($task->reporter && $task->source == 'manual_ticket')
+                                <br><span class="text-purple-600 font-medium mt-1 inline-block"><i class="fa-solid fa-user text-[10px]"></i> {{ $task->reporter->name }}</span>
+                            @endif
+                        </p>
 
-                        <form action="{{ route('technician.tasks.claim', $task->id) }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <button type="submit" class="w-full bg-white border border-blue-600 text-blue-600 py-2 rounded-lg text-xs font-bold hover:bg-blue-50 transition flex items-center justify-center gap-2 active:scale-95">
-                                <i class="fa-solid fa-hand-point-up"></i> Ambil Tugas Ini
-                            </button>
-                        </form>
+                        @if($task->initial_photo)
+                            <div class="mb-3 rounded-lg overflow-hidden h-32 border border-gray-200 relative group-hover:opacity-90 transition">
+                                <img src="{{ asset('storage/' . $task->initial_photo) }}" class="w-full h-full object-cover" alt="Bukti Foto">
+                            </div>
+                        @endif
+
+                        <div class="flex gap-2">
+                             <a href="{{ route('technician.tasks.show', $task->id) }}" class="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg text-xs font-bold hover:bg-gray-200 transition flex items-center justify-center gap-2 active:scale-95">
+                                <i class="fa-solid fa-eye"></i> Detail
+                            </a>
+                            <form action="{{ route('technician.tasks.claim', $task->id) }}" method="POST" class="flex-1">
+                                @csrf
+                                @method('PUT')
+                                <button type="submit" class="w-full bg-white border border-blue-600 text-blue-600 py-2 rounded-lg text-xs font-bold hover:bg-blue-50 transition flex items-center justify-center gap-2 active:scale-95">
+                                    <i class="fa-solid fa-hand-point-up"></i> Ambil
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             @empty

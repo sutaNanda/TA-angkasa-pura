@@ -49,14 +49,23 @@
             <h3 class="font-bold text-gray-800 mb-2 border-b pb-2">Deskripsi Masalah</h3>
             <p class="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{{ $task->issue_description }}</p>
             
+            @if($task->initial_photo)
+                <div class="mt-4">
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">Foto / Bukti Awal</p>
+                    <div class="rounded-lg overflow-hidden border border-gray-200">
+                        <img src="{{ asset('storage/'.$task->initial_photo) }}" class="w-full h-auto object-cover" alt="Foto Bukti User">
+                    </div>
+                </div>
+            @endif
+
             @if($task->reporter)
-                <div class="mt-4 flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
-                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                <div class="mt-4 flex items-center gap-2 bg-purple-50 p-3 rounded-lg border border-purple-100">
+                    <div class="w-8 h-8 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center font-bold text-xs">
                         {{ substr($task->reporter->name, 0, 1) }}
                     </div>
                     <div>
-                        <p class="text-xs font-bold text-gray-700">Dilaporkan Oleh</p>
-                        <p class="text-xs text-gray-500">{{ $task->reporter->name }}</p>
+                        <p class="text-xs font-bold text-gray-700">Pelapor (User)</p>
+                        <p class="text-xs text-gray-600">{{ $task->reporter->name }} <span class="text-gray-400">({{ $task->reporter->email }})</span></p>
                     </div>
                 </div>
             @endif

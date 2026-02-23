@@ -382,12 +382,13 @@
             if(emptyMsg) emptyMsg.remove(); // Remove "empty" message
 
             const rowId = 'spec-' + Date.now();
-            container.innerHTML += `
+            const newRowHtml = `
                 <div class="flex gap-2 items-center animate-fadeIn" id="${rowId}">
                     <input type="text" name="specs_key[]" value="${key}" placeholder="Label (ex: Warna)" class="w-1/3 border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500">
                     <input type="text" name="specs_value[]" value="${value}" placeholder="Value (ex: Merah)" class="w-full border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500">
                     <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-red-400 p-2 hover:bg-red-50 rounded transition"><i class="fa-solid fa-trash-can"></i></button>
                 </div>`;
+            container.insertAdjacentHTML('beforeend', newRowHtml);
         }
 
         // --- TREE LOGIC ---
