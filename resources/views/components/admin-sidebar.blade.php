@@ -6,9 +6,10 @@
         </div>
     </div>
 
-    <nav class="flex-1 overflow-y-auto py-4">
+    <nav class="flex-1 overflow-y-auto py-4 scrollbar-hide" style="scrollbar-width: none; -ms-overflow-style: none;">
         <ul class="space-y-1 px-2">
 
+            {{-- DASHBOARD --}}
             <li>
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-blue-600 transition {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-gauge-high w-5 text-center"></i>
@@ -16,19 +17,12 @@
                 </a>
             </li>
 
-            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase">Master Data</li>
+            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase tracking-widest">Data Referensi</li>
 
             <li>
                 <a href="{{ route('admin.assets.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.assets.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-sitemap w-5 text-center"></i>
-                    <span class="text-sm font-medium">Inventaris & Lokasi</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('admin.checklists.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.checklists.*') ? 'bg-blue-600' : '' }}">
-                    <i class="fa-solid fa-list-check w-5 text-center"></i>
-                    <span class="text-sm font-medium">Template Checklist</span>
+                    <span class="text-sm font-medium">Inventaris Aset</span>
                 </a>
             </li>
 
@@ -39,45 +33,52 @@
                 </a>
             </li>
 
-            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase">Operasional</li>
+            <li>
+                <a href="{{ route('admin.checklists.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.checklists.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-list-check w-5 text-center"></i>
+                    <span class="text-sm font-medium">Template Checklist</span>
+                </a>
+            </li>
+
+            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase tracking-widest">Operasional</li>
 
             <li>
                 <a href="{{ route('admin.maintenances.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.maintenances.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-map-location-dot w-5 text-center"></i>
-                    <span class="text-sm font-medium">Monitoring Patroli</span>
+                    <span class="text-sm font-medium">Inspeksi & Monitoring</span>
                 </a>
             </li>
 
             <li>
                 <a href="{{ route('admin.plans.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.plans.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-calendar-check w-5 text-center"></i>
-                    <span class="text-sm font-medium">Rencana Perawatan</span>
+                    <span class="text-sm font-medium">Perawatan Terjadwal</span>
                 </a>
             </li>
 
             <li>
                 <a href="{{ route('admin.work-orders.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.work-orders.*') ? 'bg-blue-600' : '' }}">
-                    <i class="fa-solid fa-screwdriver-wrench w-5 text-center"></i> <span class="text-sm font-medium">Tiket Perbaikan</span>
+                    <i class="fa-solid fa-screwdriver-wrench w-5 text-center"></i>
+                    <span class="text-sm font-medium">Work Order & Perbaikan</span>
                 </a>
             </li>
 
-            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase">Pengaturan</li>
+            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase tracking-widest">Manajemen</li>
 
             <li>
                 <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.users.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-users w-5 text-center"></i>
-                    <span class="text-sm font-medium">Manajemen User</span>
+                    <span class="text-sm font-medium">Manajemen Pengguna</span>
                 </a>
             </li>
-
-            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase">Keamanan Sistem</li>
 
             <li>
                 <a href="{{ route('admin.audit.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.audit.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-shield-halved w-5 text-center"></i>
-                    <span class="text-sm font-medium">Audit Trail (Log)</span>
+                    <span class="text-sm font-medium">Log Aktivitas</span>
                 </a>
             </li>
+
         </ul>
     </nav>
 

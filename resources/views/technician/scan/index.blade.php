@@ -1,14 +1,5 @@
 @extends('layouts.technician')
 
-@section('header')
-    <div class="flex items-center gap-3">
-        <a href="{{ route('technician.dashboard') }}" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h1 class="font-bold text-lg">Scan QR Lokasi</h1>
-    </div>
-@endsection
-
 @section('content')
     <div class="bg-white p-4 rounded-xl shadow-sm mb-6 text-center">
         <div id="reader" class="w-full rounded-lg overflow-hidden bg-black"></div>

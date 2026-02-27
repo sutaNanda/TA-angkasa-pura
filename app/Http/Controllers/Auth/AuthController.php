@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Auth; // <--- Namespace Berubah
+namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller; // <--- Import Controller Utama
+use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,7 +12,6 @@ class AuthController extends Controller
     // 1. Tampilkan Form Login
     public function showLoginForm()
     {
-        // Pastikan file view ada di: resources/views/auth/login.blade.php
         return view('auth.login');
     }
 
@@ -19,7 +19,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'email'    => ['required', 'email'],
             'password' => ['required'],
         ]);
 
@@ -27,6 +27,9 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
+
+            // Catat log aktivitas login
+            AuditLog::record('login', 'Authentication', "User {$user->name} berhasil masuk ke sistem");
 
             // Redirect sesuai Role
             if ($user->role === 'admin') {
@@ -50,11 +53,17 @@ class AuthController extends Controller
     // 3. Proses Logout
     public function logout(Request $request)
     {
+        $user = Auth::user();
+
+        // Catat log aktivitas logout sebelum session dihapus
+        if ($user) {
+            AuditLog::record('logout', 'Authentication', "User {$user->name} keluar dari sistem");
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Redirect ke route login setelah logout
         return redirect()->route('login');
     }
 }

@@ -2,10 +2,6 @@
 
 @section('title', 'Profil Saya')
 
-@section('header')
-    <h1 class="font-bold text-lg text-center text-white">Profil Saya</h1>
-@endsection
-
 @section('content')
 <div x-data="{ editModal: false, passwordModal: false }" class="pb-24">
 

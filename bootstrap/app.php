@@ -18,7 +18,20 @@ return Application::configure(basePath: dirname(__DIR__))
         
         $middleware->web(append: [
             \App\Http\Middleware\ForcePasswordReset::class,
+            \App\Http\Middleware\NgrokBypass::class,
         ]);
+
+        $middleware->redirectUsersTo(function () {
+            $user = Auth::user();
+            if ($user->role === 'admin') {
+                return route('admin.dashboard');
+            } elseif ($user->role === 'teknisi') {
+                return route('technician.dashboard');
+            } elseif ($user->role === 'user') {
+                return route('user.tickets.index');
+            }
+            return '/';
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, $request) {

@@ -1,14 +1,5 @@
 @extends('layouts.technician')
 
-@section('header')
-    <div class="flex items-center gap-3">
-        <a href="{{ route('technician.scan') }}" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition backdrop-blur-sm">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h1 class="font-bold text-lg text-white">Form Pengecekan</h1>
-    </div>
-@endsection
-
 @section('content')
     <div class="bg-white rounded-xl shadow-sm p-4 mb-4 border-l-4 border-blue-600">
         <div class="flex justify-between items-start">

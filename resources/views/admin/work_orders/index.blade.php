@@ -165,7 +165,7 @@
                             {{-- AKSI --}}
                             <td class="px-6 py-4 text-center">
                                 @if($ticket->status == 'open' || $ticket->status == 'handover')
-                                    <button onclick="openAssignModal({{ $ticket->id }}, '{{ $ticket->ticket_number }}')" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm w-full">
+                                    <button onclick="openAssignModal({{ $ticket->id }}, '{{ $ticket->ticket_number }}', {{ $ticket->technician_id ?? 'null' }}, '{{ $ticket->priority }}')" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm w-full">
                                         Tugaskan
                                     </button>
                                 @elseif($ticket->status == 'completed')
@@ -248,40 +248,92 @@
     {{-- 2. ASSIGN TEKNISI --}}
     <div id="assignModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal('assignModal')"></div>
-            <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-gray-200">
-                <div class="bg-blue-50 px-6 py-4 border-b border-blue-100">
-                    <h3 class="text-lg font-bold text-blue-900">Tugaskan Teknisi</h3>
-                    <p class="text-xs text-blue-600 mt-1">Tiket: <span id="assignTicketNo" class="font-mono font-bold"></span></p>
+            <div class="fixed inset-0 bg-black/40 transition-opacity" onclick="closeModal('assignModal')"></div>
+            <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200">
+
+                {{-- Header --}}
+                <div class="bg-slate-800 px-6 py-5 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                        <i class="fa-solid fa-user-gear text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Tugaskan Teknisi</h3>
+                        <p class="text-xs text-blue-100">Tiket: <span id="assignTicketNo" class="font-mono font-bold text-white"></span></p>
+                    </div>
                 </div>
-                <form id="assignForm" method="POST" class="p-6 space-y-4">
+
+                <form id="assignForm" method="POST" class="p-6 space-y-5">
                     @csrf
                     @method('PUT')
+
+                    {{-- Pilih Teknisi --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Pilih Teknisi</label>
-                        <select name="technician_id" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 bg-white" required>
-                            <option value="">-- Pilih --</option>
-                            @foreach($technicians as $tech)
-                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
-                            @endforeach
-                        </select>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa-solid fa-user-tie text-blue-500 mr-1"></i> Pilih Teknisi
+                        </label>
+                        <div class="relative">
+                            <select name="technician_id"
+                                class="w-full appearance-none border border-gray-300 rounded-xl pl-4 pr-10 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm"
+                                required>
+                                <option value="">Pilih Teknisi</option>
+                                @foreach($technicians as $tech)
+                                    <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                        @if($technicians->isEmpty())
+                            <p class="text-xs text-red-500 mt-1"><i class="fa-solid fa-circle-exclamation mr-1"></i>Belum ada teknisi terdaftar di sistem.</p>
+                        @else
+                            <p class="text-xs text-gray-400 mt-1">{{ $technicians->count() }} teknisi tersedia</p>
+                        @endif
                     </div>
+
+                    {{-- Prioritas --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Update Prioritas (Opsional)</label>
-                        <select name="priority" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 bg-white">
-                            <option value="high">High (Darurat)</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="low">Low</option>
-                        </select>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa-solid fa-flag text-orange-500 mr-1"></i> Prioritas Penanganan
+                        </label>
+                        <div class="grid grid-cols-3 gap-2" id="prioritySelector">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="priority" value="low" class="sr-only peer">
+                                <div class="peer-checked:bg-green-100 peer-checked:border-green-500 peer-checked:text-green-700 border-2 border-gray-200 rounded-xl p-2.5 text-center text-xs font-bold text-gray-500 hover:border-green-300 transition">
+                                    <i class="fa-solid fa-circle-down block mb-1 text-base"></i> Low
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="priority" value="medium" class="sr-only peer" checked>
+                                <div class="peer-checked:bg-orange-100 peer-checked:border-orange-500 peer-checked:text-orange-700 border-2 border-gray-200 rounded-xl p-2.5 text-center text-xs font-bold text-gray-500 hover:border-orange-300 transition">
+                                    <i class="fa-solid fa-circle-minus block mb-1 text-base"></i> Medium
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="priority" value="high" class="sr-only peer">
+                                <div class="peer-checked:bg-red-100 peer-checked:border-red-500 peer-checked:text-red-700 border-2 border-gray-200 rounded-xl p-2.5 text-center text-xs font-bold text-gray-500 hover:border-red-300 transition">
+                                    <i class="fa-solid fa-circle-up block mb-1 text-base"></i> High
+                                </div>
+                            </label>
+                        </div>
                     </div>
-                    <div class="pt-4 flex justify-end gap-2">
-                        <button type="button" onclick="closeModal('assignModal')" class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50">Batal</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md">Simpan & Tugaskan</button>
+
+                    {{-- Footer Buttons --}}
+                    <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+                        <button type="button" onclick="closeModal('assignModal')"
+                            class="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
+                            Batal
+                        </button>
+                        <button type="submit"
+                            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-600/30 flex items-center gap-2 transition">
+                            <i class="fa-solid fa-paper-plane"></i> Tugaskan
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
 
     {{-- 3. VERIFY & DETAIL (Digabung biar simple) --}}
     <div id="verifyModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
@@ -293,7 +345,6 @@
                         <h3 class="font-bold text-lg" id="modalVerifyTitle">Detail Tiket Perbaikan</h3>
                         <p class="text-xs text-green-100 opacity-90">Review hasil pekerjaan teknisi sebelum menutup tiket.</p>
                     </div>
-                    <button onclick="closeModal('verifyModal')" class="hover:bg-green-700 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 
                 <div class="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar" id="verifyContent">
@@ -330,9 +381,23 @@
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); }
         
-        function openAssignModal(id, ticketNo) {
+        function openAssignModal(id, ticketNo, currentTechId = null, currentPriority = 'medium') {
             document.getElementById('assignTicketNo').innerText = ticketNo;
             document.getElementById('assignForm').action = `/admin/work-orders/${id}/assign`;
+
+            // Pre-select technician jika sudah ada
+            const techSelect = document.querySelector('#assignForm select[name="technician_id"]');
+            if (techSelect && currentTechId) {
+                techSelect.value = currentTechId;
+            } else if (techSelect) {
+                techSelect.value = '';
+            }
+
+            // Pre-select priority (radio button)
+            const prioValue = currentPriority || 'medium';
+            const prioRadio = document.querySelector(`#assignForm input[name="priority"][value="${prioValue}"]`);
+            if (prioRadio) prioRadio.checked = true;
+
             document.getElementById('assignModal').classList.remove('hidden');
         }
 
@@ -395,7 +460,7 @@
                     <div class="mb-6">
                         <h4 class="text-sm font-bold text-gray-700 mb-2">Laporan Pengerjaan</h4>
                         <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm">
-                            <p class="text-sm text-gray-700 mb-3 italic">"${data.action_taken || 'Belum ada laporan dari teknisi.'}"</p>
+                            <p class="text-sm text-gray-700 mb-3 italic">"${(() => { const completedEntry = (data.histories || []).find(h => h.action === 'completed'); return completedEntry && completedEntry.description ? completedEntry.description : 'Belum ada laporan dari teknisi.'; })()}"</p>
                             
                             <div class="grid grid-cols-2 gap-4 mt-4">
                                 <div>

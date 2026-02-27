@@ -1,17 +1,5 @@
 @extends('layouts.technician')
 
-@section('header')
-    <div class="flex items-center gap-3">
-        <a href="{{ route('technician.scan') }}" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <div>
-            <p class="text-blue-100 text-xs">Lokasi Terdeteksi</p>
-            <h1 class="font-bold text-lg leading-tight">{{ $location->name }}</h1>
-        </div>
-    </div>
-@endsection
-
 @section('content')
     {{-- Task Statistics --}}
     <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-xl mb-6 text-white shadow-lg">

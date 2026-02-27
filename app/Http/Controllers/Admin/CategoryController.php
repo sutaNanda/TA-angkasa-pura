@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Http\Requests\Admin\StoreCategoryRequest;
+use App\Http\Requests\Admin\UpdateCategoryRequest;
 
 class CategoryController extends Controller
 {
@@ -31,57 +33,43 @@ class CategoryController extends Controller
     /**
      * Simpan Kategori Baru
      */
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request)
     {
-        $request->validate([
-            // Tambahkan 'unique' agar tidak ada nama kategori kembar
-            'name' => 'required|string|max:255|unique:categories,name',
-            'icon' => 'nullable|string|max:50',
-            'description' => 'nullable|string',
-        ]);
-
-        Category::create([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name),
-            'icon' => $request->icon ?? 'fa-box',
+        // Slug di-generate otomatis dari name — tidak diinput user
+        $category = Category::create([
+            'name'        => $request->name,
+            'slug'        => Str::slug($request->name),
+            'icon'        => $request->input('icon') ?: 'fa-box', // default jika kosong
             'description' => $request->description,
         ]);
 
-        // PERBAIKAN: Gunakan Redirect agar halaman refresh dan modal tertutup
-        return redirect()->back()->with('success', 'Kategori berhasil ditambahkan');
+        return redirect()->back()->with('success', 'Kategori berhasil ditambahkan.');
     }
 
     /**
      * Update Kategori
      */
-    public function update(Request $request, $id)
+    public function update(UpdateCategoryRequest $request, $id)
     {
         $category = Category::findOrFail($id);
 
-        $request->validate([
-            // Unique pengecualian untuk ID ini (ignore self)
-            'name' => 'required|string|max:255|unique:categories,name,' . $id,
-            'icon' => 'nullable|string|max:50',
-            'description' => 'nullable|string',
-        ]);
-
+        // Slug di-regenerate dari name terbaru — tidak diinput user
         $category->update([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name),
-            'icon' => $request->icon,
+            'name'        => $request->name,
+            'slug'        => Str::slug($request->name),
+            'icon'        => $request->input('icon') ?: 'fa-box', // default jika dikosongkan
             'description' => $request->description,
         ]);
 
-        // Return JSON untuk AJAX request
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Kategori berhasil diperbarui',
-                'data' => $category
+                'status'  => 'success',
+                'message' => 'Kategori berhasil diperbarui.',
+                'data'    => $category->fresh()->loadCount('assets'),
             ]);
         }
 
-        return redirect()->back()->with('success', 'Kategori berhasil diperbarui');
+        return redirect()->back()->with('success', 'Kategori berhasil diperbarui.');
     }
 
     /**

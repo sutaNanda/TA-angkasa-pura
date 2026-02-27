@@ -1,14 +1,5 @@
 @extends('layouts.technician')
 
-@section('header')
-    <div class="flex items-center gap-3">
-        <a href="{{ route('technician.scan') }}" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition backdrop-blur-sm">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h1 class="font-bold text-lg text-white">Patroli Area</h1>
-    </div>
-@endsection
-
 @section('content')
     <div class="bg-white rounded-xl shadow-sm p-4 mb-4 border-l-4 border-blue-600 relative overflow-hidden">
         <i class="fa-solid fa-map-location-dot absolute right-[-10px] bottom-[-10px] text-6xl text-gray-100"></i>
@@ -123,7 +114,7 @@
 
         </div>
 
-        <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] max-w-md mx-auto z-40">
+        <div class="fixed bottom-0 left-0 md:left-64 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
             <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition">
                 <i class="fa-solid fa-save mr-2"></i> Simpan Logbook Area
             </button>

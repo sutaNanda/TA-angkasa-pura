@@ -158,12 +158,28 @@
 
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lokasi <span class="text-red-500">*</span></label>
-                            <input type="text" name="name" id="locName" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Gedung A, Lantai 1..." required>
+                            <input type="text" name="name" id="locName" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Lokasi" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Tipe Lokasi <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <select name="type" id="locType" required
+                                    class="w-full appearance-none border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pr-8 bg-white">
+                                    <option value="" disabled selected>Pilih Tipe</option>
+                                    <option value="building">🏢  Gedung (Building)</option>
+                                    <option value="floor">📊  Lantai (Floor)</option>
+                                    <option value="room">🚪  Ruangan (Room)</option>
+                                    <option value="area">📍  Area / Lainnya</option>
+                                    <option value="outdoor">🌿  Outdoor</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-gray-400 text-xs pointer-events-none"></i>
+                            </div>
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
-                            <textarea name="description" id="locDesc" rows="3" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Keterangan tambahan..."></textarea>
+                            <textarea name="description" id="locDesc" rows="3" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Deskripsi"></textarea>
                         </div>
                     </div>
 
@@ -209,7 +225,7 @@
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
                                 <select name="category_id" id="assetCategory" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" required>
-                                    <option value="">-- Pilih Kategori --</option>
+                                    <option value="">Pilih Kategori</option>
                                     @foreach($categories as $cat) <option value="{{ $cat->id }}">{{ $cat->name }}</option> @endforeach
                                 </select>
                             </div>
@@ -451,8 +467,8 @@
                     <span class="truncate text-sm node-text">${loc.name}</span>
                 </div>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onclick="event.stopPropagation(); openLocationModal(null, '${loc.id}', '${safeName}', '${safeDesc}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-pen text-[10px]"></i></button>
-                    <button onclick="event.stopPropagation(); openLocationModal('${loc.id}', null, null, null, '${safeName}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-green-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                    <button onclick="event.stopPropagation(); openLocationModal(null, '${loc.id}', '${safeName}', '${safeDesc}', null, '${loc.type || ''}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                    <button onclick="event.stopPropagation(); openLocationModal('${loc.id}', null, null, null, '${safeName}', null, '${loc.type || ''}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-green-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-plus text-[10px]"></i></button>
                 </div>`;
             node.appendChild(header);
 
@@ -789,17 +805,52 @@
         }
 
         // --- LOCATION FORM ---
-        function openLocationModal(pid, eid, ename, edesc, pname) {
+        function openLocationModal(pid, eid, ename, edesc, pname, etype, ptype) {
             document.getElementById('locationForm').reset();
             document.getElementById('locParentId').value = pid||'';
             document.getElementById('locId').value = eid||'';
             const delBtn = document.getElementById('btnDeleteLoc');
             const pInfo = document.getElementById('parentInfoBox');
 
+            // --- Filter opsi tipe berdasarkan konteks ---
+            const select = document.getElementById('locType');
+            const allOptions = {
+                building : { value: 'building', label: '🏢  Gedung (Building)' },
+                floor    : { value: 'floor',    label: '📊  Lantai (Floor)' },
+                room     : { value: 'room',     label: '🚪  Ruangan (Room)' },
+                area     : { value: 'area',     label: '📍  Area / Lainnya' },
+                outdoor  : { value: 'outdoor',  label: '🌿  Outdoor' },
+            };
+
+            let allowedTypes;
+            if (eid) {
+                // Mode EDIT: tampilkan semua opsi
+                allowedTypes = ['building','floor','room','area','outdoor'];
+            } else if (!pid) {
+                // TAMBAH LOKASI UTAMA (root): hanya boleh Gedung, Area, Outdoor
+                allowedTypes = ['building','area','outdoor'];
+            } else if (ptype === 'building') {
+                // Sub-lokasi dari Gedung: boleh Lantai, Ruangan, Area
+                allowedTypes = ['floor','room','area'];
+            } else if (ptype === 'floor') {
+                // Sub-lokasi dari Lantai: hanya Ruangan atau Area
+                allowedTypes = ['room','area'];
+            } else {
+                // Fallback (Area/Outdoor/Room parent): Area saja
+                allowedTypes = ['area'];
+            }
+
+            select.innerHTML = '<option value="" disabled selected>Pilih Tipe</option>';
+            allowedTypes.forEach(t => {
+                const o = allOptions[t];
+                if (o) select.innerHTML += `<option value="${o.value}">${o.label}</option>`;
+            });
+
             if(eid) {
                 document.getElementById('locModalTitle').innerText = 'Edit Lokasi';
                 document.getElementById('locName').value = ename;
                 document.getElementById('locDesc').value = edesc==='null'?'':edesc;
+                if(etype) document.getElementById('locType').value = etype;
                 delBtn.classList.remove('hidden'); pInfo.classList.add('hidden');
             } else {
                 document.getElementById('locModalTitle').innerText = pid ? 'Tambah Sub-Lokasi' : 'Tambah Lokasi Utama';

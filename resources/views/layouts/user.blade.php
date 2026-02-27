@@ -42,48 +42,43 @@
 
         {{-- DESKTOP SIDEBAR (Static, Hidden on Mobile) --}}
         <aside class="hidden md:flex flex-col w-64 bg-slate-800 text-white flex-shrink-0 h-screen sticky top-0 overflow-hidden">
-            <div class="p-4 border-b border-slate-700 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <i class="fa-solid fa-user-shield text-white text-sm"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-bold text-lg leading-none">Portal User</h1>
-                        <span class="text-xs text-slate-400">Asset Monitoring</span>
-                    </div>
+            <div class="p-6 border-b border-slate-700 flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-cube text-white text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none tracking-tight">User Hub</h1>
+                    <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Enterprise</span>
                 </div>
             </div>
 
             <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+                <div class="px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Main Menu</div>
+                
                 <a href="{{ route('user.tickets.index') }}" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('user.tickets.index') ? 'bg-blue-600 text-white' : 'text-slate-300' }}">
-                    <i class="fa-solid fa-list-check w-5 text-center"></i>
-                    <span class="text-sm font-medium">Riwayat Laporan</span>
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group {{ request()->routeIs('user.tickets.index') ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-300' }}">
+                    <i class="fa-solid fa-list-check w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-semibold">Riwayat Laporan</span>
                 </a>
 
                 <a href="{{ route('user.tickets.create') }}" 
-                   class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('user.tickets.create') ? 'bg-blue-600 text-white' : 'text-slate-300' }}">
-                    <i class="fa-solid fa-plus-circle w-5 text-center"></i>
-                    <span class="text-sm font-medium">Buat Laporan Baru</span>
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group {{ request()->routeIs('user.tickets.create') ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-300' }}">
+                    <i class="fa-solid fa-plus-circle w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-semibold">Buat Laporan Baru</span>
+                </a>
+
+                <a href="{{ route('user.profile.index') }}" 
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group {{ request()->routeIs('user.profile.index') ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-300' }}">
+                    <i class="fa-solid fa-user w-5 text-center group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-semibold">Profil Saya</span>
                 </a>
             </nav>
 
-            <div class="p-4 border-t border-slate-700">
-                <div class="flex items-center gap-3 mb-4 px-2">
-                    <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
-                        <i class="fa-solid fa-user text-xs"></i>
-                    </div>
-                    <div class="overflow-hidden">
-                        <p class="text-sm font-bold truncate">{{ Auth::user()->name ?? 'User' }}</p>
-                        <p class="text-xs text-slate-400 truncate">Karyawan</p>
-                    </div>
+            <div class="p-4 border-t border-slate-700 bg-slate-800/50">
+                <div class="flex items-center gap-3 px-2 py-2 mb-2">
+                    <i class="fa-solid fa-circle-question text-slate-500 text-xs"></i>
+                    <span class="text-xs text-slate-400">Butuh bantuan? Hubungi IT Center</span>
                 </div>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar
-                    </button>
-                </form>
             </div>
         </aside>
 
@@ -118,13 +113,23 @@
                     <i class="fa-solid fa-plus-circle w-5 text-center"></i>
                     <span class="text-sm font-medium">Buat Laporan Baru</span>
                 </a>
+
+                <a href="{{ route('user.profile.index') }}" 
+                   class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('user.profile.index') ? 'bg-blue-600 text-white' : 'text-slate-300' }}">
+                    <i class="fa-solid fa-user w-5 text-center"></i>
+                    <span class="text-sm font-medium">Profil Saya</span>
+                </a>
             </nav>
 
             <div class="p-4 border-t border-slate-700">
                 <div class="flex items-center gap-3 mb-4 px-2">
-                    <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
-                        <i class="fa-solid fa-user text-xs"></i>
-                    </div>
+                    @if(Auth::user()->avatar)
+                        <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="w-8 h-8 rounded-full object-cover">
+                    @else
+                        <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
+                            <i class="fa-solid fa-user text-xs"></i>
+                        </div>
+                    @endif
                     <div class="overflow-hidden">
                         <p class="text-sm font-bold truncate">{{ Auth::user()->name ?? 'User' }}</p>
                         <p class="text-xs text-slate-400 truncate">Karyawan</p>
@@ -155,31 +160,70 @@
             </div>
         </div>
 
-        {{-- MAIN CONTENT --}}
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-8">
-            {{-- Flash Messages --}}
-            @if(session('success'))
-                <div class="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-check-circle"></i>
-                        <p>{{ session('success') }}</p>
-                    </div>
-                    <button onclick="this.parentElement.remove()" class="text-green-700 hover:text-green-900"><i class="fa-solid fa-times"></i></button>
+        {{-- MAIN CONTENT AREA --}}
+        <div class="flex-1 flex flex-col min-w-0 bg-gray-50">
+            {{-- DESKTOP TOP-BAR (Sticky & Glassmorphism) --}}
+            <header class="hidden md:flex items-center justify-between px-8 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-xl font-bold text-gray-800 tracking-tight">@yield('title')</h2>
                 </div>
-            @endif
-
-            @if(session('error'))
-                <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <p>{{ session('error') }}</p>
+                
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3 pl-6 border-l border-gray-200">
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-gray-900 leading-none mb-1">{{ Auth::user()->name ?? 'User' }}</p>
+                            <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Karyawan</p>
+                        </div>
+                        @if(Auth::user()->avatar)
+                            <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                        @else
+                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shadow-sm border border-blue-200">
+                                {{ substr(Auth::user()->name ?? 'U', 0, 1) }}
+                            </div>
+                        @endif
                     </div>
-                    <button onclick="this.parentElement.remove()" class="text-red-700 hover:text-red-900"><i class="fa-solid fa-times"></i></button>
-                </div>
-            @endif
 
-            @yield('content')
-        </main>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors duration-200 text-sm font-bold group">
+                            <i class="fa-solid fa-arrow-right-from-bracket group-hover:translate-x-1 transition-transform"></i>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 md:p-8">
+                <div class="max-w-7xl mx-auto w-full">
+                    {{-- Flash Messages --}}
+                    @if(session('success'))
+                        <div class="mb-6 bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl shadow-sm flex justify-between items-center animate-fade-in-down">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                                    <i class="fa-solid fa-check-circle"></i>
+                                </div>
+                                <p class="text-sm font-medium">{{ session('success') }}</p>
+                            </div>
+                            <button onclick="this.parentElement.remove()" class="text-green-400 hover:text-green-600 transition truncate"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="mb-6 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl shadow-sm flex justify-between items-center animate-fade-in-down">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </div>
+                                <p class="text-sm font-medium">{{ session('error') }}</p>
+                            </div>
+                            <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-600 transition truncate"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                    @endif
+
+                    @yield('content')
+                </div>
+            </main>
+        </div>
     </div>
 
     @stack('scripts')

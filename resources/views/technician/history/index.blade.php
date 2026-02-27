@@ -2,10 +2,6 @@
 
 @section('title', 'Riwayat Kerja')
 
-@section('header')
-    <h1 class="font-bold text-lg text-center text-white">Portofolio Kerja</h1>
-@endsection
-
 @section('content')
 <div x-data="{ 
     tab: 'patrol', 

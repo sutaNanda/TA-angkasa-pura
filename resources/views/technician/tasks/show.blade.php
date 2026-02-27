@@ -2,15 +2,6 @@
 
 @section('title', 'Detail Tugas')
 
-@section('header')
-    <div class="flex items-center gap-3">
-        <a href="{{ route('technician.tasks.index') }}" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition backdrop-blur-sm">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h1 class="font-bold text-lg text-white">Detail Tugas #{{ $task->ticket_number }}</h1>
-    </div>
-@endsection
-
 @section('content')
 <div x-data="{ showCompleteModal: false, showHandoverModal: false }" class="pb-48 relative min-h-screen">
     {{-- Header removed here --}}
@@ -78,39 +69,45 @@
 
     {{-- STICKY BOTTOM BAR (Above Bottom Nav) --}}
     @if($task->status != 'completed')
-        <div class="fixed bottom-[64px] left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-5px_10px_rgba(0,0,0,0.05)] z-40 flex gap-3 pb-safe">
-            {{-- KONDISI 1: Tugas Handover/Pool (Belum Diambil) --}}
-            @if(in_array($task->status, ['open', 'handover']) && $task->technician_id == null)
-                <form action="{{ route('technician.tasks.claim', $task->id) }}" method="POST" class="w-full">
-                    @csrf
-                    @method('PUT')
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95">
-                        <i class="fa-solid fa-hand-holding-hand"></i> Ambil Tugas Ini
-                    </button>
-                </form>
-
-            {{-- KONDISI 2: Tugas Ditugaskan ke Saya (Belum Mulai) --}}
-            @elseif($task->technician_id == auth()->id() && in_array($task->status, ['assigned', 'open']))
-                <form action="{{ route('technician.tasks.start', $task->id) }}" method="POST" class="w-full">
-                    @csrf
-                    @method('PUT')
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95">
-                        <i class="fa-solid fa-play"></i> Mulai Kerjakan
-                    </button>
-                </form>
+        <div class="fixed bottom-[64px] md:bottom-0 left-0 md:left-64 right-0 bg-white border-t border-gray-200 shadow-[0_-5px_10px_rgba(0,0,0,0.05)] z-40 ">
             
-            {{-- KONDISI 3: Tugas Saya (In Progress atau Pending Part) --}}
-            @elseif($task->technician_id == auth()->id() && in_array($task->status, ['in_progress', 'pending_part']))
-                {{-- Tombol Handover --}}
-                <button @click="showHandoverModal = true" class="flex-1 bg-yellow-500 text-white font-bold py-3 rounded-xl shadow hover:bg-yellow-600 transition flex items-center justify-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-arrow-right-arrow-left"></i> Handover
-                </button>
+            {{-- TAMBAHAN: Wrapper pembatas lebar khusus desktop agar sejajar dengan konten --}}
+            <div class="max-w-7xl mx-auto w-full p-4 md:px-8 flex gap-3 md:justify-center flex-wrap">
                 
-                {{-- Tombol Selesai --}}
-                <button @click="showCompleteModal = true" class="flex-[2] bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-green-700 transition flex items-center justify-center gap-2 active:scale-95">
-                    <i class="fa-solid fa-check-circle"></i> Selesai
-                </button>
-            @endif
+                {{-- KONDISI 1: Tugas Handover/Pool (Belum Diambil) --}}
+                @if(in_array($task->status, ['open', 'handover']) && $task->technician_id == null)
+                    <form action="{{ route('technician.tasks.claim', $task->id) }}" method="POST" class="w-full md:w-auto">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" class="w-full md:w-auto md:px-10 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95">
+                            <i class="fa-solid fa-hand-holding-hand"></i> Ambil Tugas Ini
+                        </button>
+                    </form>
+
+                {{-- KONDISI 2: Tugas Ditugaskan ke Saya (Belum Mulai) --}}
+                @elseif($task->technician_id == auth()->id() && in_array($task->status, ['assigned', 'open']))
+                    <form action="{{ route('technician.tasks.start', $task->id) }}" method="POST" class="w-full md:w-auto">
+                        @csrf
+                        @method('PUT')
+                        <button type="submit" class="w-full md:w-auto md:px-10 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 active:scale-95">
+                            <i class="fa-solid fa-play"></i> Mulai Kerjakan
+                        </button>
+                    </form>
+                
+                {{-- KONDISI 3: Tugas Saya (In Progress atau Pending Part) --}}
+                @elseif($task->technician_id == auth()->id() && in_array($task->status, ['in_progress', 'pending_part']))
+                    {{-- Tombol Handover --}}
+                    <button @click="showHandoverModal = true" class="flex-1 md:flex-none md:w-auto md:px-8 bg-yellow-500 text-white font-bold py-3 rounded-xl shadow hover:bg-yellow-600 transition flex items-center justify-center gap-2 active:scale-95">
+                        <i class="fa-solid fa-arrow-right-arrow-left"></i> Handover
+                    </button>
+                    
+                    {{-- Tombol Selesai --}}
+                    <button @click="showCompleteModal = true" class="flex-[2] md:flex-none md:w-auto md:px-12 bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-green-700 transition flex items-center justify-center gap-2 active:scale-95">
+                        <i class="fa-solid fa-check-circle"></i> Selesai
+                    </button>
+                @endif
+                
+            </div>
         </div>
     @endif
 
@@ -132,7 +129,7 @@
                 @method('PUT')
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Alasan Handover</label>
-                    <textarea name="note" rows="3" class="w-full rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 text-sm" placeholder="Jelaskan kendala kenapa tugas ini dilempar..." required></textarea>
+                    <textarea name="note" rows="3" class="w-full rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2" placeholder="Jelaskan kendala kenapa tugas ini dihandover" required></textarea>
                 </div>
                 <div class="flex gap-3 mt-6">
                     <button type="button" @click="showHandoverModal = false" class="flex-1 py-3 rounded-xl bg-gray-50 text-gray-600 font-bold hover:bg-gray-100 text-sm">Batal</button>
@@ -161,7 +158,7 @@
                 
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Catatan Perbaikan</label>
-                    <textarea name="description" rows="3" class="w-full rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 text-sm" placeholder="Apa yang sudah diperbaiki?" required></textarea>
+                    <textarea name="description" rows="3" class="w-full rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 text-sm p-2" placeholder="Apa yang sudah diperbaiki?" required></textarea>
                 </div>
 
                 <div class="mb-6">

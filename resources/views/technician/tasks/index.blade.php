@@ -2,10 +2,6 @@
 
 @section('title', 'Daftar Tugas')
 
-@section('header')
-    <h1 class="font-bold text-lg text-center text-white">Daftar Tugas</h1>
-@endsection
-
 @section('content')
 <div x-data="{ tab: '{{ $tab ?? 'my_tasks' }}' }">
 

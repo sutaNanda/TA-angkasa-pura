@@ -6,10 +6,10 @@
 <div class="max-w-7xl mx-auto pb-10">
     
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start items-center gap-4 mb-6">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">Riwayat Laporan</h1>
-            <p class="text-gray-500 text-sm mt-1">Pantau status perbaikan aset yang Anda laporkan.</p>
+            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Riwayat Laporan</h1>
+            <p class="text-gray-500 text-sm mt-1 font-medium">Pantau status perbaikan aset yang Anda laporkan secara real-time.</p>
         </div>
         {{-- Diperbaiki: Tombol sekarang muncul di HP (Full width) dan menyesuaikan di Laptop --}}
         <a href="{{ route('user.tickets.create') }}" class="w-full sm:w-auto inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition gap-2">
@@ -18,26 +18,45 @@
     </div>
 
     {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         {{-- Total --}}
-        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-3 text-center md:text-left">
-            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-ticket text-sm md:text-base"></i>
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-ticket text-base"></i>
             </div>
             <div>
-                <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider">Total Tiket</p>
-                <p class="text-base md:text-lg font-bold text-gray-800">{{ $tickets->total() }}</p>
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Total Tiket</p>
+                <p class="text-xl font-black text-gray-900">{{ $tickets->total() }}</p>
             </div>
         </div>
         {{-- Open (Menunggu) --}}
-        <div class="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-2 md:gap-3 text-center md:text-left">
-            <div class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-hourglass-half text-sm md:text-base"></i>
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200">
+            <div class="w-10 h-10 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-clock-rotate-left text-base"></i>
             </div>
             <div>
-                <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider">Menunggu</p>
-                {{-- Logic hitung tiket open di halaman saat ini --}}
-                <p class="text-base md:text-lg font-bold text-gray-800">{{ $tickets->where('status', 'open')->count() }}</p> 
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Menunggu</p>
+                <p class="text-xl font-black text-gray-900">{{ $tickets->where('status', 'open')->count() }}</p> 
+            </div>
+        </div>
+        {{-- In Progress (Diproses) --}}
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200" title="Termasuk status in_progress">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-person-digging text-base"></i>
+            </div>
+            <div>
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Diproses</p>
+                <p class="text-xl font-black text-gray-900">{{ $tickets->where('status', 'in_progress')->count() }}</p> 
+            </div>
+        </div>
+        {{-- Completed (Selesai) --}}
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200">
+            <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-check-double text-base"></i>
+            </div>
+            <div>
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Selesai</p>
+                <p class="text-xl font-black text-gray-900">{{ $tickets->where('status', 'completed')->count() }}</p> 
             </div>
         </div>
     </div>

@@ -1,17 +1,5 @@
 @extends('layouts.technician')
 
-@section('header')
-    <div class="flex items-center gap-3">
-        <a href="{{ route('technician.scan.show', $asset->location_id) }}" class="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition backdrop-blur-sm">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <div>
-            <p class="text-blue-100 text-xs">Inspeksi Aset</p>
-            <h1 class="font-bold text-lg leading-tight">{{ $asset->name }}</h1>
-        </div>
-    </div>
-@endsection
-
 @section('content')
     {{-- Asset Info Card --}}
     <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border-l-4 border-blue-500">
@@ -31,13 +19,15 @@
     </div>
 
     {{-- Checklist Form --}}
+{{-- Checklist Form --}}
     <form id="inspectionForm" action="{{ isset($maintenance) ? route('technician.maintenance.complete', $maintenance->id) : route('technician.inspection.store') }}" method="POST">
         @csrf
         <input type="hidden" name="asset_id" value="{{ $asset->id }}">
         <input type="hidden" name="template_id" value="{{ $template->id }}">
         <input type="hidden" name="has_issue" id="hasIssue" value="0">
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-24">
+        {{-- Jarak bawah (mb-32) ditambahkan agar item paling bawah tidak tertutup tombol fixed --}}
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-32 md:mb-8">
             <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-3 border-b border-green-100">
                 <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm">
                     <i class="fa-solid fa-clipboard-check text-green-600"></i>
@@ -70,6 +60,7 @@
                                 </label>
                             </div>
 
+                        @elseif($item->type === 'number')
                             {{-- Numeric Input --}}
                             <div class="space-y-2">
                                 <div class="flex gap-2 items-center">
@@ -101,34 +92,40 @@
                     </div>
                 @endforeach
             </div>
-        </div>
 
-        {{-- Sticky Bottom Actions --}}
-        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] md:relative md:border-0 md:shadow-none md:bg-transparent md:p-0 z-20">
-            
-            {{-- Issue Details Form (Hidden by default, shown when fail is selected) --}}
-            <div id="issueDetails" class="hidden mb-4 bg-red-50 p-4 rounded-xl border border-red-100">
-                <div class="mb-3">
-                    <label class="block text-xs font-bold text-red-700 mb-1">Catatan Masalah <span class="text-red-500">*</span></label>
-                    <textarea name="notes" rows="2" class="w-full text-sm border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500" placeholder="Deskripsikan masalah..."></textarea>
-                </div>
-                <div class="mb-3">
-                    <label class="block text-xs font-bold text-red-700 mb-1">Foto Bukti <span class="text-red-500">*</span></label>
-                    <input type="file" name="photo" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200" accept="image/*">
-                </div>
-                <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-red-100">
-                    <div>
-                        <p class="text-sm font-bold text-red-700">⚠️ Kerusakan Kritis/Berbahaya?</p>
-                        <p class="text-[10px] text-red-500">Akan ditandai sebagai High Priority</p>
+            {{-- DIPINDAHKAN KE SINI: Form Detail Masalah (Masuk ke normal flow, BUKAN fixed) --}}
+            <div class="px-4 pb-4">
+                <div id="issueDetails" class="hidden bg-red-50 p-4 rounded-xl border border-red-200 shadow-inner mt-2">
+                    <h4 class="font-bold text-red-800 text-sm mb-3 border-b border-red-200 pb-2">
+                        <i class="fa-solid fa-pen-to-square mr-1"></i> Detail Laporan Kerusakan
+                    </h4>
+                    <div class="mb-3">
+                        <label class="block text-xs font-bold text-red-700 mb-1">Catatan Masalah <span class="text-red-500">*</span></label>
+                        <textarea name="notes" rows="2" class="w-full text-sm border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500" placeholder="Jelaskan detail kerusakannya..."></textarea>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" name="is_critical" value="1" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                    </label>
+                    <div class="mb-3">
+                        <label class="block text-xs font-bold text-red-700 mb-1">Foto Bukti <span class="text-red-500">*</span></label>
+                        <input type="file" name="photo" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200" accept="image/*">
+                    </div>
+                    <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-red-100">
+                        <div>
+                            <p class="text-sm font-bold text-red-700">⚠️ Kerusakan Kritis?</p>
+                            <p class="text-[10px] text-red-500">Tandai sebagai High Priority</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="is_critical" value="1" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                        </label>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <button type="submit" id="submitBtn" class="w-full bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+        {{-- HANYA TOMBOL INI YANG MELAYANG (FIXED) --}}
+        <div class="fixed left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-5px_15px_rgba(0,0,0,0.08)] md:relative md:bottom-auto md:border-0 md:shadow-none md:bg-transparent z-40 p-3 md:p-0 transition-all" 
+             style="bottom: calc(64px + env(safe-area-inset-bottom, 0px));">
+            
+            <button type="submit" id="submitBtn" class="w-full max-w-3xl mx-auto bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="fa-solid fa-check-circle"></i>
                 <span>Simpan Hasil Inspeksi</span>
             </button>

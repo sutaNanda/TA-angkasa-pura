@@ -10,9 +10,11 @@ use App\Models\Category;
 use App\Models\Location;
 use App\Http\Requests\Admin\StoreAssetRequest;
 use App\Http\Requests\Admin\UpdateAssetRequest;
+use App\Traits\ImageUploadTrait;
 
 class AssetController extends Controller
 {
+    use ImageUploadTrait;
     public function index()
     {
         $locations = Location::whereNull('parent_id')->with('children')->get();
@@ -54,28 +56,36 @@ class AssetController extends Controller
 
     public function store(StoreAssetRequest $request)
     {
-        // 1. Ambil data yang sudah divalidasi (Safe)
+        // 1. Ambil data yang sudah divalidasi (aman dari mass-assignment)
         $data = $request->validated();
 
-        // 2. Proses Spesifikasi (Helper function biar rapi)
+        // 2. Proses Spesifikasi: buat array asosiatif dari dua array paralel
         $data['specifications'] = $this->formatSpecifications(
-            $request->input('specs_key', []), 
+            $request->input('specs_key', []),
             $request->input('specs_value', [])
         );
 
-        // 3. Proses Upload Gambar
+        // 3. Bersihkan key yang bukan kolom DB agar tidak error saat insert
+        unset($data['specs_key'], $data['specs_value']);
+
+        // 4. Upload & Optimasi Gambar → otomatis di-resize & dikonversi ke WebP
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('assets', 'public');
+            $data['image'] = $this->uploadAndOptimizeImage(
+                file: $request->file('image'),
+                folderPath: 'assets',
+                maxWidth: 800,
+                quality: 80
+            );
         }
 
-        // 4. Simpan
+        // 5. Simpan (uuid di-generate otomatis oleh boot() di Model)
         $asset = Asset::create($data);
 
         return response()->json([
-            'status' => 'success', 
-            'message' => 'Aset berhasil ditambahkan', 
-            'data' => $asset
-        ]);
+            'status'  => 'success',
+            'message' => 'Aset berhasil ditambahkan.',
+            'data'    => $asset->load(['category', 'location']),
+        ], 201);
     }
 
     /**
@@ -99,38 +109,44 @@ class AssetController extends Controller
     public function update(UpdateAssetRequest $request, $id)
     {
         $asset = Asset::findOrFail($id);
-        
-        // 1. Ambil data validasi
+
+        // 1. Ambil data yang sudah divalidasi
         $data = $request->validated();
 
         // 2. Proses Spesifikasi
         $data['specifications'] = $this->formatSpecifications(
-            $request->input('specs_key', []), 
+            $request->input('specs_key', []),
             $request->input('specs_value', [])
         );
 
-        // 3. Proses Gambar (Hapus lama jika ada upload baru)
+        // 3. Bersihkan key yang bukan kolom DB
+        unset($data['specs_key'], $data['specs_value']);
+
+        // 4. Upload & Optimasi Gambar baru, hapus file lama otomatis
         if ($request->hasFile('image')) {
-            if ($asset->image && Storage::disk('public')->exists($asset->image)) {
-                Storage::disk('public')->delete($asset->image);
-            }
-            $data['image'] = $request->file('image')->store('assets', 'public');
+            $this->deleteOldImage($asset->image);
+            $data['image'] = $this->uploadAndOptimizeImage(
+                file: $request->file('image'),
+                folderPath: 'assets',
+                maxWidth: 800,
+                quality: 80
+            );
         }
 
-        // 4. Update
+        // 5. Update
         $asset->update($data);
 
         return response()->json([
-            'status' => 'success', 
-            'message' => 'Data aset berhasil diperbarui', 
-            'data' => $asset
+            'status'  => 'success',
+            'message' => 'Data aset berhasil diperbarui.',
+            'data'    => $asset->fresh()->load(['category', 'location']),
         ]);
     }
 
     public function destroy($id)
     {
         $asset = Asset::findOrFail($id);
-        if ($asset->image && Storage::disk('public')->exists($asset->image)) { Storage::disk('public')->delete($asset->image); }
+        $this->deleteOldImage($asset->image);
         $asset->delete();
         return response()->json(['status' => 'success', 'message' => 'Deleted']);
     }

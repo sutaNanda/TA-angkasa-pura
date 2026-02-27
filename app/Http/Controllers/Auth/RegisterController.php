@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -12,9 +11,23 @@ use Illuminate\Auth\Events\Registered;
 
 class RegisterController extends Controller
 {
+    /**
+     * Daftar divisi hardcoded — tidak butuh tabel database.
+     * Cukup update array ini jika ada perubahan struktur organisasi.
+     */
+    private const DIVISIONS = [
+        'IT',
+        'HR & GA',
+        'Finance',
+        'Operations',
+        'Commercial',
+        'Technical',
+        'Security',
+    ];
+
     public function showRegistrationForm()
     {
-        $divisions = Division::all();
+        $divisions = self::DIVISIONS;
         return view('auth.register', compact('divisions'));
     }
 
@@ -28,20 +41,22 @@ class RegisterController extends Controller
                 'email',
                 'max:255',
                 'unique:users',
-                'regex:/(@angkasapura\.co\.id|@gmail\.com)$/' // Domain Restriction (Updated: Allow Gmail)
+                'regex:/(@angkasapura\.co\.id|@gmail\.com)$/',
             ],
-            'password' => 'required|string|min:8|confirmed',
-            'division_id' => 'required|exists:divisions,id',
+            'password'  => 'required|string|min:8|confirmed',
+            // Validasi division sebagai string pilihan, bukan FK
+            'division'  => 'nullable|string|in:' . implode(',', self::DIVISIONS),
         ], [
-            'email.regex' => 'Gunakan email resmi (@angkasapura.co.id) atau akun Gmail.',
+            'email.regex'    => 'Gunakan email resmi (@angkasapura.co.id) atau akun Gmail.',
+            'division.in'    => 'Divisi yang dipilih tidak valid.',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'     => $request->name,
+            'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user', // Hardcoded Role
-            'division_id' => $request->division_id,
+            'role'     => 'user', // Default role untuk registrasi mandiri
+            'division' => $request->division,
         ]);
 
         event(new Registered($user));

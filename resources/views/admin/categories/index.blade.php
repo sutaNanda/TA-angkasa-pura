@@ -66,8 +66,8 @@
 
             <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50">
                 <div>
-                    <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Audit Aset Kategori</p>
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2" id="detailTitle">-- Pilih Kategori --</h2>
+                    <!-- <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Audit Aset Kategori</p> -->
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2" id="detailTitle">Pilih Kategori</h2>
                     <p class="text-sm text-gray-500 mt-1" id="detailDesc">Klik salah satu kategori di kiri untuk melihat detail.</p>
                 </div>
                 <div class="flex gap-2 hidden" id="categoryActions"></div>
@@ -131,13 +131,31 @@
                         <h3 class="text-lg font-bold text-gray-900">Tambah Kategori Baru</h3>
                     </div>
                     <div class="bg-white px-6 py-6 space-y-4">
+
+                        {{-- Error banner --}}
+                        @if($errors->any())
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <p class="text-xs font-bold text-red-700 mb-1 flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-exclamation"></i> Gagal menyimpan:
+                                </p>
+                                <ul class="list-disc list-inside space-y-0.5">
+                                    @foreach($errors->all() as $error)
+                                        <li class="text-xs text-red-600">{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nama Kategori</label>
-                            <input type="text" name="name" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" required>
+                            <input type="text" name="name"
+                                value="{{ old('name') }}"
+                                class="w-full rounded-lg text-sm focus:ring-blue-500 {{ $errors->has('name') ? 'border-red-400 bg-red-50' : 'border-gray-300' }}"
+                                required>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
-                            <textarea name="description" rows="2" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500"></textarea>
+                            <textarea name="description" rows="2" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500">{{ old('description') }}</textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Ikon Kategori</label>
@@ -606,6 +624,14 @@
                     closeModal('editCategoryModal');
                     await Swal.fire('Berhasil!', 'Kategori berhasil diupdate.', 'success');
                     window.location.reload();
+                } else if (response.status === 422) {
+                    // Tampilkan pesan validasi field-by-field
+                    const messages = Object.values(json.errors).flat().join('\n');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Data tidak valid',
+                        text: messages,
+                    });
                 } else {
                     throw new Error(json.message || 'Gagal mengupdate kategori');
                 }
@@ -613,5 +639,12 @@
                 Swal.fire('Gagal!', error.message, 'error');
             }
         });
+
+        @if($errors->any())
+            // Auto-buka modal tambah jika ada error validasi dari server
+            document.addEventListener('DOMContentLoaded', function() {
+                openModal('addCategoryModal');
+            });
+        @endif
     </script>
 @endsection

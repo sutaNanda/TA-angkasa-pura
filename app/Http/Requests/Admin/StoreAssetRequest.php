@@ -3,46 +3,149 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAssetRequest extends FormRequest
 {
+    /**
+     * Hanya Admin yang boleh melakukan request ini.
+     */
     public function authorize(): bool
     {
-        return true;
+        return $this->user() && $this->user()->role === 'admin';
     }
 
+    /**
+     * Aturan validasi untuk CREATE aset baru.
+     */
     public function rules(): array
     {
         return [
-            'name'          => ['required', 'string', 'max:255'],
-            'serial_number' => ['nullable', 'string', 'max:100', 'unique:assets,serial_number'], // Opsional: Unik
-            'category_id'   => ['required', 'exists:categories,id'], // Wajib ada di tabel categories
-            'location_id'   => ['required', 'exists:locations,id'],  // Wajib ada di tabel locations
-            
-            // Batasi status agar user tidak input sembarangan lewat Inspect Element
-            'status'        => ['required', 'in:normal,rusak,maintenance,disposed'], 
-            
-            'image'         => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], // Max 2MB
-            'purchase_date' => ['nullable', 'date'],
-            
-            // Validasi Array Spesifikasi
-            'specs_key'     => ['nullable', 'array'],
-            'specs_key.*'   => ['nullable', 'string', 'max:255'], // Tiap item key harus string
-            'specs_value'   => ['nullable', 'array'],
-            'specs_value.*' => ['nullable', 'string', 'max:255'], // Tiap item value harus string
+            // --- Informasi Utama ---
+            'name' => [
+                'required',
+                'string',
+                'min:3',
+                'max:255',
+            ],
+
+            'serial_number' => [
+                'nullable',
+                'string',
+                'max:100',
+                // Unique check: serial number tidak boleh duplikat di seluruh tabel assets
+                Rule::unique('assets', 'serial_number'),
+            ],
+
+            // --- Klasifikasi ---
+            'category_id' => [
+                'required',
+                // Pastikan ID kategori benar-benar ada di DB
+                Rule::exists('categories', 'id'),
+            ],
+
+            'location_id' => [
+                'required',
+                // Pastikan ID lokasi benar-benar ada di DB
+                Rule::exists('locations', 'id'),
+            ],
+
+            // --- Status: enum DB reference ---
+            'status' => [
+                'required',
+                // Cocokkan tepat dengan nilai ENUM di tabel assets
+                Rule::in(['normal', 'rusak', 'maintenance', 'hilang']),
+            ],
+
+            // --- Tanggal: tidak boleh tanggal masa depan ---
+            'purchase_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:today',
+            ],
+
+            // --- Upload Gambar ---
+            'image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048', // 2 MB
+            ],
+
+            // --- Spesifikasi (dikirim sebagai dua array paralel dari form) ---
+            // Key: 'RAM', 'Processor', dll.
+            'specs_key' => ['nullable', 'array'],
+            'specs_key.*' => [
+                'nullable',
+                'string',
+                'max:100',
+                // Setiap key tidak boleh kosong jika ada (string yang isinya hanya spasi dianggap kosong)
+            ],
+
+            // Value: '8 GB', 'Intel i7', dll.
+            'specs_value' => ['nullable', 'array'],
+            'specs_value.*' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
         ];
     }
 
+    /**
+     * Pesan error yang ramah pengguna (Bahasa Indonesia).
+     */
     public function messages(): array
     {
         return [
+            // Nama
+            'name.required'       => 'Nama aset wajib diisi.',
+            'name.min'            => 'Nama aset minimal 3 karakter.',
+            'name.max'            => 'Nama aset maksimal 255 karakter.',
+            'name.string'         => 'Nama aset harus berupa teks.',
+
+            // Serial Number
+            'serial_number.max'        => 'Serial number maksimal 100 karakter.',
+            'serial_number.unique'     => 'Serial number ini sudah terdaftar pada aset lain.',
+
+            // Kategori & Lokasi
             'category_id.required' => 'Kategori aset wajib dipilih.',
-            'category_id.exists'   => 'Kategori tidak valid.',
+            'category_id.exists'   => 'Kategori yang dipilih tidak ditemukan dalam sistem.',
             'location_id.required' => 'Lokasi aset wajib dipilih.',
-            'location_id.exists'   => 'Lokasi tidak valid.',
-            'status.in'            => 'Status tidak valid (Pilih: Normal, Rusak, Maintenance).',
-            'image.max'            => 'Ukuran gambar maksimal 2MB.',
-            'serial_number.unique' => 'Serial number sudah terdaftar.',
+            'location_id.exists'   => 'Lokasi yang dipilih tidak ditemukan dalam sistem.',
+
+            // Status
+            'status.required' => 'Status aset wajib dipilih.',
+            'status.in'       => 'Status tidak valid. Pilihan: Normal, Rusak, Maintenance, atau Hilang.',
+
+            // Tanggal
+            'purchase_date.date'            => 'Format tanggal pembelian tidak valid.',
+            'purchase_date.before_or_equal' => 'Tanggal pembelian tidak boleh melebihi hari ini.',
+
+            // Gambar
+            'image.image'  => 'File yang diunggah harus berupa gambar.',
+            'image.mimes'  => 'Format gambar yang diizinkan: JPG, JPEG, PNG, atau WebP.',
+            'image.max'    => 'Ukuran gambar tidak boleh melebihi 2 MB.',
+
+            // Spesifikasi
+            'specs_key.*.max'   => 'Nama spesifikasi (#:position) terlalu panjang, maksimal 100 karakter.',
+            'specs_value.*.max' => 'Nilai spesifikasi (#:position) terlalu panjang, maksimal 500 karakter.',
+        ];
+    }
+
+    /**
+     * Custom attribute names untuk pesan error yang lebih deskriptif.
+     */
+    public function attributes(): array
+    {
+        return [
+            'name'          => 'nama aset',
+            'serial_number' => 'serial number',
+            'category_id'   => 'kategori',
+            'location_id'   => 'lokasi',
+            'status'        => 'status aset',
+            'purchase_date' => 'tanggal pembelian',
+            'image'         => 'gambar aset',
         ];
     }
 }

@@ -12,6 +12,14 @@ use Illuminate\Http\Request; // Masih dipakai untuk getTree (karena tidak ada in
 class LocationController extends Controller
 {
     /**
+     * Tampilkan halaman Master Lokasi
+     */
+    public function index()
+    {
+        return view('admin.locations.index');
+    }
+
+    /**
      * Mengembalikan struktur Tree (Parent -> Children)
      */
     public function getTree()

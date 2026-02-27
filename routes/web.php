@@ -56,15 +56,25 @@ Route::middleware('auth')->group(function () {
     })->name('session.keep-alive');
 });
 
-// Redirect halaman awal ke dashboard admin
+// Redirect halaman awal berdasarkan role user
 Route::get('/', function () {
-    return redirect()->route('admin.dashboard');
+    if (Auth::check()) {
+        $user = Auth::user();
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->role === 'teknisi') {
+            return redirect()->route('technician.dashboard');
+        } elseif ($user->role === 'user') {
+            return redirect()->route('user.tickets.index');
+        }
+    }
+    return redirect()->route('login');
 });
 
 // ====================================================
 // GROUP ROUTE ADMIN (KOORDINATOR)
 // ====================================================
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
 
     // 1. Dashboard
     // Route::get('/dashboard', function () {
@@ -87,6 +97,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     // 3. MASTER DATA: LOKASI (API TREE)
     // PENTING: Ini dikeluarkan dari prefix 'assets' agar URL-nya benar: /admin/api/locations/...
+    Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
     Route::prefix('api/locations')->name('locations.')->group(function() {
         Route::get('/tree', [LocationController::class, 'getTree'])->name('tree');
         Route::post('/', [LocationController::class, 'store'])->name('store');
@@ -108,11 +119,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
     });
 
-    // ===========================
-    // 4. MASTER DATA: LOKASI (Controller - API)
-    // ===========================
-    Route::get('/api/locations/tree', [LocationController::class, 'getTree'])->name('locations.tree');
-    Route::post('/api/locations', [LocationController::class, 'store'])->name('locations.store');
+
 
     // ===========================
     // 5. MASTER DATA: TEMPLATE CHECKLIST
@@ -125,19 +132,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::get('/maintenances', [MaintenanceController::class, 'index'])->name('maintenances.index');
     Route::get('/maintenances/{id}', [MaintenanceController::class, 'show'])->name('maintenances.show');
 
-    // Maintenance Schedules (PM System - OLD, kept for backup)
-    Route::prefix('schedules')->name('schedules.')->group(function() {
-        Route::get('/', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'update'])->name('update');
-        Route::delete('/{id}', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'destroy'])->name('destroy');
-        Route::post('/{id}/toggle', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'toggleActive'])->name('toggle');
-        Route::post('/generate-now', [App\Http\Controllers\Admin\MaintenanceScheduleController::class, 'generateNow'])->name('generate-now');
-    });
-
-    // Maintenance Plans (PM System - NEW, Rule-Based)
+    // Maintenance Plans (PM System - Rule-Based)
     Route::prefix('plans')->name('plans.')->group(function() {
         Route::get('/', [App\Http\Controllers\Admin\MaintenancePlanController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\Admin\MaintenancePlanController::class, 'create'])->name('create');
@@ -191,15 +186,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     //     return view('admin.users.index');
     // })->name('users.index');
 
-    Route::get('/audit-logs', function () {
-        return view('admin.audit.index');
-    })->name('audit.index');
+    Route::get('/audit-logs', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
 });
 
 
 // ====================================================
 // GROUP ROUTE TEKNISI (MOBILE WEB)
-Route::prefix('technician')->name('technician.')->middleware(['auth'])->group(function () {
+Route::prefix('technician')->name('technician.')->middleware(['auth', 'role:teknisi'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -263,7 +256,7 @@ Route::prefix('technician')->name('technician.')->middleware(['auth'])->group(fu
 // ====================================================
 // GROUP ROUTE USER (PELAPOR / KARYAWAN)
 // ====================================================
-Route::prefix('user')->name('user.')->middleware(['auth', 'verified'])->group(function () {
+Route::prefix('user')->name('user.')->middleware(['auth', 'role:user', 'verified'])->group(function () {
     
     // Dashboard User = List Tiket Saya
     Route::get('/dashboard', [App\Http\Controllers\User\TicketController::class, 'index'])->name('tickets.index');
@@ -275,5 +268,13 @@ Route::prefix('user')->name('user.')->middleware(['auth', 'verified'])->group(fu
     // API Helper untuk Cascading Dropdown
     Route::get('/api/locations/{parentId}', [App\Http\Controllers\User\TicketController::class, 'getLocations'])->name('api.locations');
     Route::get('/api/assets/{locationId}', [App\Http\Controllers\User\TicketController::class, 'getAssets'])->name('api.assets');
+
+    // Profil User
+    Route::controller(App\Http\Controllers\User\ProfileController::class)->group(function() {
+        Route::get('/profile', 'index')->name('profile.index');
+        Route::put('/profile/update', 'update')->name('profile.update');
+        Route::get('/profile/update', fn() => redirect()->route('user.profile.index')); // Fallback anti-error
+        Route::put('/profile/password', 'updatePassword')->name('profile.password');
+    });
 
 });

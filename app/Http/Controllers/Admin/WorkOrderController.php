@@ -39,7 +39,7 @@ class WorkOrderController extends Controller
         $tickets = $query->paginate(10);
 
         // Data Pendukung untuk Modal & Badge
-        $technicians = User::where('role', 'technician')->get();
+        $technicians = User::where('role', 'teknisi')->get();
         $assets = Asset::all();
         
         // Hitung Jumlah untuk Badge di Tab
@@ -131,7 +131,7 @@ class WorkOrderController extends Controller
      */
     public function show($id)
     {
-        $ticket = WorkOrder::with(['asset.location', 'technician', 'reporter'])->findOrFail($id);
+        $ticket = WorkOrder::with(['asset.location', 'technician', 'reporter', 'histories'])->findOrFail($id);
         return response()->json([
             'status' => 'success',
             'data' => $ticket

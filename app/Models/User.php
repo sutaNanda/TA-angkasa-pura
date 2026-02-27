@@ -24,8 +24,9 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
         'email',
         'password',
         'role',
-        'division_id',
+        'division',
         'requires_password_reset',
+        'avatar',
     ];
 
     /**
@@ -57,10 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
 
     // --- RELASI ---
 
-    public function division()
-    {
-        return $this->belongsTo(Division::class);
-    }
+    // Divisi disimpan sebagai string sederhana (tanpa relasi ke tabel divisions)
 
     // Teknisi bisa punya banyak riwayat pengecekan rutin
     public function maintenances()
