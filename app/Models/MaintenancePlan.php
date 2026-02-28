@@ -42,6 +42,11 @@ class MaintenancePlan extends Model
         return $this->hasMany(Maintenance::class);
     }
 
+    public function assets(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Asset::class, 'maintenance_plan_assets');
+    }
+
     /**
      * Get human-readable schedule description
      */

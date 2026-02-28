@@ -51,11 +51,11 @@
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1">Tanggal</label>
                 <input type="date" name="date" value="{{ request('date') }}"
-                    class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500">
+                    class="w-full border-2 pl-2 py-2 mt-2 border-gray-300 rounded-lg text-sm focus:ring-blue-500">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1">Pengguna</label>
-                <select name="user_id" class="w-full border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500">
+                <select name="user_id" class="w-full border-2 pl-2 py-2 mt-2 border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500">
                     <option value="">Semua Pengguna</option>
                     @foreach($users as $user)
                         <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
@@ -66,7 +66,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-500 mb-1">Tipe Aktivitas</label>
-                <select name="action" class="w-full border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500">
+                <select name="action" class="w-full border-2 pl-2 py-2 mt-2 border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500">
                     <option value="">Semua</option>
                     <option value="login" {{ request('action') == 'login' ? 'selected' : '' }}>Login</option>
                     <option value="logout" {{ request('action') == 'logout' ? 'selected' : '' }}>Logout</option>
@@ -81,7 +81,7 @@
                 <label class="block text-xs font-bold text-gray-500 mb-1">Cari Keterangan</label>
                 <input type="text" name="search" value="{{ request('search') }}"
                     placeholder="Kata kunci..."
-                    class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500">
+                    class="w-full border-2 pl-2 py-2 mt-2 border-gray-300 rounded-lg text-sm focus:ring-blue-500">
             </div>
             <div class="flex gap-2">
                 <button type="submit"

@@ -150,12 +150,12 @@
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nama Kategori</label>
                             <input type="text" name="name"
                                 value="{{ old('name') }}"
-                                class="w-full rounded-lg text-sm focus:ring-blue-500 {{ $errors->has('name') ? 'border-red-400 bg-red-50' : 'border-gray-300' }}"
-                                required>
+                                class="w-full rounded-lg text-sm focus:ring-blue-500 {{ $errors->has('name') ? 'border-red-400 bg-red-50' : 'border-gray-300' }} border-2 border-gray-300 py-2 pl-2"
+                                required placeholder="Kategori">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
-                            <textarea name="description" rows="2" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500">{{ old('description') }}</textarea>
+                            <textarea name="description" rows="2" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 py-2 pl-2 border-2 border-gray-300" placeholder="Deskripsi">{{ old('description') }}</textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Ikon Kategori</label>
@@ -195,16 +195,16 @@
                         <input type="hidden" id="edit_category_id">
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nama Kategori</label>
-                            <input type="text" name="name" id="edit_category_name" class="w-full border-gray-300 rounded-lg text-sm focus:ring-yellow-500" required>
+                            <input type="text" name="name" id="edit_category_name" class="w-full border-gray-300 rounded-lg text-sm focus:ring-yellow-500 border-2 border-yellow-500 bg-yellow-50 pl-2 py-2" required>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
-                            <textarea name="description" id="edit_category_description" rows="2" class="w-full border-gray-300 rounded-lg text-sm focus:ring-yellow-500"></textarea>
+                            <textarea name="description" id="edit_category_description" rows="2" class="w-full border-gray-300 rounded-lg text-sm focus:ring-yellow-500 border-2 border-yellow-500 bg-yellow-50 pl-2 py-2"></textarea>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Ikon Kategori</label>
                             <input type="hidden" name="icon" id="edit_icon_value" value="fa-solid fa-box">
-                            <div id="edit_icon_grid" class="grid grid-cols-8 gap-2 max-h-64 overflow-y-auto p-2 border border-gray-200 rounded-lg bg-gray-50">
+                            <div id="edit_icon_grid" class="grid grid-cols-8 gap-2 max-h-64 overflow-y-auto p-2 border border-gray-200 rounded-lg bg-yellow-50">
                                 <!-- Icons will be rendered by JavaScript -->
                             </div>
                             <p class="text-xs text-gray-500 mt-2">

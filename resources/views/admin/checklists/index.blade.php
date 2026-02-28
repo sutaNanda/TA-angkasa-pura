@@ -208,23 +208,22 @@
     {{-- MODAL 1: FORM INPUT (CREATE / EDIT) --}}
     {{-- ================================================= --}}
     <div id="checklistModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="flex items-center justify-center h-screen px-4">
             <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal()"></div>
-            <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-gray-200">
+            <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-gray-200 ">
                 <form id="checklistForm" onsubmit="saveChecklist(event)">
                     <input type="hidden" id="templateId">
 
                     <div class="bg-white px-8 py-5 border-b border-gray-100 flex justify-between items-center sticky top-0 z-20 shadow-sm">
                         <div>
-                            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2" id="modalTitle">
-                                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-list-check"></i></div>
+                            <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2 " id="modalTitle">
+                                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-list-check"></i>
+                                </div>
                                 Buat SOP Baru
                             </h3>
-                            <p class="text-sm text-gray-500 mt-1 ml-10">Atur standar pertanyaan checklist untuk teknisi.</p>
+                            <p class="text-md text-gray-500 mt-2">Atur standar pertanyaan checklist untuk teknisi.</p>
                         </div>
-                        <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 w-8 h-8 rounded-full flex items-center justify-center transition">
-                            <i class="fa-solid fa-xmark text-lg"></i>
-                        </button>
                     </div>
 
                     <div class="flex flex-col md:flex-row max-h-[75vh]">
@@ -233,18 +232,19 @@
                             <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">1. Informasi Dasar</h4>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Nama SOP <span class="text-red-500">*</span></label>
-                                <input type="text" id="name" name="name" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 shadow-sm" placeholder="Misal: Cek Harian Genset" required>
+                                <input type="text" id="name" name="name" class="w-full border-gray-300 rounded-lg text-sm border-2 border-gray-300 pl-2 py-2 bg-white" placeholder="Cek Harian Genset" required>
                             </div>
+
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Target Kategori</label>
-                                <select id="category_id" name="category_id" class="w-full border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 shadow-sm">
-                                    <option value="">-- Umum / Semua Aset --</option>
+                                <select id="category_id" name="category_id" class="w-full border-gray-300 rounded-lg text-sm bg-white border-2 border-gray-300 pl-2 py-2">
+                                    <option value="" class="text-gray-500">Umum / Semua Aset</option>
                                     @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                        <option value="{{ $cat->id }}" class="text-gray-500">{{ $cat->name }}</option>
                                     @endforeach
                                 </select>
-                                <p class="text-[10px] text-gray-500 mt-1 leading-tight">Otomatis muncul jika teknisi scan aset kategori ini.</p>
                             </div>
+
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-2">Frekuensi <span class="text-red-500">*</span></label>
                                 <div class="space-y-2">
@@ -267,7 +267,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
-                                <textarea id="description" name="description" rows="2" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" placeholder="Keterangan tambahan..."></textarea>
+                                <textarea id="description" name="description" rows="2" class="w-full border-gray-300 rounded-lg text-sm border-2 border-gray-300 pl-2 py-2 bg-white" placeholder="Deskripsi SOP"></textarea>
                             </div>
                         </div>
 
@@ -275,7 +275,7 @@
                         <div class="w-full md:w-2/3 px-8 py-6 overflow-y-auto custom-scrollbar bg-white">
                             <div class="flex justify-between items-center mb-4">
                                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Butir Pertanyaan Checklist</h4>
-                                <button type="button" onclick="addItemRow()" class="text-xs bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-black transition font-bold flex items-center gap-2 shadow-md hover:shadow-lg">
+                                <button type="button" onclick="addItemRow()" class="text-xs bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 hover:shadow-lg cursor-pointer transition font-bold flex items-center gap-2">
                                     <i class="fa-solid fa-plus"></i> Tambah Item
                                 </button>
                             </div>
@@ -315,7 +315,6 @@
                                 <span id="detailCatSOP">Kategori</span>
                             </div>
                         </div>
-                        <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fa-solid fa-xmark text-2xl"></i></button>
                     </div>
                     <p class="text-sm text-gray-600 mt-4 bg-white p-3 rounded-lg border border-gray-200" id="detailDescSOP">Deskripsi SOP...</p>
                 </div>
@@ -418,18 +417,18 @@
         function addItemRow(question = '', type = 'pass_fail', unit = '') {
             const container = document.getElementById('itemsContainer');
             const div = document.createElement('div');
-            div.className = 'flex gap-3 items-start bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 hover:shadow-md transition duration-200 group animate-fade-in item-row relative';
+            div.className = 'flex gap-3 items-start bg-white p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition duration-200 group animate-fade-in item-row relative';
             div.innerHTML = `
-                <div class="pt-3 text-gray-300 cursor-move hover:text-gray-500 transition"><i class="fa-solid fa-grip-vertical"></i></div>
+
                 <div class="flex-1 space-y-3">
                     <div>
                         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Pertanyaan / Instruksi</label>
-                        <input type="text" name="questions[]" value="${question}" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 font-medium" placeholder="Contoh: Cek suhu radiator..." required>
+                        <input type="text" name="questions[]" value="${question}" class="w-full border-gray-300 rounded-lg text-sm border-2 border-gray-500 pl-2 py-2 mt-4" placeholder="Cek Suhu Radiator" required>
                     </div>
                     <div class="flex gap-3">
                         <div class="w-2/3">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipe Jawaban</label>
-                            <select name="types[]" class="w-full border-gray-300 rounded-lg text-xs bg-gray-50 text-gray-700 focus:ring-blue-500 h-9 font-medium" onchange="toggleUnitInput(this)">
+                            <select name="types[]" class="w-full rounded-lg text-xs bg-white text-gray-700 border-2 border-gray-300 h-9 font-medium" onchange="toggleUnitInput(this)">
                                 <option value="pass_fail" ${type === 'pass_fail' ? 'selected' : ''}>🔘 Pilihan: Bagus / Rusak</option>
                                 <option value="number" ${type === 'number' ? 'selected' : ''}>🔢 Isian Angka (Suhu, Volt)</option>
                                 <option value="text" ${type === 'text' ? 'selected' : ''}>📝 Catatan Teks</option>
@@ -438,7 +437,7 @@
                         </div>
                         <div class="w-1/3 ${type !== 'number' ? 'hidden' : ''} unit-wrapper">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Satuan</label>
-                            <input type="text" name="units[]" value="${unit || ''}" placeholder="Cth: °C" class="w-full border-gray-300 rounded-lg text-xs h-9 focus:ring-blue-500">
+                            <input class="pl-2 border-2 border-gray-300 rounded-lg text-xs py-2" type="text" name="units[]" value="${unit || ''}" placeholder="Cth: °C">
                         </div>
                         <input type="hidden" name="units[]" value="" class="unit-hidden ${type === 'number' ? 'hidden' : ''}">
                     </div>

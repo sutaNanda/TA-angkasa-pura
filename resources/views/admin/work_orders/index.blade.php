@@ -211,14 +211,13 @@
             <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200">
                 <div class="bg-white px-6 py-5 border-b flex justify-between items-center">
                     <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-pen-to-square text-blue-600 mr-2"></i> Buat Tiket Manual</h3>
-                    <button onclick="closeModal('createModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
                 <form action="{{ route('admin.work-orders.store') }}" method="POST" class="p-6 space-y-4">
                     @csrf
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Aset Bermasalah</label>
-                        <select name="asset_id" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" required>
-                            <option value="">-- Pilih Aset --</option>
+                        <select name="asset_id" class="w-full border-2 border-gray-300 rounded-lg text-sm focus:ring-blue-500 pl-2 py-2" required>
+                            <option value="">Pilih Aset</option>
                             @foreach($assets as $asset)
                                 <option value="{{ $asset->id }}">{{ $asset->name }} - {{ $asset->location->name ?? '' }}</option>
                             @endforeach
@@ -226,7 +225,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi Masalah</label>
-                        <textarea name="issue_description" rows="3" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" required placeholder="Jelaskan kerusakan secara detail..."></textarea>
+                        <textarea name="issue_description" rows="3" class="w-full border-2 border-gray-300 rounded-lg text-sm focus:ring-blue-500 pl-2 py-2" required placeholder="Jelaskan kerusakan secara detail..."></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-1">Prioritas</label>

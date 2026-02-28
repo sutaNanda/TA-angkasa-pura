@@ -6,7 +6,7 @@
 {{-- Alpine.js for interactivity --}}
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 
-<div class="container-fluid px-4 py-6" x-data="{ frequency: '{{ old('frequency', 'daily') }}' }">
+<div class="container-fluid px-4 py-6" x-data="maintenancePlanForm()">
     {{-- Header --}}
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
@@ -45,28 +45,32 @@
                         </h3>
                     </div>
                     <div class="p-6 space-y-4">
+                        {{-- Name --}}
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Nama Inspeksi / Rencana <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" value="{{ old('name') }}" required placeholder="Contoh: Pengecekan Rutin AC Bulanan" class="w-full rounded-lg focus:ring-blue-500 focus:border-blue-500 transition border-2 border-gray-700 pl-2 py-2">
+                            @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+
                         {{-- Category --}}
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Kategori Aset <span class="text-red-500">*</span></label>
-                            <select name="category_id" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
-                                <option value="">-- Pilih Kategori --</option>
+                            <select name="category_id" x-model="categoryId" @change="fetchAssets" required class="w-full rounded-lg focus:ring-blue-500 focus:border-blue-500 transition border-2 border-gray-700 pl-2 py-2">
+                                <option value="">Pilih Kategori</option>
                                 @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                    <option value="{{ $category->id }}">
                                         {{ $category->name }}
                                     </option>
                                 @endforeach
                             </select>
                             @error('category_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                            <p class="text-xs text-gray-500 mt-2 bg-blue-50 text-blue-700 p-2 rounded border border-blue-100 inline-block">
-                                <i class="fa-solid fa-circle-info mr-1"></i> Aturan ini akan berlaku untuk <strong>SEMUA</strong> aset dalam kategori ini.
-                            </p>
                         </div>
 
                         {{-- Template --}}
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Template Checklist <span class="text-red-500">*</span></label>
-                            <select name="checklist_template_id" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
-                                <option value="">-- Pilih Template --</option>
+                            <select name="checklist_template_id" required class="w-full rounded-lg focus:ring-blue-500 focus:border-blue-500 transition border-2 border-gray-700 pl-2 py-2">
+                                <option value="">Pilih Template</option>
                                 @foreach($templates as $template)
                                     <option value="{{ $template->id }}" {{ old('checklist_template_id') == $template->id ? 'selected' : '' }}>
                                         {{ $template->name }} ({{ $template->frequency ?? '-' }})
@@ -74,6 +78,69 @@
                                 @endforeach
                             </select>
                             @error('checklist_template_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+
+                        {{-- Target Assets Selection --}}
+                        <div x-show="categoryId" style="display: none;" class="mt-6 border border-gray-200 rounded-xl overflow-hidden">
+                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-sm">Pilih Aset Spesifik</h4>
+                                    <p class="text-xs text-gray-500">Biarkan kosong jika ingin berlaku untuk <strong>semua</strong> aset di kategori ini.</p>
+                                </div>
+                                
+                                <div class="flex items-center gap-2">
+                                    <div class="relative">
+                                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                        <input type="text" x-model="searchQuery" placeholder="Cari by nama/SN..." class="pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48">
+                                    </div>
+                                    <button type="button" @click="selectAll()" class="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded-lg font-medium transition whitespace-nowrap">
+                                        <span x-text="selectedAssets.length === filteredAssets.length && filteredAssets.length > 0 ? 'Batal Pilih Semua' : 'Pilih Semua'"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="p-0 max-h-[300px] overflow-y-auto bg-white">
+                                <div x-show="isLoading" class="p-8 text-center text-gray-500">
+                                    <i class="fa-solid fa-spinner fa-spin text-xl mb-2 text-blue-500"></i>
+                                    <p class="text-sm">Memuat daftar aset...</p>
+                                </div>
+                                
+                                <div x-show="!isLoading && filteredAssets.length === 0" style="display: none;" class="p-8 text-center text-gray-500">
+                                    <i class="fa-solid fa-box-open text-3xl mb-3 text-gray-300"></i>
+                                    <p class="text-sm">Tidak ada aset ditemukan.</p>
+                                </div>
+
+                                <ul x-show="!isLoading && filteredAssets.length > 0" class="divide-y divide-gray-100">
+                                    <template x-for="asset in filteredAssets" :key="asset.id">
+                                        <li>
+                                            <label class="flex items-start gap-3 p-3 hover:bg-gray-50 cursor-pointer transition">
+                                                <div class="pt-0.5">
+                                                    <input type="checkbox" name="asset_ids[]" :value="asset.id" x-model="selectedAssets" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300 mt-1">
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="font-bold text-sm text-gray-800" x-text="asset.name"></div>
+                                                    <div class="text-xs text-gray-500 mt-0.5 flex gap-3">
+                                                        <span x-show="asset.serial_number"><i class="fa-solid fa-barcode mr-1"></i> <span x-text="asset.serial_number"></span></span>
+                                                        <span x-show="asset.location"><i class="fa-solid fa-location-dot mr-1"></i> <span x-text="asset.location ? asset.location.name : '-'"></span></span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span class="px-2 py-1 text-[10px] font-bold rounded-full" 
+                                                          :class="{
+                                                            'bg-green-100 text-green-700': asset.status === 'normal',
+                                                            'bg-red-100 text-red-700': asset.status === 'rusak',
+                                                            'bg-yellow-100 text-yellow-700': asset.status === 'maintenance'
+                                                          }" x-text="asset.status.toUpperCase()"></span>
+                                                </div>
+                                            </label>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <div class="bg-gray-50 px-4 py-2 border-t border-gray-200 text-xs text-gray-500 flex justify-between">
+                                <span x-text="`${selectedAssets.length} aset dipilih dari total ${assets.length}`"></span>
+                                <span x-show="selectedAssets.length === 0" class="text-blue-600 font-medium"><i class="fa-solid fa-info-circle mr-1"></i> Akan berlaku untuk semua aset</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -194,8 +261,8 @@
 
                     {{-- Notes --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Catatan (Opsional)</label>
-                        <textarea name="notes" rows="4" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Dilakukan oleh tim vendor...">{{ old('notes') }}</textarea>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Catatan</label>
+                        <textarea name="notes" rows="4" class="w-full border-2 border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pl-2 py-2" placeholder="Informasi Tambahan Untuk Maintenance">{{ old('notes') }}</textarea>
                     </div>
 
                 </div>
@@ -204,4 +271,71 @@
         </div>
     </form>
 </div>
+
+<script>
+    function maintenancePlanForm() {
+        return {
+            frequency: '{{ old('frequency', 'daily') }}',
+            categoryId: '{{ old('category_id') }}',
+            assets: [],
+            selectedAssets: {!! json_encode(old('asset_ids', [])) !!},
+            searchQuery: '',
+            isLoading: false,
+
+            init() {
+                if(this.categoryId) {
+                    this.fetchAssets();
+                }
+            },
+
+            get filteredAssets() {
+                if (this.searchQuery === '') {
+                    return this.assets;
+                }
+                const lowerCaseQuery = this.searchQuery.toLowerCase();
+                return this.assets.filter(asset => {
+                    return asset.name.toLowerCase().includes(lowerCaseQuery) || 
+                           (asset.serial_number && asset.serial_number.toLowerCase().includes(lowerCaseQuery));
+                });
+            },
+
+            async fetchAssets() {
+                if (!this.categoryId) {
+                    this.assets = [];
+                    this.selectedAssets = [];
+                    return;
+                }
+                
+                this.isLoading = true;
+                
+                try {
+                    const response = await fetch(`/admin/assets/by-category/${this.categoryId}?all=true`);
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        this.assets = result.data;
+                        
+                        // Hapus selectedAssets yang tidak ada di category ini
+                        const validAssetIds = this.assets.map(a => a.id.toString());
+                        this.selectedAssets = this.selectedAssets.filter(id => validAssetIds.includes(id.toString()));
+                    }
+                } catch (error) {
+                    console.error('Error fetching assets:', error);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            selectAll() {
+                if (this.selectedAssets.length === this.filteredAssets.length && this.filteredAssets.length > 0) {
+                    // Deselect all filtered
+                    this.selectedAssets = [];
+                } else {
+                    // Select all filtered
+                    this.selectedAssets = this.filteredAssets.map(asset => asset.id.toString());
+                }
+            }
+        }
+    }
+</script>
 @endsection

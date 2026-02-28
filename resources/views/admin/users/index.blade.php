@@ -184,26 +184,25 @@
                     
                     <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
                         <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-pen-to-square text-yellow-600 mr-2"></i> Edit Data User</h3>
-                        <button type="button" onclick="closeModal('editUserModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
                     </div>
                     
                     <div class="bg-white px-6 py-6 space-y-4">
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap</label>
-                            <input type="text" name="name" id="edit_name" required class="w-full border-gray-300 rounded-lg text-sm focus:ring-yellow-500">
+                            <input type="text" name="name" id="edit_name" required class="w-full border-2 border-gray-300 rounded-lg text-sm focus:ring-yellow-500 pl-2 py-2">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Email</label>
-                            <input type="email" name="email" id="edit_email" required class="w-full border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-500 cursor-not-allowed" readonly title="Email tidak dapat diubah">
+                            <input type="email" name="email" id="edit_email" required class="w-full border-2 border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-500 cursor-not-allowed pl-2 py-2" readonly title="Email tidak dapat diubah">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Password Baru</label>
-                            <input type="password" name="password" class="w-full border-gray-300 rounded-lg text-sm focus:ring-yellow-500" placeholder="Kosongkan jika tidak diganti">
+                            <input type="password" name="password" class="w-full border-2 border-gray-300 rounded-lg text-sm focus:ring-yellow-500 pl-2 py-2" placeholder="Kosongkan jika tidak diganti">
                             <p class="text-[10px] text-orange-500 mt-1 font-medium">Isi hanya jika ingin mereset password user ini.</p>
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Role</label>
-                            <select name="role" id="edit_role" required class="w-full border-gray-300 rounded-lg text-sm bg-white focus:ring-yellow-500">
+                            <select name="role" id="edit_role" required class="w-full border-2 border-gray-300 rounded-lg text-sm bg-white focus:ring-yellow-500 pl-2 py-2">
                                 <option value="teknisi">Teknisi</option>
                                 <option value="admin">Admin</option>
                                 <option value="manajer">Manajer</option>
@@ -211,9 +210,14 @@
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 px-6 py-4 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
-                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-yellow-500 text-base font-bold text-white hover:bg-yellow-600 sm:ml-3 sm:w-auto sm:text-sm transition">Update Data</button>
-                        <button type="button" onclick="closeModal('editUserModal')" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition">Batal</button>
+                    <div class="bg-gray-50 px-6 py-4 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100 mt-10">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-yellow-500 text-base font-bold text-white hover:bg-yellow-600 sm:ml-3 sm:w-auto sm:text-sm transition">
+                            Update Data
+                        </button>
+
+                        <button type="button" onclick="closeModal('editUserModal')" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition">
+                            Batal
+                        </button>
                     </div>
                 </form>
             </div>

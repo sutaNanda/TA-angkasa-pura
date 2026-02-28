@@ -73,7 +73,6 @@
                         }
 
                         // 2. LOGIKA BADGE STATUS TINDAKAN (WORK ORDER)
-                        $actionBadge = '-';
                         if ($log->status != 'normal') {
                             $wo = optional($log->workOrder);
                             
@@ -95,6 +94,8 @@
                                 // Open
                                 $actionBadge = '<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold border border-red-200"><i class="fa-regular fa-clock"></i> Belum Dikerjakan</span>';
                             }
+                        } else {
+                            $actionBadge = '<span class="bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full text-xs font-bold border border-gray-200"><i class="fa-solid fa-minus"></i> Tidak Ada Tindakan</span>';
                         }
                     @endphp
 
@@ -171,7 +172,6 @@
                         <h3 class="text-lg font-bold text-gray-800">Detail Riwayat Patroli</h3>
                         <p class="text-xs text-gray-500" id="modalLogId">ID Log: -</p>
                     </div>
-                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500"><i class="fa-solid fa-xmark text-xl"></i></button>
                 </div>
 
                 {{-- Body Modal --}}
@@ -346,7 +346,14 @@
                     tbody.innerHTML = '';
 
                     const templateItems = data.checklist_template ? data.checklist_template.items : [];
-                    const answers = data.inspection_data || {};
+                    let answers = data.inspection_data || {};
+                    if (typeof answers === 'string') {
+                        try {
+                            answers = JSON.parse(answers);
+                        } catch(e) {
+                            answers = {};
+                        }
+                    }
 
                     if(templateItems.length > 0) {
                         templateItems.forEach((item, index) => {

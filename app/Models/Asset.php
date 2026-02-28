@@ -42,4 +42,5 @@ class Asset extends Model
     public function category() { return $this->belongsTo(Category::class); }
     public function location() { return $this->belongsTo(Location::class); }
     public function maintenances() { return $this->hasMany(Maintenance::class); }
+    public function maintenancePlans() { return $this->belongsToMany(MaintenancePlan::class, 'maintenance_plan_assets'); }
 }

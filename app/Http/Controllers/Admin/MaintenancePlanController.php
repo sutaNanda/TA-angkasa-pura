@@ -50,15 +50,22 @@ class MaintenancePlanController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'checklist_template_id' => 'required|exists:checklist_templates,id',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
             'start_date' => 'required|date',
             'is_active' => 'boolean',
             'notes' => 'nullable|string',
+            'asset_ids' => 'nullable|array',
+            'asset_ids.*' => 'exists:assets,id',
         ]);
 
-        MaintenancePlan::create($validated);
+        $plan = MaintenancePlan::create($validated);
+
+        if ($request->has('asset_ids')) {
+            $plan->assets()->sync($request->asset_ids);
+        }
 
         return redirect()->route('admin.plans.index')
             ->with('success', 'Aturan maintenance berhasil dibuat!');
@@ -69,7 +76,7 @@ class MaintenancePlanController extends Controller
      */
     public function edit($id)
     {
-        $plan = MaintenancePlan::with(['category', 'checklistTemplate'])->findOrFail($id);
+        $plan = MaintenancePlan::with(['category', 'checklistTemplate', 'assets'])->findOrFail($id);
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
         
@@ -84,15 +91,24 @@ class MaintenancePlanController extends Controller
         $plan = MaintenancePlan::findOrFail($id);
         
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'checklist_template_id' => 'required|exists:checklist_templates,id',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
             'start_date' => 'required|date',
             'is_active' => 'boolean',
             'notes' => 'nullable|string',
+            'asset_ids' => 'nullable|array',
+            'asset_ids.*' => 'exists:assets,id',
         ]);
 
         $plan->update($validated);
+
+        if ($request->has('asset_ids')) {
+            $plan->assets()->sync($request->asset_ids);
+        } else {
+            $plan->assets()->detach();
+        }
 
         return redirect()->route('admin.plans.index')
             ->with('success', 'Aturan maintenance berhasil diupdate!');

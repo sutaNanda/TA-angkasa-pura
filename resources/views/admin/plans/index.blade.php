@@ -88,7 +88,8 @@
         <table class="w-full">
             <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Kategori</th>
+                    <th class="px-4 py-3 w-12 text-center text-xs font-bold text-gray-600 uppercase">No</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Rencana / Kategori</th>
                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Template Checklist</th>
                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Frekuensi</th>
                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Jadwal</th>
@@ -100,12 +101,15 @@
             <tbody class="divide-y divide-gray-200">
                 @forelse($plans as $plan)
                     <tr class="hover:bg-gray-50 transition">
+                        <td class="px-4 py-3 text-center text-xs font-bold text-gray-400">
+                            {{ ($plans->currentPage() - 1) * $plans->perPage() + $loop->iteration }}
+                        </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-2">
                                 <i class="fa-solid fa-layer-group text-gray-400"></i>
                                 <div>
-                                    <p class="font-bold text-sm text-gray-800">{{ $plan->category->name }}</p>
-                                    <p class="text-xs text-gray-500">{{ $plan->affected_assets_count }} aset</p>
+                                    <p class="font-bold text-sm text-gray-800">{{ $plan->name }}</p>
+                                    <p class="text-xs text-gray-500"><span class="font-semibold">Kategori:</span> {{ $plan->category->name }}</p>
                                 </div>
                             </div>
                         </td>
@@ -152,7 +156,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="8" class="px-4 py-8 text-center text-gray-500">
                             <i class="fa-solid fa-calendar-xmark text-4xl mb-2 text-gray-300"></i>
                             <p>Belum ada aturan maintenance. <a href="{{ route('admin.plans.create') }}" class="text-blue-600 hover:underline">Tambah aturan baru</a></p>
                         </td>

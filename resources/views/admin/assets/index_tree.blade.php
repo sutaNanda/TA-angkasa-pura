@@ -141,14 +141,14 @@
         <div class="flex items-center justify-center min-h-screen px-4">
             <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal('locationModal')"></div>
 
-            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-md sm:w-full">
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-md sm:w-full border-4 border-gray-400">
                 <form id="locationForm" onsubmit="submitLocationForm(event)">
                     <input type="hidden" name="parent_id" id="locParentId">
                     <input type="hidden" name="id" id="locId">
 
                     <div class="bg-white px-6 py-4 border-b flex justify-between items-center">
                         <h3 class="text-lg font-bold text-gray-900" id="locModalTitle">Tambah Lokasi</h3>
-                        <button type="button" onclick="closeModal('locationModal')" class="text-gray-400 hover:text-gray-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        <button type="button" onclick="closeModal('locationModal')" class="text-gray-400 hover:text-gray-500 transition"></button>
                     </div>
 
                     <div class="p-6 space-y-4">
@@ -158,14 +158,14 @@
 
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lokasi <span class="text-red-500">*</span></label>
-                            <input type="text" name="name" id="locName" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Lokasi" required>
+                            <input type="text" name="name" id="locName" class="w-full border-2 border-gray-500 rounded-lg text-sm pl-2 py-2 " placeholder="Lokasi" required>
                         </div>
 
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Tipe Lokasi <span class="text-red-500">*</span></label>
                             <div class="relative">
                                 <select name="type" id="locType" required
-                                    class="w-full appearance-none border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pr-8 bg-white">
+                                    class="w-full appearance-none border-2 border-gray-500 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pr-8 bg-white py-2 pl-2">
                                     <option value="" disabled selected>Pilih Tipe</option>
                                     <option value="building">🏢  Gedung (Building)</option>
                                     <option value="floor">📊  Lantai (Floor)</option>
@@ -179,7 +179,7 @@
 
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
-                            <textarea name="description" id="locDesc" rows="3" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Deskripsi"></textarea>
+                            <textarea name="description" id="locDesc" rows="3" class="w-full border-2 border-gray-500 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pl-2 py-2" placeholder="Deskripsi"></textarea>
                         </div>
                     </div>
 
@@ -220,11 +220,11 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Nama Aset <span class="text-red-500">*</span></label>
-                                <input type="text" name="name" id="assetName" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" required placeholder="Contoh: AC Daikin 2PK">
+                                <input type="text" name="name" id="assetName" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" required placeholder="UniFi AP AC Pro">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
-                                <select name="category_id" id="assetCategory" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" required>
+                                <select name="category_id" id="assetCategory" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" required>
                                     <option value="">Pilih Kategori</option>
                                     @foreach($categories as $cat) <option value="{{ $cat->id }}">{{ $cat->name }}</option> @endforeach
                                 </select>
@@ -234,11 +234,11 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Serial Number</label>
-                                <input type="text" name="serial_number" id="assetSN" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500" placeholder="SN-12345">
+                                <input type="text" name="serial_number" id="assetSN" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" placeholder="SN-12345">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Status</label>
-                                <select name="status" id="assetStatus" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500">
+                                <select name="status" id="assetStatus" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2">
                                     <option value="normal">Normal</option>
                                     <option value="rusak">Rusak</option>
                                     <option value="maintenance">Maintenance</option>
@@ -400,8 +400,8 @@
             const rowId = 'spec-' + Date.now();
             const newRowHtml = `
                 <div class="flex gap-2 items-center animate-fadeIn" id="${rowId}">
-                    <input type="text" name="specs_key[]" value="${key}" placeholder="Label (ex: Warna)" class="w-1/3 border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500">
-                    <input type="text" name="specs_value[]" value="${value}" placeholder="Value (ex: Merah)" class="w-full border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500">
+                    <input type="text" name="specs_key[]" value="${key}" placeholder="Label (ex: Warna)" class="w-1/3 border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500 border-2 border-gray-700">
+                    <input type="text" name="specs_value[]" value="${value}" placeholder="Value (ex: Merah)" class="w-full border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500 border-2 border-gray-700">
                     <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-red-400 p-2 hover:bg-red-50 rounded transition"><i class="fa-solid fa-trash-can"></i></button>
                 </div>`;
             container.insertAdjacentHTML('beforeend', newRowHtml);

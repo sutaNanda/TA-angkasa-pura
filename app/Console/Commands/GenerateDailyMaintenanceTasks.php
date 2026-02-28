@@ -27,7 +27,7 @@ class GenerateDailyMaintenanceTasks extends Command
         
         // Get all active maintenance plans
         $plans = MaintenancePlan::where('is_active', true)
-            ->with(['category', 'checklistTemplate'])
+            ->with(['category', 'checklistTemplate', 'assets'])
             ->get();
         
         if ($plans->isEmpty()) {
@@ -47,13 +47,24 @@ class GenerateDailyMaintenanceTasks extends Command
             $category = $plan->category;
             $template = $plan->checklistTemplate;
             
-            // Get assets in this category that DON'T have this task today
-            $assets = Asset::where('category_id', $plan->category_id)
-                ->whereDoesntHave('maintenances', function($q) use ($today, $plan) {
-                    $q->where('checklist_template_id', $plan->checklist_template_id)
-                      ->whereDate('scheduled_date', $today);
-                })
-                ->get();
+            if ($plan->assets->isNotEmpty()) {
+                // Get ONLY specific assets that DON'T have this task today
+                $assetIds = $plan->assets->pluck('id')->toArray();
+                $assets = Asset::whereIn('id', $assetIds)
+                    ->whereDoesntHave('maintenances', function($q) use ($today, $plan) {
+                        $q->where('checklist_template_id', $plan->checklist_template_id)
+                          ->whereDate('scheduled_date', $today);
+                    })
+                    ->get();
+            } else {
+                // Get ALL assets in this category that DON'T have this task today
+                $assets = Asset::where('category_id', $plan->category_id)
+                    ->whereDoesntHave('maintenances', function($q) use ($today, $plan) {
+                        $q->where('checklist_template_id', $plan->checklist_template_id)
+                          ->whereDate('scheduled_date', $today);
+                    })
+                    ->get();
+            }
             
             if ($assets->isEmpty()) {
                 $totalSkipped++;

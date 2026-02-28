@@ -39,12 +39,17 @@ class AssetController extends Controller
         ]);
     }
 
-    public function getByCategory($categoryId)
+    public function getByCategory(Request $request, $categoryId)
     {
-        $assets = Asset::where('category_id', $categoryId)
+        $query = Asset::where('category_id', $categoryId)
                     ->with('location') // Load relasi lokasi agar muncul namanya
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(10); // UBAH get() JADI paginate(10)
+                    ->orderBy('created_at', 'desc');
+
+        if ($request->has('all')) {
+            $assets = $query->get();
+        } else {
+            $assets = $query->paginate(10); 
+        }
 
         return response()->json([
             'status' => 'success',

@@ -34,7 +34,7 @@ class ChecklistController extends Controller
      */
     public function show($id)
     {
-        $template = ChecklistTemplate::with('items')->findOrFail($id);
+        $template = ChecklistTemplate::with(['items', 'category'])->findOrFail($id);
         return response()->json(['status' => 'success', 'data' => $template]);
     }
 
