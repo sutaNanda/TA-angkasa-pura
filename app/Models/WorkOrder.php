@@ -11,6 +11,7 @@ class WorkOrder extends Model
     use HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];
+    protected $appends = ['photo_before', 'photo_after'];
     
     // Columns:
     // ticket_number, asset_id, reporter_id, technician_id, issue_description, priority, status, initial_photo,

@@ -124,13 +124,14 @@
                                 'daily' => 'bg-blue-50 text-blue-700 border-blue-200',
                                 'weekly' => 'bg-orange-50 text-orange-700 border-orange-200',
                                 'monthly' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                'yearly' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                 default => 'bg-gray-50 text-gray-700'
                             };
                             $freqLabel = match($template->frequency) {
-                                'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', default => 'Tahunan'
+                                'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan', default => 'Tidak diketahui'
                             };
                             $freqIcon = match($template->frequency) {
-                                'daily' => 'fa-sun', 'weekly' => 'fa-calendar-week', 'monthly' => 'fa-calendar', default => 'fa-calendar-days'
+                                'daily' => 'fa-sun', 'weekly' => 'fa-calendar-week', 'monthly' => 'fa-calendar', 'yearly' => 'fa-calendar-days', default => 'fa-circle-question'
                             };
                         @endphp
                         <tr class="hover:bg-gray-50 transition group template-row" 
@@ -263,6 +264,11 @@
                                         <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3"><i class="fa-regular fa-calendar"></i></div>
                                         <div><span class="block text-sm font-bold text-gray-800">Bulanan</span></div>
                                     </label>
+                                    <label class="flex items-center p-3 border border-gray-200 rounded-lg bg-white cursor-pointer hover:border-emerald-300 transition group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                                        <input type="radio" name="frequency" value="yearly" class="sr-only">
+                                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3"><i class="fa-solid fa-calendar-days"></i></div>
+                                        <div><span class="block text-sm font-bold text-gray-800">Tahunan</span></div>
+                                    </label>
                                 </div>
                             </div>
                             <div>
@@ -373,8 +379,10 @@
                         badgeClass = 'bg-blue-100 text-blue-700 border-blue-200'; badgeIcon = 'fa-sun'; badgeText = 'Harian';
                     } else if(data.frequency === 'weekly') {
                         badgeClass = 'bg-orange-100 text-orange-700 border-orange-200'; badgeIcon = 'fa-calendar-week'; badgeText = 'Mingguan';
-                    } else {
+                    } else if(data.frequency === 'monthly') {
                         badgeClass = 'bg-purple-100 text-purple-700 border-purple-200'; badgeIcon = 'fa-calendar'; badgeText = 'Bulanan';
+                    } else {
+                        badgeClass = 'bg-emerald-100 text-emerald-700 border-emerald-200'; badgeIcon = 'fa-calendar-days'; badgeText = 'Tahunan';
                     }
                     badge.className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border mb-2 ${badgeClass}`;
                     badge.innerHTML = `<i class="fa-regular ${badgeIcon}"></i> ${badgeText}`;

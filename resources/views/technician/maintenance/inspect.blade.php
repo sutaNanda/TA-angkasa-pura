@@ -43,47 +43,64 @@
                         </label>
 
                         @if($item->type === 'pass_fail')
-                            {{-- Pass/Fail Radio Buttons --}}
-                            <div class="flex gap-3">
-                                <label class="flex items-center gap-2 cursor-pointer">
+                            {{-- Pass/Fail Radio Buttons (Bagus / Rusak) --}}
+                            <div class="flex gap-3 mt-2">
+                                <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-gray-200 bg-white hover:bg-green-50 transition">
                                     <input type="radio" name="answers[{{ $item->id }}]" value="pass" class="w-4 h-4 text-green-600 focus:ring-green-500" required>
-                                    <span class="text-sm text-gray-700 flex items-center gap-1">
-                                        <i class="fa-solid fa-check text-green-600"></i> Normal / OK
+                                    <span class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        <i class="fa-solid fa-thumbs-up text-green-600"></i> Bagus
                                     </span>
                                 </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-gray-200 bg-white hover:bg-red-50 transition">
                                     <input type="radio" name="answers[{{ $item->id }}]" value="fail" class="w-4 h-4 text-red-600 focus:ring-red-500 issue-trigger" required>
-                                    <span class="text-sm text-gray-700 flex items-center gap-1">
-                                        <i class="fa-solid fa-xmark text-red-600"></i> Ada Masalah
+                                    <span class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        <i class="fa-solid fa-thumbs-down text-red-600"></i> Rusak
+                                    </span>
+                                </label>
+                            </div>
+
+                        @elseif($item->type === 'checkbox')
+                            {{-- Ya/Tidak Checkbox --}}
+                            <div class="flex gap-3 mt-2">
+                                <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-gray-200 bg-white hover:bg-blue-50 transition">
+                                    <input type="radio" name="answers[{{ $item->id }}]" value="Ya" class="w-4 h-4 text-blue-600 focus:ring-blue-500" required>
+                                    <span class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        <i class="fa-solid fa-check text-blue-600"></i> Ya
+                                    </span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 transition">
+                                    <input type="radio" name="answers[{{ $item->id }}]" value="Tidak" class="w-4 h-4 text-gray-600 focus:ring-gray-500 issue-trigger" required>
+                                    <span class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        <i class="fa-solid fa-xmark text-gray-600"></i> Tidak
                                     </span>
                                 </label>
                             </div>
 
                         @elseif($item->type === 'number')
-                            {{-- Numeric Input --}}
-                            <div class="space-y-2">
+                            {{-- Numeric Input (Isian Angka) --}}
+                            <div class="space-y-2 mt-2">
                                 <div class="flex gap-2 items-center">
-                                    <input type="number" step="0.01" name="answers[{{ $item->id }}]" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan nilai" required>
+                                    <input type="number" step="0.01" name="answers[{{ $item->id }}]" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white" placeholder="Masukkan nilai" required>
                                     @if($item->unit)
-                                        <span class="text-sm text-gray-500 font-medium">{{ $item->unit }}</span>
+                                        <span class="text-sm px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-600 font-bold shadow-sm whitespace-nowrap">{{ $item->unit }}</span>
                                     @endif
                                 </div>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                                <label class="flex items-center gap-2 cursor-pointer mt-1">
                                     <input type="checkbox" class="w-4 h-4 text-red-600 focus:ring-red-500 rounded border-gray-300 issue-trigger">
-                                    <span class="text-xs text-red-600 font-medium flex items-center gap-1">
-                                        <i class="fa-solid fa-triangle-exclamation"></i> Tandai Masalah
+                                    <span class="text-xs text-red-600 font-bold flex items-center gap-1">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Tandai jika nilai di luar standar (Rusak)
                                     </span>
                                 </label>
                             </div>
 
                         @else
-                            {{-- Text Input --}}
-                            <div class="space-y-2">
-                                <input type="text" name="answers[{{ $item->id }}]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan jawaban" required>
-                                <label class="flex items-center gap-2 cursor-pointer">
+                            {{-- Text Input (Catatan Teks) --}}
+                            <div class="space-y-2 mt-2">
+                                <textarea name="answers[{{ $item->id }}]" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 bg-white" placeholder="Masukkan catatan teknis" required></textarea>
+                                <label class="flex items-center gap-2 cursor-pointer mt-1">
                                     <input type="checkbox" class="w-4 h-4 text-red-600 focus:ring-red-500 rounded border-gray-300 issue-trigger">
-                                    <span class="text-xs text-red-600 font-medium flex items-center gap-1">
-                                        <i class="fa-solid fa-triangle-exclamation"></i> Tandai Masalah
+                                    <span class="text-xs text-red-600 font-bold flex items-center gap-1">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> Tandai jika isi catatan mengindikasikan kerusakan
                                     </span>
                                 </label>
                             </div>

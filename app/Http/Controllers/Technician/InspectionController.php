@@ -101,8 +101,8 @@ class InspectionController extends Controller
                         'status' => 'open',
                         'source' => 'patrol',
                         'issue_description' => $request->notes ?? 'Masalah ditemukan saat patroli',
-                        'photo' => $photoPath, // Copy photo from patrol
-                        'patrol_log_id' => $patrolLog->id, // Link back if column exists (optional but good)
+                        'initial_photo' => $photoPath,
+                        'photo_before' => $photoPath,
                     ]);
 
                     $response['has_issue'] = true;

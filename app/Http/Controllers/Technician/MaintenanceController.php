@@ -113,8 +113,8 @@ class MaintenanceController extends Controller
                         'status' => 'open',
                         'source' => 'patrol', // Or 'maintenance'
                         'issue_description' => $request->notes ?? 'Masalah ditemukan saat maintenance rutin',
-                        'photo' => $photoPath,
-                        'patrol_log_id' => $patrolLog->id,
+                        'initial_photo' => $photoPath,
+                        'photo_before' => $photoPath,
                         'maintenance_id' => $maintenance->id, // Link to this maintenance schedule
                     ]);
                     

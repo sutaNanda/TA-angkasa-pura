@@ -14,7 +14,7 @@ export default defineConfig({
         host: true,
         port: 5173,
         hmr: {
-            host: 'f6c6-103-19-231-208.ngrok-free.app',
+            host: 'cfaf-103-19-231-203.ngrok-free.app',
             protocol: 'wss',
         },
         watch: {

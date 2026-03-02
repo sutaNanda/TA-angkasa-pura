@@ -61,6 +61,8 @@ class MaintenancePlanController extends Controller
             'asset_ids.*' => 'exists:assets,id',
         ]);
 
+        $validated['is_active'] = $request->has('is_active');
+
         $plan = MaintenancePlan::create($validated);
 
         if ($request->has('asset_ids')) {
@@ -101,6 +103,8 @@ class MaintenancePlanController extends Controller
             'asset_ids' => 'nullable|array',
             'asset_ids.*' => 'exists:assets,id',
         ]);
+
+        $validated['is_active'] = $request->has('is_active');
 
         $plan->update($validated);
 
