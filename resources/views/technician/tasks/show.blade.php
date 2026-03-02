@@ -120,19 +120,28 @@
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95">
         
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showHandoverModal = false"></div>
+        <div class="absolute inset-0 bg-black/50" @click="showHandoverModal = false"></div>
 
         <div class="bg-white w-full max-w-xs sm:max-w-sm rounded-2xl shadow-2xl p-6 relative z-10 overflow-hidden transform transition-all">
             <h3 class="font-bold text-lg text-gray-800 mb-4">Handover Tugas</h3>
-            <form action="{{ route('technician.tasks.handover', $task->id) }}" method="POST">
+            <form action="{{ route('technician.tasks.handover', $task->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Alasan Handover</label>
-                    <textarea name="note" rows="3" class="w-full rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2" placeholder="Jelaskan kendala kenapa tugas ini dihandover" required></textarea>
+                    <textarea name="note" rows="3" class="w-full rounded-xl border-2 border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2" placeholder="Jelaskan kendala kenapa tugas ini dihandover" required></textarea>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Bukti Foto (Opsional)</label>
+                    <input type="file" name="photo" class="block w-full text-xs text-slate-500
+                        file:mr-4 file:py-2.5 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-xs file:font-semibold
+                        file:bg-yellow-50 file:text-yellow-700
+                        hover:file:bg-yellow-100" accept="image/*">
                 </div>
                 <div class="flex gap-3 mt-6">
-                    <button type="button" @click="showHandoverModal = false" class="flex-1 py-3 rounded-xl bg-gray-50 text-gray-600 font-bold hover:bg-gray-100 text-sm">Batal</button>
+                    <button type="button" @click="showHandoverModal = false" class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 text-sm">Batal</button>
                     <button type="submit" class="flex-1 py-3 rounded-xl bg-yellow-500 text-white font-bold hover:bg-yellow-600 shadow-lg shadow-yellow-200 text-sm">Simpan Handover</button>
                 </div>
             </form>
@@ -148,7 +157,7 @@
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95">
         
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showCompleteModal = false"></div>
+        <div class="absolute inset-0 bg-black/50" @click="showCompleteModal = false"></div>
 
         <div class="bg-white w-full max-w-xs sm:max-w-sm rounded-2xl shadow-2xl p-6 relative z-10 overflow-hidden transform transition-all">
             <h3 class="font-bold text-lg text-gray-800 mb-4">Lapor Selesai</h3>
@@ -158,7 +167,7 @@
                 
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Catatan Perbaikan</label>
-                    <textarea name="description" rows="3" class="w-full rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 text-sm p-2" placeholder="Apa yang sudah diperbaiki?" required></textarea>
+                    <textarea name="description" rows="3" class="w-full rounded-xl border-2 border-gray-300 focus:border-green-500 focus:ring-green-500 text-sm p-2" placeholder="Apa yang sudah diperbaiki?" required></textarea>
                 </div>
 
                 <div class="mb-6">

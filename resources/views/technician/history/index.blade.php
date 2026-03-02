@@ -8,7 +8,9 @@
     showPatrolModal: false, 
     selectedPatrol: null,
     showWorkOrderModal: false, 
-    selectedWorkOrder: null
+    selectedWorkOrder: null,
+    filterPatrol: 'all',
+    filterWorkOrder: 'all'
 }">
 
     {{-- FILTER BULAN & TAHUN --}}
@@ -78,14 +80,35 @@
 
     {{-- KONTEN TAB: PATROLI --}}
     <div x-show="tab === 'patrol'" x-transition:enter="transition ease-out duration-300" style="display: none;">
+        
+        {{-- Filter Status Patroli --}}
+        <div class="flex gap-2 overflow-x-auto pb-4 mb-2 no-scrollbar px-1">
+            <button @click="filterPatrol = 'all'" 
+                    :class="filterPatrol === 'all' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-200'"
+                    class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm">
+                Semua Status
+            </button>
+            <button @click="filterPatrol = 'normal'" 
+                    :class="filterPatrol === 'normal' ? 'bg-green-600 text-white border-transparent' : 'bg-white text-green-600 hover:bg-green-50 border border-green-200'"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-check-circle"></i> Normal
+            </button>
+            <button @click="filterPatrol = 'issue'" 
+                    :class="filterPatrol === 'issue' ? 'bg-red-500 text-white border-transparent' : 'bg-white text-red-500 hover:bg-red-50 border border-red-200'"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-triangle-exclamation"></i> Issue
+            </button>
+        </div>
+
         <div class="space-y-8 relative border-l-2 border-gray-200 ml-3 pl-6 pb-10 min-h-[300px]">
+            @php $hasVisiblePatrols = false; @endphp
             @forelse($groupedPatrols as $date => $items)
                 @php
                     $dateObj = \Carbon\Carbon::parse($date);
                     $label = $dateObj->isToday() ? "Hari Ini (" . $dateObj->format('d M') . ")" : $dateObj->translatedFormat('l, d F Y');
                 @endphp
 
-                <div class="relative animate-fade-in-up">
+                <div class="relative animate-fade-in-up date-group-patrol" x-data="{ visibleCount: {{ count($items) }} }" x-show="visibleCount > 0">
                     <span class="absolute -left-[33px] top-0 {{ $dateObj->isToday() ? 'bg-blue-600 text-white border-blue-200' : 'bg-white text-gray-500 border-gray-200' }} w-9 h-9 rounded-full flex items-center justify-center border-2 shadow-sm text-[10px] font-bold z-10">
                         {{ $dateObj->format('d') }}
                     </span>
@@ -134,8 +157,18 @@
                                 })->values()->toArray() // Reset keys for JSON
                             ];
                         @endphp
+                        @php
+                            $isVisibleCondition = "filterPatrol === 'all' || (filterPatrol === 'normal' && " . ($isIssue ? 'false' : 'true') . ") || (filterPatrol === 'issue' && " . ($isIssue ? 'true' : 'false') . ")";
+                        @endphp
 
-                        <div class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 mb-3 relative overflow-hidden group hover:border-blue-200 transition">
+                        <div x-show="{{ $isVisibleCondition }}" 
+                             x-effect="if({{ $isVisibleCondition }}) { visibleCount++ } else { visibleCount-- }"
+                             x-init="$watch('filterPatrol', value => { 
+                                 // Reset the count mechanism to re-evaluate 
+                                 visibleCount = 0; 
+                                 setTimeout(() => { if({{ $isVisibleCondition }}) visibleCount++; }, 10);
+                             })"
+                             class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 mb-3 relative overflow-hidden group hover:border-blue-200 transition filter-item-patrol">
                             <div class="absolute left-0 top-0 bottom-0 w-1 {{ $isIssue ? 'bg-red-500' : 'bg-green-500' }}"></div>
                             
                             <div class="flex justify-between items-start mb-2">
@@ -167,9 +200,34 @@
 
     {{-- KONTEN TAB: PERBAIKAN (WORK ORDER) --}}
     <div x-show="tab === 'work_order'" x-transition:enter="transition ease-out duration-300" style="display: none;">
+        
+        {{-- Filter Status Perbaikan --}}
+        <div class="flex gap-2 overflow-x-auto pb-4 mb-2 no-scrollbar px-1">
+            <button @click="filterWorkOrder = 'all'" 
+                    :class="filterWorkOrder === 'all' ? 'bg-gray-800 text-white' : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-200'"
+                    class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm">
+                Semua Status
+            </button>
+            <button @click="filterWorkOrder = 'completed'" 
+                    :class="filterWorkOrder === 'completed' ? 'bg-yellow-500 text-white border-transparent' : 'bg-white text-yellow-600 hover:bg-yellow-50 border border-yellow-200'"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-clock-rotate-left"></i> Menunggu Verif
+            </button>
+            <button @click="filterWorkOrder = 'verified'" 
+                    :class="filterWorkOrder === 'verified' ? 'bg-green-600 text-white border-transparent' : 'bg-white text-green-600 hover:bg-green-50 border border-green-200'"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-check-double"></i> Verified
+            </button>
+            <button @click="filterWorkOrder = 'handover'" 
+                    :class="filterWorkOrder === 'handover' ? 'bg-pink-500 text-white border-transparent' : 'bg-white text-pink-600 hover:bg-pink-50 border border-pink-200'"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors shadow-sm flex items-center gap-1.5">
+                <i class="fa-solid fa-handshake"></i> Handover
+            </button>
+        </div>
+
         <div class="space-y-8 relative border-l-2 border-gray-200 ml-3 pl-6 pb-10 min-h-[300px]">
              @forelse($groupedWorkOrders as $date => $items)
-                <div class="relative animate-fade-in-up">
+                <div class="relative animate-fade-in-up date-group-wo" x-data="{ visibleCountWo: {{ count($items) }} }" x-show="visibleCountWo > 0">
                     <span class="absolute -left-[33px] top-0 bg-white text-blue-600 border-blue-200 w-9 h-9 rounded-full flex items-center justify-center border-2 shadow-sm text-[10px] font-bold z-10">
                         {{ \Carbon\Carbon::parse($date)->format('d') }}
                     </span>
@@ -179,45 +237,90 @@
                         @php
                             // Prepare data for Alpine (Evidence/Handover)
                             $handoverHistory = $item->histories->where('user_id', auth()->id())->where('action', 'handover')->first();
+                            $completedHistory = $item->histories->where('action', 'completed')->last();
                             $woData = [
                                 'ticket_number' => $item->ticket_number,
                                 'asset_name' => $item->asset->name,
                                 'location_name' => $item->asset->location->name,
                                 'status' => $item->status,
                                 'issue_description' => $item->issue_description,
-                                'completed_date' => $item->updated_at->format('d M Y H:i'),
+                                'completed_date' => $item->updated_at->format('d M Y, H:i'),
                                 // Data Completed
                                 'photo' => $item->last_progress_photo ? asset('storage/' . $item->last_progress_photo) : null,
+                                'completed_note' => $completedHistory ? $completedHistory->description : 'Perbaikan telah diselesaikan oleh teknisi.',
                                 // Data Handover
                                 'handover_note' => $handoverHistory ? $handoverHistory->description : 'Tidak ada catatan handover.',
+                                'handover_photo' => ($handoverHistory && $handoverHistory->photo) ? asset('storage/' . $handoverHistory->photo) : null,
                             ];
+
+                            // Status Logic for UI
+                            $statusColor = 'bg-gray-100 text-gray-600 border-gray-200';
+                            $statusIcon = 'fa-file';
+                            $statusText = 'History';
+                            $borderColor = 'border-l-gray-300';
+
+                            if ($item->status == 'completed') {
+                                $statusColor = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+                                $statusIcon = 'fa-clock-rotate-left';
+                                $statusText = 'Menunggu Verif';
+                                $borderColor = 'border-l-yellow-400';
+                            } elseif ($item->status == 'verified') {
+                                $statusColor = 'bg-green-50 text-green-700 border-green-200';
+                                $statusIcon = 'fa-check-double';
+                                $statusText = 'Verified';
+                                $borderColor = 'border-l-green-500';
+                            } elseif ($item->status == 'handover') {
+                                $statusColor = 'bg-pink-50 text-pink-700 border-pink-200';
+                                $statusIcon = 'fa-handshake';
+                                $statusText = 'Handover';
+                                $borderColor = 'border-l-pink-500';
+                            }
+
+                            $isWoVisibleCondition = "filterWorkOrder === 'all' || filterWorkOrder === '{$item->status}'";
                         @endphp
 
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-3 relative overflow-hidden group hover:border-blue-200 transition">
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="bg-gray-100 text-gray-600 text-[10px] font-mono px-2 py-0.5 rounded">#{{ $item->ticket_number }}</span>
-                                
-                                @if($item->status == 'completed')
-                                    <span class="bg-green-100 text-green-600 text-[10px] px-2 py-0.5 rounded font-bold uppercase flex items-center gap-1">
-                                        <i class="fa-solid fa-check-circle"></i> Selesai
-                                    </span>
-                                @elseif($item->status == 'handover')
-                                    <span class="bg-yellow-100 text-yellow-600 text-[10px] px-2 py-0.5 rounded font-bold uppercase flex items-center gap-1">
-                                        <i class="fa-solid fa-arrow-right-arrow-left"></i> Handover
-                                    </span>
-                                @endif
+                        <div x-show="{{ $isWoVisibleCondition }}"
+                             x-init="$watch('filterWorkOrder', value => { 
+                                 visibleCountWo = 0; 
+                                 setTimeout(() => { if({{ $isWoVisibleCondition }}) visibleCountWo++; }, 10);
+                             })"
+                             class="bg-white p-4 mb-4 rounded-xl shadow-sm border border-gray-100 {{ $borderColor }} border-l-4 relative group hover:shadow-md transition-all duration-200 filter-item-wo">
+                            
+                            {{-- Header Card --}}
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="bg-gray-50 text-gray-600 text-[10px] font-mono px-2 py-1 rounded border border-gray-200 font-bold tracking-wider">
+                                    <i class="fa-solid fa-hashtag text-gray-400"></i> {{ $item->ticket_number }}
+                                </span>
+                                <span class="{{ $statusColor }} text-[10px] px-2.5 py-1 rounded-full font-bold uppercase flex items-center gap-1.5 shadow-sm border">
+                                    <i class="fa-solid {{ $statusIcon }}"></i> {{ $statusText }}
+                                </span>
                             </div>
 
-                            <h4 class="font-bold text-gray-800 text-sm mb-1 leading-snug">{{ $item->issue_description }}</h4>
-                            <p class="text-xs text-gray-500 mb-3">
-                                <i class="fa-solid fa-cube mr-1"></i> {{ $item->asset->name }} ({{ $item->asset->location->name }})
-                            </p>
+                            {{-- Issue / Title --}}
+                            <div class="mb-3">
+                                <h4 class="font-bold text-gray-800 text-sm mb-2 leading-snug">{{ \Illuminate\Support\Str::limit($item->issue_description, 70) }}</h4>
+                                
+                                <div class="flex flex-col gap-1.5 text-xs text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-4 flex justify-center"><i class="fa-solid fa-cube text-blue-500"></i></div>
+                                        <span class="font-semibold text-gray-700">{{ $item->asset->name }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-4 flex justify-center"><i class="fa-solid fa-location-dot text-red-500"></i></div>
+                                        <span>{{ $item->asset->location->name }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-1 pt-1.5 border-t border-gray-200">
+                                        <div class="w-4 flex justify-center"><i class="fa-regular fa-clock text-gray-400"></i></div>
+                                        <span>Update: <span class="text-gray-700 font-medium">{{ $item->updated_at->format('d M Y, H:i') }}</span></span>
+                                    </div>
+                                </div>
+                            </div>
 
                             {{-- BUTTON DETAIL UNIVERSAL --}}
                             <button 
                                 @click="selectedWorkOrder = {{ json_encode($woData) }}; showWorkOrderModal = true"
-                                class="w-full py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-eye"></i> Lihat Detail
+                                class="w-full py-2.5 bg-white hover:bg-blue-50 text-gray-600 hover:text-blue-700 border border-gray-200 hover:border-blue-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fa-solid fa-eye"></i> Lihat Detail Laporan
                             </button>
                         </div>
                     @endforeach
@@ -238,7 +341,7 @@
          x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
          x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
         
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showPatrolModal = false"></div>
+        <div class="absolute inset-0 bg-black/50" @click="showPatrolModal = false"></div>
         
         <div class="bg-white w-full max-w-xs sm:max-w-sm rounded-2xl shadow-xl overflow-hidden max-h-[85vh] flex flex-col relative z-10 transform transition-all">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50">
@@ -283,16 +386,16 @@
          x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
          x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
         
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showWorkOrderModal = false"></div>
+        <div class="absolute inset-0 bg-black/50" @click="showWorkOrderModal = false"></div>
         
         <div class="bg-white w-full max-w-xs sm:max-w-sm rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative z-10 transform transition-all">
             {{-- Header --}}
             <div class="relative bg-gray-100">
                 {{-- Toggle Image/Placeholder --}}
-                <template x-if="selectedWorkOrder?.status === 'completed' && selectedWorkOrder?.photo">
+                <template x-if="['completed', 'verified'].includes(selectedWorkOrder?.status) && selectedWorkOrder?.photo">
                     <img :src="selectedWorkOrder?.photo" class="w-full h-56 object-cover">
                 </template>
-                <template x-if="selectedWorkOrder?.status === 'completed' && !selectedWorkOrder?.photo">
+                <template x-if="['completed', 'verified'].includes(selectedWorkOrder?.status) && !selectedWorkOrder?.photo">
                     <div class="w-full h-40 bg-gray-200 flex flex-col items-center justify-center text-gray-400">
                         <i class="fa-solid fa-image-slash text-3xl mb-2"></i>
                         <span class="text-xs font-bold">Tidak ada foto bukti</span>
@@ -307,35 +410,65 @@
                     </div>
                 </template>
 
-                <button @click="showWorkOrderModal = false" class="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition">
+                <button @click="showWorkOrderModal = false" class="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/50 transition">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
             <div class="p-5 overflow-y-auto">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-bold text-gray-800 text-lg leading-tight" x-text="selectedWorkOrder?.issue_description"></h3>
+            <div class="p-5 overflow-y-auto">
+                {{-- Header Modal Info --}}
+                <div class="flex justify-between items-start mb-4 pb-4 border-b border-gray-100">
+                    <div>
+                        <span class="bg-blue-50 text-blue-600 px-2 py-1 rounded font-mono text-xs font-bold border border-blue-100 mb-2 inline-block shadow-sm" x-text="'#' + selectedWorkOrder?.ticket_number"></span>
+                        <h4 class="font-bold text-gray-800 text-lg leading-tight" x-text="selectedWorkOrder?.asset_name"></h4>
+                        <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                            <i class="fa-solid fa-location-dot text-red-500"></i>
+                            <span x-text="selectedWorkOrder?.location_name"></span>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-400 mb-4" x-text="selectedWorkOrder?.completed_date"></p>
-                
-                {{-- Info Asset --}}
-                <div class="flex items-center gap-2 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-100">
-                    <span class="bg-gray-100 px-2 py-1 rounded font-mono" x-text="'#' + selectedWorkOrder?.ticket_number"></span>
-                    <span x-text="selectedWorkOrder?.asset_name"></span>
+
+                {{-- Detail Masalah Awal --}}
+                <div class="mb-5">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><i class="fa-solid fa-clipboard-question text-gray-400"></i> Laporan Masalah / Kendala</p>
+                    <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-100 text-gray-700 text-sm font-medium leading-relaxed">
+                        <span x-text="selectedWorkOrder?.issue_description"></span>
+                    </div>
                 </div>
 
                 {{-- Content based on Status --}}
-                <template x-if="selectedWorkOrder?.status === 'completed'">
-                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
-                        <p class="text-xs font-bold text-green-700 mb-1">Catatan Penyelesaian:</p>
-                        <p class="text-sm text-green-900 leading-relaxed" x-text="selectedWorkOrder?.issue_description"></p>
+                <template x-if="['completed', 'verified'].includes(selectedWorkOrder?.status)">
+                    <div class="mb-2">
+                        <p class="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><i class="fa-solid fa-check-double text-green-500"></i> Catatan Teknisi Terkait Penyelesaian</p>
+                        <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-2 -top-2 text-green-600/10"><i class="fa-solid fa-check-circle text-6xl"></i></div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="bg-white text-green-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">Updated: <span x-text="selectedWorkOrder?.completed_date"></span></span>
+                            </div>
+                            <p class="text-sm text-green-800 font-medium leading-relaxed drop-shadow-sm relative z-10" x-html="selectedWorkOrder?.completed_note"></p>
+                        </div>
                     </div>
                 </template>
 
                 <template x-if="selectedWorkOrder?.status === 'handover'">
-                    <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-                        <p class="text-xs font-bold text-yellow-700 mb-1">Alasan Handover:</p>
-                        <p class="text-sm text-yellow-900 leading-relaxed" x-text="selectedWorkOrder?.handover_note"></p>
+                    <div class="mb-2">
+                        <p class="text-[10px] font-bold text-yellow-600 uppercase tracking-wider mb-1.5 flex items-center gap-1.5"><i class="fa-solid fa-handshake text-yellow-500"></i> Alasan Melakukan Handover Shift</p>
+                        <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-2 -top-2 text-yellow-600/10"><i class="fa-solid fa-arrow-right-arrow-left text-6xl"></i></div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="bg-white text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">Updated: <span x-text="selectedWorkOrder?.completed_date"></span></span>
+                            </div>
+                            <p class="text-sm text-yellow-800 font-medium leading-relaxed drop-shadow-sm relative z-10" x-html="selectedWorkOrder?.handover_note"></p>
+                            
+                            {{-- Foto Bukti Handover --}}
+                            <template x-if="selectedWorkOrder?.handover_photo">
+                                <div class="mt-3 rounded-lg overflow-hidden border border-yellow-200 shadow-sm relative z-10">
+                                    <img :src="selectedWorkOrder?.handover_photo" class="w-full h-40 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(selectedWorkOrder?.handover_photo, '_blank')">
+                                    <div class="bg-yellow-100 text-[10px] text-center py-1 font-bold text-yellow-700">Foto Lampiran Handover</div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </template>
             </div>

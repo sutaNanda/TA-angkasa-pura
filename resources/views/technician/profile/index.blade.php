@@ -145,7 +145,7 @@
          x-transition:leave-end="opacity-0 scale-95">
         
         {{-- Backdrop --}}
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="editModal = false"></div>
+        <div class="absolute inset-0 bg-black/50" @click="editModal = false"></div>
 
         {{-- Modal Content --}}
         <div class="bg-white w-full max-w-xs sm:max-w-sm rounded-2xl shadow-xl relative z-10 overflow-hidden transform transition-all">
@@ -205,7 +205,7 @@
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95">
         
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="passwordModal = false"></div>
+        <div class="absolute inset-0 bg-black/50" @click="passwordModal = false"></div>
 
         <div class="bg-white w-full max-w-xs sm:max-w-sm rounded-2xl shadow-xl relative z-10 overflow-hidden transform transition-all">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">

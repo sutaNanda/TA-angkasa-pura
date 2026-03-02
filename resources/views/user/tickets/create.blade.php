@@ -36,14 +36,17 @@
                             <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center text-xs mr-2">1</span>
                             Gedung / Area
                         </label>
-                        <div class="relative">
-                            <select x-model="selectedBuilding" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 h-11">
+                        <div class="relative mt-2">
+                            <i class="fa-solid fa-building absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            <select x-model="selectedBuilding" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 pr-10 py-2.5 text-sm md:text-base appearance-none bg-white shadow-sm transition-all hover:border-blue-300 cursor-pointer">
                                 <option value="">-- Pilih Gedung --</option>
                                 @foreach($rootLocations as $loc)
                                     <option value="{{ $loc->id }}">{{ $loc->name }}</option>
                                 @endforeach
                             </select>
-                            <i class="fa-solid fa-building absolute left-3 top-4 text-gray-400"></i>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
                         </div>
                     </div>
 
@@ -54,16 +57,19 @@
                             Ruangan / Lantai
                         </label>
                         
-                        <div class="relative">
-                            <select x-model="selectedRoom" :disabled="!selectedBuilding || loadingRoom" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 h-11 disabled:bg-gray-100 transition">
+                        <div class="relative mt-2">
+                            <i class="fa-solid fa-door-open absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            <select x-model="selectedRoom" :disabled="!selectedBuilding || loadingRoom" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 pr-10 py-2.5 text-sm md:text-base appearance-none bg-white shadow-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-all hover:border-blue-300 cursor-pointer">
                                 <option value="">-- Pilih Ruangan --</option>
                                 <template x-for="room in rooms" :key="room.id">
                                     <option :value="room.id" x-text="room.name"></option>
                                 </template>
                             </select>
-                            <i class="fa-solid fa-door-open absolute left-3 top-4 text-gray-400"></i>
                             
-                            <div x-show="loadingRoom" class="absolute right-3 top-3">
+                            <div x-show="!loadingRoom" class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                            <div x-show="loadingRoom" class="absolute right-3 top-1/2 -translate-y-1/2">
                                 <i class="fa-solid fa-circle-notch fa-spin text-blue-600"></i>
                             </div>
                         </div>
@@ -76,16 +82,19 @@
                             Aset Bermasalah
                         </label>
                         
-                        <div class="relative">
-                            <select name="asset_id" x-model="selectedAsset" :disabled="!selectedRoom || loadingAsset" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 h-11 disabled:bg-gray-100 transition">
+                        <div class="relative mt-2">
+                            <i class="fa-solid fa-cube absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            <select name="asset_id" x-model="selectedAsset" :disabled="!selectedRoom || loadingAsset" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 pr-10 py-2.5 text-sm md:text-base appearance-none bg-white shadow-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-all hover:border-blue-300 cursor-pointer break-words break-all">
                                 <option value="">-- Pilih Aset --</option>
                                 <template x-for="asset in assets" :key="asset.id">
                                     <option :value="asset.id" x-text="asset.name + ' (' + asset.serial_number + ')'"></option>
                                 </template>
                             </select>
-                            <i class="fa-solid fa-cube absolute left-3 top-4 text-gray-400"></i>
                             
-                            <div x-show="loadingAsset" class="absolute right-3 top-3">
+                            <div x-show="!loadingAsset" class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                            <div x-show="loadingAsset" class="absolute right-3 top-1/2 -translate-y-1/2">
                                 <i class="fa-solid fa-circle-notch fa-spin text-blue-600"></i>
                             </div>
                         </div>
@@ -104,7 +113,7 @@
                                 <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 inline-flex items-center justify-center text-xs mr-2">4</span>
                                 Deskripsi Masalah
                             </label>
-                            <textarea name="issue_description" rows="5" required class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 p-2" placeholder="Jelaskan kerusakan yang terjadi sedetail mungkin..."></textarea>
+                            <textarea name="issue_description" rows="5" required class="w-full border-2 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400 p-2" placeholder="Jelaskan kerusakan yang terjadi sedetail mungkin..."></textarea>
                         </div>
                     </div>
 
@@ -113,13 +122,16 @@
                         {{-- Prioritas --}}
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Tingkat Urgensi</label>
-                            <div class="relative">
-                                <select name="priority" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 h-11">
+                            <div class="relative mt-2">
+                                <i class="fa-solid fa-signal absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                                <select name="priority" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-10 pr-10 py-2.5 text-sm md:text-base appearance-none bg-white shadow-sm transition-all hover:border-blue-300 cursor-pointer">
                                     <option value="low">Low (Tidak Mendesak)</option>
                                     <option value="medium" selected>Medium (Perlu Perbaikan)</option>
                                     <option value="high">High (Darurat / Kritis)</option>
                                 </select>
-                                <i class="fa-solid fa-signal absolute left-3 top-3.5 text-gray-400"></i>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
                             </div>
                         </div>
 
@@ -127,7 +139,7 @@
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Foto Bukti (Opsional)</label>
                             <div class="relative ">
-                                <input type="file" name="photo" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-gray-300 rounded-lg h-9 pt-1.5 pl-2">
+                                <input type="file" name="photo" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 rounded-lg h-9 pt-1.5 pl-2">
                             </div>
                         </div>
                     </div>

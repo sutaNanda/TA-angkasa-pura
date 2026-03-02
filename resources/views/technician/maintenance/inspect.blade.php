@@ -19,7 +19,6 @@
     </div>
 
     {{-- Checklist Form --}}
-{{-- Checklist Form --}}
     <form id="inspectionForm" action="{{ isset($maintenance) ? route('technician.maintenance.complete', $maintenance->id) : route('technician.inspection.store') }}" method="POST">
         @csrf
         <input type="hidden" name="asset_id" value="{{ $asset->id }}">
@@ -101,7 +100,7 @@
                     </h4>
                     <div class="mb-3">
                         <label class="block text-xs font-bold text-red-700 mb-1">Catatan Masalah <span class="text-red-500">*</span></label>
-                        <textarea name="notes" rows="2" class="w-full text-sm border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500" placeholder="Jelaskan detail kerusakannya..."></textarea>
+                        <textarea name="notes" rows="2" class="w-full text-sm border-2 pl-2 py-2 border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500" placeholder="Jelaskan detail kerusakannya"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="block text-xs font-bold text-red-700 mb-1">Foto Bukti <span class="text-red-500">*</span></label>

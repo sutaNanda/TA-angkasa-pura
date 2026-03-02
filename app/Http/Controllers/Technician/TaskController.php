@@ -182,6 +182,7 @@ class TaskController extends Controller
     {
         $request->validate([
             'note' => 'required|string|min:10', // Alasan handover
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // Foto opsional, max 5MB
         ]);
 
         $task = WorkOrder::findOrFail($id);
@@ -195,6 +196,12 @@ class TaskController extends Controller
         }
 
         DB::transaction(function() use ($task, $user, $request) {
+            // Check if photo is uploaded
+            $photoPath = null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('handover-photos', 'public');
+            }
+
             // Update Work Order
             $task->technician_id = null; // Lepas ke pool
             $task->status = 'handover';
@@ -206,6 +213,7 @@ class TaskController extends Controller
                 'user_id' => $user->id,
                 'action' => 'handover', 
                 'description' => 'Handover: ' . $request->note,
+                'photo' => $photoPath, // Simpan path foto jika ada
             ]);
         });
 
