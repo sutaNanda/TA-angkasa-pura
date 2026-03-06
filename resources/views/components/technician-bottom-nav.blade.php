@@ -24,9 +24,9 @@
 
         {{-- 3. SCAN (Floating Button) --}}
         <div class="relative w-16 h-16 flex justify-center z-50">
-            <a href="{{ route('technician.scan') }}" class="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/40 border-4 border-white transform transition hover:scale-105 hover:bg-blue-700 active:scale-95">
+            <button type="button" @click="showScanOptions = true" class="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/40 border-4 border-white transform transition hover:scale-105 hover:bg-blue-700 active:scale-95">
                 <i class="fa-solid fa-qrcode text-2xl"></i>
-            </a>
+            </button>
         </div>
 
         {{-- 4. RIWAYAT --}}
@@ -35,10 +35,10 @@
             <span class="text-[10px] font-medium">Riwayat</span>
         </a>
 
-        {{-- 5. AKUN --}}
-        <a href="{{ route('technician.profile.index') }}" class="flex flex-1 flex-col items-center justify-center h-full {{ request()->routeIs('technician.profile.*') ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600' }}">
-            <i class="fa-solid fa-user text-xl mb-1"></i>
-            <span class="text-[10px] font-medium">Akun</span>
+        {{-- 5. INVENTARIS ASET --}}
+        <a href="{{ route('technician.assets.index') }}" class="flex flex-1 flex-col items-center justify-center h-full {{ request()->routeIs('technician.assets.*') ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600' }}">
+            <i class="fa-solid fa-box text-xl mb-1"></i>
+            <span class="text-[10px] font-medium">Inventaris</span>
         </a>
 
     </div>

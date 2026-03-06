@@ -72,7 +72,7 @@ class DashboardController extends Controller
 
         // 4. JADWAL PATROLI HARI INI (Using Maintenance Model as requested)
         // Ambil data maintenance (preventive) yang dijadwalkan hari ini dan belum selesai
-        $patrols = \App\Models\Maintenance::with(['asset.location'])
+        $patrols = \App\Models\Maintenance::with(['asset.location', 'location', 'maintenancePlan'])
             ->whereDate('scheduled_date', $now->toDateString())
             ->where('type', 'preventive')
             ->whereIn('status', ['pending', 'in_progress'])
@@ -91,7 +91,7 @@ class DashboardController extends Controller
 
         // Group By Location ID agar tampilan dashboard lebih rapi (Location Cards)
         $patrols = $patrols->groupBy(function ($item) {
-            return $item->asset->location_id ?? 0;
+            return $item->location_id ?? ($item->asset->location_id ?? 0);
         });
 
         return view('technician.dashboard', compact('greeting', 'user', 'stats', 'poolTasks', 'myTasks', 'patrols', 'handoverTasks', 'userReports'));

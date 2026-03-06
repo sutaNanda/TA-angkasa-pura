@@ -45,7 +45,7 @@ class HistoryController extends Controller
         // ==========================================
         // Ambil WO yang Selesai oleh User INI
         // ATAU yang pernah di-Handover oleh User INI
-        $workOrders = WorkOrder::with(['asset.location', 'histories'])
+        $workOrders = WorkOrder::with(['asset.location', 'histories', 'location'])
             ->where(function($q) use ($user) {
                 // Completed by me
                 $q->where('technician_id', $user->id)

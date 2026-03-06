@@ -38,11 +38,18 @@
         </form>
 
         <div class="flex gap-2">
+            @if(!auth()->user()->isManajer())
             <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center">
                 <i class="fa-solid fa-plus"></i> Buat Tiket Manual
             </button>
+            @endif
+
+            <a href="{{ route('admin.work-orders.export', request()->all()) }}" target="_blank" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition shadow-md hover:shadow-lg flex items-center gap-2 w-full md:w-auto justify-center">
+                <i class="fa-solid fa-file-pdf"></i> Export PDF
+            </a>
 
             @if(request('tab') == 'verify')
+                @if(!auth()->user()->isManajer())
                 <form action="{{ route('admin.work-orders.verify-all') }}" method="POST" onsubmit="return confirmVerifyAll(event)">
                     @csrf
                     <button type="submit" 
@@ -52,6 +59,7 @@
                         <i class="fa-solid fa-check-double"></i> Verifikasi Semua ({{ $counts['verify'] }})
                     </button>
                 </form>
+                @endif
             @endif
 
 
@@ -110,10 +118,17 @@
                                         {{ $ticket->ticket_number }}
                                     </span>
                                 </div>
-                                <div class="font-bold text-gray-800">{{ $ticket->asset->name }}</div>
-                                <div class="text-xs text-gray-500 flex items-center gap-1">
-                                    <i class="fa-solid fa-location-dot"></i> {{ $ticket->asset->location->name ?? '-' }}
-                                </div>
+                                @if($ticket->asset)
+                                    <div class="font-bold text-gray-800">{{ $ticket->asset->name }}</div>
+                                    <div class="text-xs text-gray-500 flex items-center gap-1">
+                                        <i class="fa-solid fa-location-dot"></i> {{ $ticket->asset->location->name ?? '-' }}
+                                    </div>
+                                @else
+                                    <div class="font-bold text-gray-800">{{ $ticket->location->name ?? 'Lokasi tidak diketahui' }}</div>
+                                    <div class="text-xs text-orange-500 flex items-center gap-1">
+                                        <i class="fa-solid fa-cube"></i> Aset belum diidentifikasi
+                                    </div>
+                                @endif
                             </td>
 
                             {{-- MASALAH --}}
@@ -164,11 +179,11 @@
 
                             {{-- AKSI --}}
                             <td class="px-6 py-4 text-center">
-                                @if($ticket->status == 'open' || $ticket->status == 'handover')
+                                @if(!auth()->user()->isManajer() && ($ticket->status == 'open' || $ticket->status == 'handover'))
                                     <button onclick="openAssignModal({{ $ticket->id }}, '{{ $ticket->ticket_number }}', {{ $ticket->technician_id ?? 'null' }}, '{{ $ticket->priority }}')" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm w-full">
                                         Tugaskan
                                     </button>
-                                @elseif($ticket->status == 'completed')
+                                @elseif(!auth()->user()->isManajer() && $ticket->status == 'completed')
                                     <button onclick="openVerifyModal({{ $ticket->id }}, '{{ $ticket->ticket_number }}')" class="bg-green-600 text-white hover:bg-green-700 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm w-full flex items-center justify-center gap-1 animate-pulse">
                                         <i class="fa-solid fa-check-double"></i> Verifikasi
                                     </button>
@@ -435,65 +450,154 @@
                 const json = await res.json();
                 const data = json.data;
 
-                content.innerHTML = `
-                    <div class="grid grid-cols-2 gap-6 mb-6">
-                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Aset & Lokasi</p>
-                            <p class="font-bold text-gray-800">${data.asset.name}</p>
-                            <p class="text-sm text-gray-600">${data.asset.location ? data.asset.location.name : '-'}</p>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-right">
-                            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Teknisi Penanggung Jawab</p>
-                            <p class="font-bold text-gray-800">${data.technician ? data.technician.name : 'Belum Ada'}</p>
-                            <p class="text-sm text-gray-600">${data.ticket_number}</p>
-                        </div>
-                    </div>
+                // Build photo HTML outside template literal to avoid nested backtick issues
+                function renderPhotoGrid(urls) {
+                    if (!urls || urls.length === 0) {
+                        return '<div class="aspect-video bg-gray-100 rounded-lg flex items-center justify-center text-gray-300 border border-dashed border-gray-200"><i class="fa-solid fa-image text-2xl"></i></div>';
+                    }
+                    var html = '<div class="flex flex-wrap gap-2">';
+                    urls.forEach(function(url) {
+                        html += '<a href="' + url + '" target="_blank"><img src="' + url + '" class="h-20 w-20 object-cover rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:scale-105 transition cursor-pointer"></a>';
+                    });
+                    html += '</div>';
+                    return html;
+                }
 
-                    <div class="mb-6">
-                        <h4 class="text-sm font-bold text-gray-700 mb-2">Masalah Dilaporkan</h4>
-                        <div class="bg-red-50 p-4 rounded-xl border border-red-100 text-red-800 text-sm">
-                            "${data.issue_description}"
-                        </div>
-                    </div>
+                var completedEntry = (data.histories || []).find(function(h) { return h.action === 'completed'; });
+                var laporanText = completedEntry && completedEntry.description ? completedEntry.description : 'Belum ada laporan dari teknisi.';
+                var photosBeforeHtml = renderPhotoGrid(data.photos_before_urls);
+                var photosAfterHtml = renderPhotoGrid(data.photos_after_urls);
 
-                    <div class="mb-6">
-                        <h4 class="text-sm font-bold text-gray-700 mb-2">Laporan Pengerjaan</h4>
-                        <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm">
-                            <p class="text-sm text-gray-700 mb-3 italic">"${(() => { const completedEntry = (data.histories || []).find(h => h.action === 'completed'); return completedEntry && completedEntry.description ? completedEntry.description : 'Belum ada laporan dari teknisi.'; })()}"</p>
-                            
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                <div>
-                                    <p class="text-xs text-center mb-1 font-bold text-gray-400">FOTO SEBELUM</p>
-                                    <div class="aspect-video bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 border border-gray-200">
-                                        ${data.photo_before ? `<img src="${data.photo_before}" class="w-full h-full object-cover rounded-lg">` : '<i class="fa-solid fa-image-slash"></i>'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-center mb-1 font-bold text-gray-400">FOTO SESUDAH</p>
-                                    <div class="aspect-video bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 border border-gray-200">
-                                        ${data.photo_after ? `<img src="${data.photo_after}" class="w-full h-full object-cover rounded-lg">` : '<i class="fa-solid fa-image-slash"></i>'}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                // Calculate duration
+                function formatDuration(ms) {
+                    if (ms <= 0) return '-';
+                    var seconds = Math.floor(ms / 1000);
+                    var minutes = Math.floor(seconds / 60);
+                    var hours = Math.floor(minutes / 60);
+                    var days = Math.floor(hours / 24);
+                    hours = hours % 24;
+                    minutes = minutes % 60;
+                    var parts = [];
+                    if (days > 0) parts.push(days + ' hari');
+                    if (hours > 0) parts.push(hours + ' jam');
+                    if (minutes > 0) parts.push(minutes + ' menit');
+                    return parts.length > 0 ? parts.join(' ') : '< 1 menit';
+                }
+
+                function formatDate(dateStr) {
+                    if (!dateStr) return '-';
+                    var d = new Date(dateStr);
+                    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                }
+
+                var createdAt = new Date(data.created_at);
+                var verifiedEntry = (data.histories || []).find(function(h) { return h.action === 'verified'; });
+                var endDate = verifiedEntry ? new Date(verifiedEntry.created_at) : (completedEntry ? new Date(completedEntry.created_at) : null);
+                var durationMs = endDate ? (endDate - createdAt) : (new Date() - createdAt);
+                var durationText = formatDuration(durationMs);
+                var durationLabel = verifiedEntry ? 'Terverifikasi' : (completedEntry ? 'Selesai dikerjakan' : 'Masih berjalan');
+                var durationColor = verifiedEntry ? 'text-green-600' : (completedEntry ? 'text-blue-600' : 'text-orange-600');
+                var durationIcon = verifiedEntry ? 'fa-check-double' : (completedEntry ? 'fa-clipboard-check' : 'fa-hourglass-half');
+
+                // Build timeline HTML
+                var timelineHtml = '<div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">'
+                    + '<div class="flex items-center gap-2 mb-3">'
+                    + '<i class="fa-solid fa-clock-rotate-left text-blue-600"></i>'
+                    + '<h4 class="text-sm font-bold text-gray-700">Durasi Penanganan</h4>'
+                    + '</div>'
+                    + '<div class="flex items-center justify-between">'
+                    + '<div class="text-center flex-1">'
+                    + '<p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Dibuat</p>'
+                    + '<p class="text-xs font-semibold text-gray-700">' + formatDate(data.created_at) + '</p>'
+                    + '</div>'
+                    + '<div class="flex flex-col items-center flex-1">'
+                    + '<div class="w-full flex items-center gap-1">'
+                    + '<div class="flex-1 h-0.5 bg-blue-200"></div>'
+                    + '<i class="fa-solid fa-arrow-right text-blue-300 text-[10px]"></i>'
+                    + '<div class="flex-1 h-0.5 bg-blue-200"></div>'
+                    + '</div>'
+                    + '<div class="mt-1 px-3 py-1 bg-white rounded-full shadow-sm border border-blue-100">'
+                    + '<span class="text-xs font-bold ' + durationColor + '"><i class="fa-solid fa-stopwatch mr-1"></i>' + durationText + '</span>'
+                    + '</div>'
+                    + '</div>'
+                    + '<div class="text-center flex-1">'
+                    + '<p class="text-[10px] uppercase font-bold text-gray-400 mb-1">' + durationLabel + '</p>'
+                    + '<p class="text-xs font-semibold text-gray-700">' + (endDate ? formatDate(endDate) : '<span class=\'text-orange-500 italic\'>Belum selesai</span>') + '</p>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>';
+
+                var assetName = data.asset ? data.asset.name : (data.location ? data.location.name : 'Tidak diketahui');
+                var assetLocation = data.asset ? (data.asset.location ? data.asset.location.name : '-') : (data.asset ? '-' : '<span class=\'text-orange-500 text-xs italic\'>Aset belum diidentifikasi</span>');
+
+                content.innerHTML = '<div class="grid grid-cols-2 gap-6 mb-6">'
+                    + '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100">'
+                    + '<p class="text-xs text-gray-500 uppercase font-bold mb-1">' + (data.asset ? 'Aset & Lokasi' : 'Lokasi Laporan') + '</p>'
+                    + '<p class="font-bold text-gray-800">' + assetName + '</p>'
+                    + '<p class="text-sm text-gray-600">' + assetLocation + '</p>'
+                    + '</div>'
+                    + '<div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-right">'
+                    + '<p class="text-xs text-gray-500 uppercase font-bold mb-1">Teknisi Penanggung Jawab</p>'
+                    + '<p class="font-bold text-gray-800">' + (data.technician ? data.technician.name : 'Belum Ada') + '</p>'
+                    + '<p class="text-sm text-gray-600">' + data.ticket_number + '</p>'
+                    + '</div>'
+                    + '</div>'
+
+                    + timelineHtml
+
+                    + '<div class="mb-6">'
+                    + '<h4 class="text-sm font-bold text-gray-700 mb-2">Masalah Dilaporkan</h4>'
+                    + '<div class="bg-red-50 p-4 rounded-xl border border-red-100 text-red-800 text-sm">"' + data.issue_description + '"</div>'
+                    + '</div>'
+
+                    + '<div class="mb-6">'
+                    + '<h4 class="text-sm font-bold text-gray-700 mb-2">Laporan Pengerjaan</h4>'
+                    + '<div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm">'
+                    + '<p class="text-sm text-gray-700 mb-3 italic">"' + laporanText + '"</p>'
+                    + '<div class="grid grid-cols-2 gap-4 mt-4">'
+                    + '<div>'
+                    + '<p class="text-xs text-center mb-2 font-bold text-gray-400 uppercase">Foto Sebelum</p>'
+                    + photosBeforeHtml
+                    + '</div>'
+                    + '<div>'
+                    + '<p class="text-xs text-center mb-2 font-bold text-gray-400 uppercase">Foto Sesudah</p>'
+                    + photosAfterHtml
+                    + '</div>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>';
 
                 // Footer Logic
                 if (isVerifyMode) {
-                    footer.innerHTML = `
-                        <button onclick="closeModal('verifyModal')" class="text-gray-500 hover:text-gray-700 text-sm font-bold">Batal</button>
-                        <form action="${formAction}" method="POST" class="flex items-center gap-2">
-                            @csrf
-                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-green-600/30 flex items-center gap-2">
-                                <i class="fa-solid fa-check-double"></i> Setujui & Tutup
-                            </button>
-                        </form>
-                    `;
+                    var reopenAction = '/admin/work-orders/' + id + '/reopen';
+                    footer.innerHTML = '<div class="w-full">'
+                        + '<div id="reopenSection" style="display:none;" class="mb-3 w-full">'
+                        + '<form action="' + reopenAction + '" method="POST" class="w-full">'
+                        + '@csrf'
+                        + '<label class="block text-xs font-bold text-red-600 mb-1"><i class="fa-solid fa-exclamation-triangle mr-1"></i>Alasan Penolakan / Re-open</label>'
+                        + '<textarea name="rejection_note" rows="2" class="w-full border-2 border-red-300 rounded-lg text-sm px-3 py-2 focus:ring-red-500 focus:border-red-500 mb-2" placeholder="Jelaskan kenapa tiket ini perlu dikerjakan ulang..." required></textarea>'
+                        + '<button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-md flex items-center justify-center gap-2">'
+                        + '<i class="fa-solid fa-rotate-left"></i> Konfirmasi Re-open'
+                        + '</button>'
+                        + '</form>'
+                        + '</div>'
+                        + '<div class="flex items-center justify-between gap-3">'
+                        + '<button type="button" onclick="document.getElementById(\'reopenSection\').style.display = document.getElementById(\'reopenSection\').style.display === \'none\' ? \'block\' : \'none\'" class="text-red-500 hover:text-red-700 text-sm font-bold flex items-center gap-1 border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-lg transition">'
+                        + '<i class="fa-solid fa-rotate-left"></i> Tolak & Re-open'
+                        + '</button>'
+                        + '<div class="flex items-center gap-2">'
+                        + '<button onclick="closeModal(\'verifyModal\')" class="text-gray-500 hover:text-gray-700 text-sm font-bold px-4 py-2.5">Batal</button>'
+                        + '<form action="' + formAction + '" method="POST">'
+                        + '@csrf'
+                        + '<button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-green-600/30 flex items-center gap-2">'
+                        + '<i class="fa-solid fa-check-double"></i> Setujui & Tutup'
+                        + '</button>'
+                        + '</form>'
+                        + '</div>'
+                        + '</div>'
+                        + '</div>';
                 } else {
-                    footer.innerHTML = `
-                        <button onclick="closeModal('verifyModal')" class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 w-full">Tutup</button>
-                    `;
+                    footer.innerHTML = '<button onclick="closeModal(\'verifyModal\')" class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 w-full">Tutup</button>';
                 }
 
             } catch(e) {

@@ -40,6 +40,9 @@
                 <a href="{{ route('admin.maintenances.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium transition">
                     Reset
                 </a>
+                <a href="{{ route('admin.export.maintenances') }}?{{ http_build_query(request()->all()) }}" target="_blank" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf"></i> Export PDF
+                </a>
             </div>
         </form>
     </div>
@@ -225,7 +228,10 @@
                     </div>
 
                 {{-- Footer --}}
-                <div class="bg-gray-50 px-6 py-3 flex justify-end">
+                <div class="bg-gray-50 px-6 py-3 flex justify-end gap-2">
+                    <a href="#" id="modalExportBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> Cetak Laporan
+                    </a>
                     <button onclick="closeModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Tutup</button>
                 </div>
             </div>
@@ -253,6 +259,9 @@
                     document.getElementById('modalAssetLoc').innerText = data.asset.location ? data.asset.location.name : '-';
                     document.getElementById('modalTechName').innerText = data.technician ? data.technician.name : '-';
                     document.getElementById('modalTime').innerText = new Date(data.created_at).toLocaleString('id-ID');
+
+                    // Set link Export PDF
+                    document.getElementById('modalExportBtn').href = `/admin/export/maintenances/${data.id}`;
 
                     // [NEW] Logic Timeline
                     const timelineBody = document.getElementById('modalTimelineBody');

@@ -12,10 +12,12 @@
             </div>
         </div>
 
+        @if(!auth()->user()->isManajer())
         <button onclick="openModal('addAssetModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-sm">
             <i class="fa-solid fa-plus"></i>
             Tambah Aset
         </button>
+        @endif
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -26,8 +28,9 @@
                         <th class="px-6 py-4">Informasi Aset</th>
                         <th class="px-6 py-4">Kategori</th>
                         <th class="px-6 py-4">Lokasi</th>
-                        <th class="px-6 py-4">Status</th>
+                        @if(!auth()->user()->isManajer())
                         <th class="px-6 py-4 text-center">Aksi</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -48,6 +51,7 @@
                         <td class="px-6 py-4">
                             <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">Normal</span>
                         </td>
+                        @if(!auth()->user()->isManajer())
                         <td class="px-6 py-4 text-center">
                             <div class="flex justify-center gap-2">
                                 <button onclick="openEditModal('AC Server Lt.1', 'AC-2023-001')" class="w-8 h-8 rounded flex items-center justify-center bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition">
@@ -58,6 +62,7 @@
                                 </button>
                             </div>
                         </td>
+                        @endif
                     </tr>
                 </tbody>
             </table>

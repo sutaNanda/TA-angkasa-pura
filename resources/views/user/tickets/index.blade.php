@@ -72,17 +72,24 @@
                     {{-- KIRI: Info Aset (Cols 1-4) --}}
                     <div class="md:col-span-4 flex items-center gap-3">
                         <div class="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                            @if($ticket->asset->image)
+                            @if($ticket->asset && $ticket->asset->image)
                                 <img src="{{ asset('storage/'.$ticket->asset->image) }}" class="w-full h-full object-cover">
                             @else
-                                <i class="fa-solid fa-cube text-gray-400 text-lg"></i>
+                                <i class="fa-solid {{ $ticket->asset ? 'fa-cube' : 'fa-location-dot' }} text-gray-400 text-lg"></i>
                             @endif
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-gray-900 text-sm line-clamp-1" title="{{ $ticket->asset->name }}">{{ $ticket->asset->name }}</p>
-                            <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                <i class="fa-solid fa-location-dot text-blue-500 mr-1"></i> {{ $ticket->asset->location->name ?? '-' }}
-                            </p>
+                            @if($ticket->asset)
+                                <p class="font-bold text-gray-900 text-sm line-clamp-1" title="{{ $ticket->asset->name }}">{{ $ticket->asset->name }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                    <i class="fa-solid fa-location-dot text-blue-500 mr-1"></i> {{ $ticket->asset->location->name ?? '-' }}
+                                </p>
+                            @else
+                                <p class="font-bold text-gray-900 text-sm line-clamp-1">{{ $ticket->location->name ?? 'Lokasi tidak diketahui' }}</p>
+                                <p class="text-xs text-orange-500 mt-0.5 line-clamp-1">
+                                    <i class="fa-solid fa-cube mr-1"></i> Aset belum diidentifikasi
+                                </p>
+                            @endif
                         </div>
                     </div>
 
@@ -129,20 +136,20 @@
                             @php
                                 // Data tracking untuk Alpine Modal
                                 $completedHistory = $ticket->histories()->where('action', 'completed')->latest()->first();
-                                $photoBefore = $ticket->initial_photo ? asset('storage/' . $ticket->initial_photo) : null;
-                                $photoAfter = $ticket->photo_after ? asset('storage/' . $ticket->photo_after) : ($ticket->last_progress_photo ? asset('storage/'. $ticket->last_progress_photo) : null);
+                                $photoBeforeUrls = $ticket->photos_before_urls;
+                                $photoAfterUrls = $ticket->photos_after_urls;
                                 
                                 $ticketData = [
                                     'ticket_number' => $ticket->ticket_number,
-                                    'asset_name' => $ticket->asset->name,
-                                    'location_name' => $ticket->asset->location->name ?? '-',
+                                    'asset_name' => $ticket->asset ? $ticket->asset->name : ($ticket->location ? $ticket->location->name : 'Tidak diketahui'),
+                                    'location_name' => $ticket->asset ? ($ticket->asset->location->name ?? '-') : ($ticket->location ? $ticket->location->name : '-'),
                                     'status' => $ticket->status,
                                     'priority' => $ticket->priority,
                                     'issue_description' => $ticket->issue_description,
                                     'created_at' => $ticket->created_at->format('d M Y, H:i'),
                                     'completed_date' => $ticket->status == 'completed' ? $ticket->updated_at->format('d M Y, H:i') : null,
-                                    'photo_before' => $photoBefore,
-                                    'photo_after' => $photoAfter,
+                                    'photos_after_urls' => $photoAfterUrls,
+                                    'technician_name' => $ticket->technician ? $ticket->technician->name : 'Teknisi',
                                     'completed_note' => $completedHistory ? $completedHistory->description : 'Perbaikan telah diselesaikan oleh teknisi.',
                                 ];
                             @endphp
@@ -215,10 +222,16 @@
                     </div>
 
                     {{-- Foto Sebelum --}}
-                    <template x-if="selectedTicket?.photo_before">
-                        <div class="mt-3 rounded-lg overflow-hidden border border-gray-100">
-                            <img :src="selectedTicket?.photo_before" class="w-full h-32 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(selectedTicket?.photo_before, '_blank')">
-                            <div class="bg-gray-100 text-[10px] text-center py-1 font-bold text-gray-500">Lampiran Foto Anda</div>
+                    <template x-if="selectedTicket?.photos_before_urls?.length > 0">
+                        <div class="mt-3">
+                            <p class="text-[10px] font-bold text-gray-500 mb-2">Lampiran Foto Anda</p>
+                            <div class="flex flex-wrap gap-2">
+                                <template x-for="(url, index) in selectedTicket?.photos_before_urls" :key="index">
+                                    <div class="rounded-lg overflow-hidden border border-gray-100">
+                                        <img :src="url" class="h-20 w-20 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(url, '_blank')">
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -228,7 +241,9 @@
                     <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm relative overflow-hidden">
                         <div class="absolute -right-2 -top-2 text-green-600/10"><i class="fa-solid fa-check-circle text-6xl"></i></div>
                         
-                        <p class="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i class="fa-solid fa-wrench text-green-500"></i> Hasil Perbaikan Teknisi</p>
+                        <p class="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i class="fa-solid fa-wrench text-green-500"></i> Hasil Perbaikan <span x-text="selectedTicket?.technician_name"></span>
+                        </p>
                         <p class="text-sm text-green-900 font-medium leading-relaxed drop-shadow-sm relative z-10 mb-3" x-html="selectedTicket?.completed_note"></p>
                         
                         <div class="flex items-center gap-2 mb-3 z-10 relative">
@@ -236,13 +251,19 @@
                         </div>
 
                         {{-- Foto Setelah Perbaikan --}}
-                        <template x-if="selectedTicket?.photo_after">
-                            <div class="mt-2 rounded-lg overflow-hidden border border-green-200 shadow-sm relative z-10">
-                                <img :src="selectedTicket?.photo_after" class="w-full h-40 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(selectedTicket?.photo_after, '_blank')">
-                                <div class="bg-green-100 text-[10px] text-center py-1 font-bold text-green-700">Foto Bukti Perbaikan dari Teknisi</div>
+                        <template x-if="selectedTicket?.photos_after_urls?.length > 0">
+                            <div class="mt-3 relative z-10">
+                                <div class="bg-green-100 text-[10px] text-center py-1 font-bold text-green-700 mb-2 rounded">Foto Bukti Perbaikan dari Teknisi</div>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="(url, index) in selectedTicket?.photos_after_urls" :key="index">
+                                        <div class="rounded-lg overflow-hidden border border-green-200 shadow-sm">
+                                            <img :src="url" class="h-24 w-24 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(url, '_blank')">
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </template>
-                        <template x-if="!selectedTicket?.photo_after">
+                        <template x-if="!selectedTicket?.photos_after_urls || selectedTicket?.photos_after_urls?.length === 0">
                             <div class="mt-2 w-full h-24 bg-green-100/50 rounded-lg flex flex-col items-center justify-center text-green-600/50 border border-green-200 border-dashed relative z-10">
                                 <i class="fa-solid fa-image-slash text-xl mb-1"></i>
                                 <span class="text-[10px] font-bold">Teknisi tidak melampirkan foto</span>

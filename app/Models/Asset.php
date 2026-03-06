@@ -20,13 +20,32 @@ class Asset extends Model
         'status',
         'purchase_date',
         'image',
+        'images',
         'specifications',
     ];
 
     protected $casts = [
         'specifications' => 'array',
         'purchase_date' => 'date',
+        'images' => 'array', // Menyimpan multiple image paths
     ];
+    
+    // Virtual Attribute untuk kompatibilitas frontend lama
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute()
+    {
+        if (!empty($this->images) && is_array($this->images)) {
+            $firstImage = $this->images[0];
+            return str_starts_with($firstImage, 'http') ? $firstImage : asset('storage/' . $firstImage);
+        }
+        
+        if (!empty($this->image)) {
+            return str_starts_with($this->image, 'http') ? $this->image : asset('storage/' . $this->image);
+        }
+
+        return null;
+    }
 
     // Otomatis generate UUID saat create
     protected static function boot()

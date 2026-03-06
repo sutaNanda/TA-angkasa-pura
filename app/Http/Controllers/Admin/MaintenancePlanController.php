@@ -16,9 +16,8 @@ class MaintenancePlanController extends Controller
      */
     public function index()
     {
-        $plans = MaintenancePlan::with(['category', 'checklistTemplate'])
-            ->orderBy('is_active', 'desc')
-            ->orderBy('category_id')
+        $plans = MaintenancePlan::orderBy('is_active', 'desc')
+            ->orderBy('name')
             ->paginate(20);
         
         $stats = [
@@ -51,8 +50,9 @@ class MaintenancePlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'checklist_template_id' => 'required|exists:checklist_templates,id',
+            'configs' => 'required|array|min:1',
+            'configs.*.category_id' => 'required|exists:categories,id',
+            'configs.*.template_id' => 'required|exists:checklist_templates,id',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
             'start_date' => 'required|date',
             'is_active' => 'boolean',
@@ -62,6 +62,7 @@ class MaintenancePlanController extends Controller
         ]);
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['template_configs'] = $request->input('configs');
 
         $plan = MaintenancePlan::create($validated);
 
@@ -78,11 +79,18 @@ class MaintenancePlanController extends Controller
      */
     public function edit($id)
     {
-        $plan = MaintenancePlan::with(['category', 'checklistTemplate', 'assets'])->findOrFail($id);
+        $plan = MaintenancePlan::with(['assets.category', 'assets.location'])->findOrFail($id);
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
+
+        // Fetch all current assets in category for selection list
+        $categoryIds = collect($plan->template_configs)->pluck('category_id')->unique()->toArray();
+        $allCategoryAssets = \App\Models\Asset::whereIn('category_id', $categoryIds)
+            ->with(['location', 'category'])
+            ->orderBy('name')
+            ->get();
         
-        return view('admin.plans.edit', compact('plan', 'categories', 'templates'));
+        return view('admin.plans.edit', compact('plan', 'categories', 'templates', 'allCategoryAssets'));
     }
 
     /**
@@ -94,8 +102,9 @@ class MaintenancePlanController extends Controller
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'checklist_template_id' => 'required|exists:checklist_templates,id',
+            'configs' => 'required|array|min:1',
+            'configs.*.category_id' => 'required|exists:categories,id',
+            'configs.*.template_id' => 'required|exists:checklist_templates,id',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
             'start_date' => 'required|date',
             'is_active' => 'boolean',
@@ -105,6 +114,7 @@ class MaintenancePlanController extends Controller
         ]);
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['template_configs'] = $request->input('configs');
 
         $plan->update($validated);
 
@@ -121,10 +131,17 @@ class MaintenancePlanController extends Controller
     /**
      * Delete plan
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $plan = MaintenancePlan::findOrFail($id);
         $plan->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Aturan maintenance berhasil dihapus!'
+            ]);
+        }
 
         return redirect()->route('admin.plans.index')
             ->with('success', 'Aturan maintenance berhasil dihapus!');

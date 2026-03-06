@@ -113,20 +113,21 @@
                 {{-- Tab Content: Patroli --}}
                 <div x-show="tab === 'patrol'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translateY(10px)" x-transition:enter-end="opacity-100 translateY(0)">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @forelse($patrols as $locationId => $assets)
+                        @forelse($patrols as $locationId => $items)
                             @php
-                                $location = $assets->first()->asset->location;
-                                $locationName = $location->name ?? 'Lokasi Tidak Diketahui';
-                                $pendingCount = $assets->count();
-                                $previewAssets = $assets->take(4);
+                                $firstItem = $items->first();
+                                $location = $firstItem->location ?? ($firstItem->asset->location ?? null);
+                                $locationName = $locationId == 0 ? 'Virtual / Software' : ($location->name ?? 'Lokasi Tidak Diketahui');
+                                $pendingCount = $items->count();
+                                $previewItems = $items->take(4);
                             @endphp
 
                             <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors duration-300">
                                 {{-- Header Card --}}
                                 <div class="flex justify-between items-start mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center flex-shrink-0 font-bold border border-gray-100 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                            <i class="fa-solid fa-location-dot"></i>
+                                        <div class="w-10 h-10 rounded-xl {{ $locationId == 0 ? 'bg-blue-50 text-blue-500 border-blue-100 group-hover:bg-blue-100' : 'bg-gray-50 text-gray-400 border-gray-100 group-hover:bg-blue-50 group-hover:text-blue-500' }} flex items-center justify-center flex-shrink-0 font-bold border transition-colors">
+                                            <i class="fa-solid {{ $locationId == 0 ? 'fa-cloud' : 'fa-location-dot' }}"></i>
                                         </div>
                                         <div>
                                             <h4 class="text-sm font-black text-gray-900 leading-tight">{{ $locationName }}</h4>
@@ -137,9 +138,12 @@
 
                                 {{-- Asset Preview (Avatars) --}}
                                 <div class="flex items-center pl-1 mb-4">
-                                    @foreach($previewAssets as $item)
-                                        <div class="w-8 h-8 rounded-full bg-blue-50 border-2 border-white flex items-center justify-center text-[10px] text-blue-500 font-black -ml-2 first:ml-0 shadow-sm" title="{{ $item->asset->name }}">
-                                            {{ substr($item->asset->name, 0, 1) }}
+                                    @foreach($previewItems as $item)
+                                        @php
+                                            $displayName = $item->asset->name ?? $item->maintenancePlan->name ?? 'Aset';
+                                        @endphp
+                                        <div class="w-8 h-8 rounded-full bg-blue-50 border-2 border-white flex items-center justify-center text-[10px] text-blue-500 font-black -ml-2 first:ml-0 shadow-sm" title="{{ $displayName }}">
+                                            {{ substr($displayName, 0, 1) }}
                                         </div>
                                     @endforeach
                                     @if($pendingCount > 4)
@@ -149,11 +153,18 @@
                                     @endif
                                 </div>
 
-                                {{-- Locked Indicator --}}
-                                <div class="mt-2 bg-gray-50 rounded-xl py-3 px-4 flex items-center justify-center gap-2 border border-gray-100 border-dashed">
-                                    <i class="fa-solid fa-qrcode text-gray-300 text-xs"></i>
-                                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Scan QR Lokasi</span>
-                                </div>
+                                {{-- Locked Indicator / Virtual Bypass Button --}}
+                                @if($locationId == 0)
+                                    <a href="{{ route('technician.scan.show', 0) }}" class="mt-2 bg-blue-50 hover:bg-blue-100 rounded-xl py-3 px-4 flex items-center justify-center gap-2 border border-blue-200 shadow-sm transition-colors active:scale-95 cursor-pointer group-hover:border-blue-300">
+                                        <i class="fa-solid fa-cloud-arrow-up text-blue-600 text-sm"></i>
+                                        <span class="text-[9px] font-black text-blue-700 uppercase tracking-widest leading-none">Mulai Patroli Virtual</span>
+                                    </a>
+                                @else
+                                    <div class="mt-2 bg-gray-50 rounded-xl py-3 px-4 flex items-center justify-center gap-2 border border-gray-100 border-dashed">
+                                        <i class="fa-solid fa-qrcode text-gray-300 text-xs"></i>
+                                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Scan QR Lokasi</span>
+                                    </div>
+                                @endif
                             </div>
                         @empty
                             <div class="col-span-full text-center py-16 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -188,7 +199,7 @@
                                         
                                         <div class="flex items-center gap-3 text-[10px] text-gray-500 font-semibold border-t border-amber-100/50 pt-3">
                                             <span class="flex items-center gap-1.5 truncate">
-                                                <i class="fa-solid fa-cube text-amber-400"></i> {{ $task->asset->name }}
+                                                <i class="fa-solid fa-cube text-amber-400"></i> {{ $task->asset ? $task->asset->name : 'Aset belum diidentifikasi' }}
                                             </span>
                                         </div>
                                         <div class="absolute right-4 bottom-4 text-amber-300 group-hover:translate-x-1 group-hover:text-amber-500 transition-all">
@@ -224,7 +235,7 @@
                                     
                                     <div class="flex items-center gap-3 text-[10px] text-gray-500 font-semibold border-t border-gray-50 pt-3">
                                         <span class="flex items-center gap-1.5 truncate">
-                                            <i class="fa-solid fa-cube text-gray-300 group-hover:text-blue-400 transition-colors"></i> {{ $task->asset->name }}
+                                            <i class="fa-solid fa-cube text-gray-300 group-hover:text-blue-400 transition-colors"></i> {{ $task->asset ? $task->asset->name : 'Aset belum diidentifikasi' }}
                                         </span>
                                     </div>
                                     

@@ -11,8 +11,7 @@ class MaintenancePlan extends Model
 {
     protected $fillable = [
         'name',
-        'category_id',
-        'checklist_template_id',
+        'template_configs',
         'frequency',
         'start_date',
         'is_active',
@@ -22,24 +21,35 @@ class MaintenancePlan extends Model
     protected $casts = [
         'start_date' => 'date',
         'is_active' => 'boolean',
+        'template_configs' => 'array',
     ];
 
     /**
      * Relationships
      */
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(Category::class);
-    }
-
-    public function checklistTemplate(): BelongsTo
-    {
-        return $this->belongsTo(ChecklistTemplate::class);
-    }
-
     public function maintenances(): HasMany
     {
         return $this->hasMany(Maintenance::class);
+    }
+
+    /**
+     * Get unique categories from template_configs
+     */
+    public function getCategoriesAttribute()
+    {
+        if (empty($this->template_configs)) return collect();
+        $ids = collect($this->template_configs)->pluck('category_id')->unique();
+        return Category::whereIn('id', $ids)->get();
+    }
+
+    /**
+     * Get unique templates from template_configs
+     */
+    public function getTemplatesAttribute()
+    {
+        if (empty($this->template_configs)) return collect();
+        $ids = collect($this->template_configs)->pluck('template_id')->unique();
+        return ChecklistTemplate::whereIn('id', $ids)->get();
     }
 
     public function assets(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
@@ -103,6 +113,15 @@ class MaintenancePlan extends Model
      */
     public function getAffectedAssetsCountAttribute(): int
     {
-        return Asset::where('category_id', $this->category_id)->count();
+        // 1. Prioritaskan jika user memilih aset secara spesifik
+        if ($this->assets()->exists()) {
+            return $this->assets()->count();
+        }
+
+        // 2. Fallback: Hitung semua aset dalam kategori yang dipilih
+        if (empty($this->template_configs)) return 0;
+        
+        $categoryIds = collect($this->template_configs)->pluck('category_id')->unique()->toArray();
+        return Asset::whereIn('category_id', $categoryIds)->count();
     }
 }

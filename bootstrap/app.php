@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'force.reset' => \App\Http\Middleware\ForcePasswordReset::class,
+            'read_only_manager' => \App\Http\Middleware\ReadOnlyManager::class,
         ]);
         
         $middleware->web(append: [
@@ -23,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->redirectUsersTo(function () {
             $user = Auth::user();
-            if ($user->role === 'admin') {
+            if ($user->role === 'admin' || $user->role === 'manajer') {
                 return route('admin.dashboard');
             } elseif ($user->role === 'teknisi') {
                 return route('technician.dashboard');

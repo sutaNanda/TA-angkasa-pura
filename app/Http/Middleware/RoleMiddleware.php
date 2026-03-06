@@ -17,7 +17,7 @@ class RoleMiddleware
      * @param  string  $role
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!Auth::check()) {
             return redirect()->route('login');
@@ -26,9 +26,9 @@ class RoleMiddleware
         $user = Auth::user();
 
         // Check if user has the required role
-        if ($user->role !== $role) {
+        if (!in_array($user->role, $roles)) {
             // Redirect based on role if they try to access unauthorized area
-            if ($user->role === 'admin') {
+            if ($user->role === 'admin' || $user->role === 'manajer') {
                 return redirect()->route('admin.dashboard')->with('error', 'Anda tidak memiliki hak akses ke halaman tersebut.');
             } elseif ($user->role === 'teknisi') {
                 return redirect()->route('technician.dashboard')->with('error', 'Anda tidak memiliki hak akses ke halaman tersebut.');

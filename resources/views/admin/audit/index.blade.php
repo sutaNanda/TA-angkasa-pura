@@ -88,8 +88,12 @@
                     class="flex-1 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1">
                     <i class="fa-solid fa-magnifying-glass"></i> Filter
                 </button>
+                <a href="{{ route('admin.audit.export', request()->all()) }}" target="_blank"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1" title="Export PDF">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
                 <a href="{{ route('admin.audit.index') }}"
-                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition" title="Reset Filter">
                     <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>

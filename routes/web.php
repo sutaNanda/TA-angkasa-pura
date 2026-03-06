@@ -72,9 +72,10 @@ Route::get('/', function () {
 });
 
 // ====================================================
-// GROUP ROUTE ADMIN (KOORDINATOR)
+// GROUP ROUTE ADMIN (KOORDINATOR & MANAJER)
 // ====================================================
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
+// Kita buat custom pengecekan role manual untuk dua role agar lebih simple tanpa mengubah `RoleMiddleware` secara besar-besaran
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer', 'read_only_manager'])->group(function () {
 
     // 1. Dashboard
     // Route::get('/dashboard', function () {
@@ -85,19 +86,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 // 2. MASTER DATA: ASET
     Route::prefix('assets')->name('assets.')->group(function () {
         Route::get('/', [AssetController::class, 'index'])->name('index');
+        
+        // Specific API Helper Routes (Must be above /{id} to avoid collision)
+        Route::get('/by-location/{id}', [AssetController::class, 'getByLocation'])->name('by-location');
+        Route::get('/by-category/{id}', [AssetController::class, 'getByCategory'])->name('by-category');
+        Route::get('/by-categories', [AssetController::class, 'getByCategories'])->name('by-categories');
+
         Route::post('/', [AssetController::class, 'store'])->name('store');
         Route::get('/{id}', [AssetController::class, 'show'])->name('show');
         Route::put('/{id}', [AssetController::class, 'update'])->name('update');
         Route::delete('/{id}', [AssetController::class, 'destroy'])->name('destroy');
-
-        // API Helper Aset
-        Route::get('/by-location/{id}', [AssetController::class, 'getByLocation'])->name('by-location');
-        Route::get('/by-category/{id}', [AssetController::class, 'getByCategory'])->name('by-category');
     });
 
     // 3. MASTER DATA: LOKASI (API TREE)
     // PENTING: Ini dikeluarkan dari prefix 'assets' agar URL-nya benar: /admin/api/locations/...
     Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
+    Route::get('/export/locations-assets', [App\Http\Controllers\Admin\ExportController::class, 'exportAssetLocation'])->name('locations.export');
     Route::prefix('api/locations')->name('locations.')->group(function() {
         Route::get('/tree', [LocationController::class, 'getTree'])->name('tree');
         Route::post('/', [LocationController::class, 'store'])->name('store');
@@ -131,6 +135,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     // ... di dalam group admin ...
     Route::get('/maintenances', [MaintenanceController::class, 'index'])->name('maintenances.index');
     Route::get('/maintenances/{id}', [MaintenanceController::class, 'show'])->name('maintenances.show');
+    Route::get('/export/maintenances/{id}', [App\Http\Controllers\Admin\ExportController::class, 'exportMaintenance'])->name('maintenances.export');
+    
+    // Export All Maintenances Logbook
+    Route::get('/export/all-maintenances', [App\Http\Controllers\Admin\ExportController::class, 'exportMaintenances'])->name('export.maintenances');
 
     // Maintenance Plans (PM System - Rule-Based)
     Route::prefix('plans')->name('plans.')->group(function() {
@@ -161,6 +169,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     // MANAJEMEN TIKET (WORK ORDER)
     // ===========================
     Route::get('/work-orders', [App\Http\Controllers\Admin\WorkOrderController::class, 'index'])->name('work-orders.index');
+    Route::get('/export/work-orders', [App\Http\Controllers\Admin\ExportController::class, 'exportWorkOrders'])->name('work-orders.export');
     Route::post('/work-orders', [App\Http\Controllers\Admin\WorkOrderController::class, 'store'])->name('work-orders.store');
 
     // API Detail untuk Modal
@@ -170,6 +179,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::put('/work-orders/{id}/assign', [App\Http\Controllers\Admin\WorkOrderController::class, 'assign'])->name('work-orders.assign');
     Route::post('/work-orders/verify-all', [App\Http\Controllers\Admin\WorkOrderController::class, 'verifyAll'])->name('work-orders.verify-all');
     Route::post('/work-orders/{id}/verify', [App\Http\Controllers\Admin\WorkOrderController::class, 'verify'])->name('work-orders.verify');
+    Route::post('/work-orders/{id}/reopen', [App\Http\Controllers\Admin\WorkOrderController::class, 'reopen'])->name('work-orders.reopen');
 
     // Route::get('/work-orders', function () {
     //     return view('admin.work_orders.index');
@@ -187,6 +197,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     // })->name('users.index');
 
     Route::get('/audit-logs', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
+    Route::get('/export/audit-logs', [App\Http\Controllers\Admin\ExportController::class, 'exportAuditLogs'])->name('audit.export');
 });
 
 
@@ -235,10 +246,28 @@ Route::prefix('technician')->name('technician.')->middleware(['auth', 'role:tekn
     Route::post('/scan/process', [App\Http\Controllers\Technician\ScanController::class, 'process'])->name('scan.process'); // Cek QR Database
     Route::get('/scan/location/{id}', [App\Http\Controllers\Technician\ScanController::class, 'show'])->name('scan.show'); // Tampil Aset
 
+    // Data Referensi (Read-Only)
+    Route::get('/locations/tree', [App\Http\Controllers\Technician\LocationController::class, 'getTree'])->name('locations.tree');
+    Route::get('/assets/by-location/{id}', [App\Http\Controllers\Technician\AssetController::class, 'getByLocation'])->name('assets.by-location');
+    
+    Route::get('/assets', [App\Http\Controllers\Technician\AssetController::class, 'index'])->name('assets.index');
+    Route::get('/assets/{id}', [App\Http\Controllers\Technician\AssetController::class, 'show'])->name('assets.show');
+    Route::get('/locations', [App\Http\Controllers\Technician\LocationController::class, 'index'])->name('locations.index');
+    Route::get('/locations/{id}', [App\Http\Controllers\Technician\LocationController::class, 'show'])->name('locations.show');
+    Route::post('/locations/scan', [App\Http\Controllers\Technician\LocationController::class, 'scan'])->name('locations.scan');
+
 
     // Inspection/Checklist Routes
     Route::get('/inspection/{assetId}', [App\Http\Controllers\Technician\InspectionController::class, 'show'])->name('inspection.show');
     Route::post('/inspection', [App\Http\Controllers\Technician\InspectionController::class, 'store'])->name('inspection.store');
+
+    // Unified Location Inspection
+    Route::get('/location-inspection/{locationId}', [App\Http\Controllers\Technician\LocationInspectionController::class, 'inspect'])->name('locations.inspect');
+    Route::post('/location-inspection/{locationId}', [App\Http\Controllers\Technician\LocationInspectionController::class, 'store'])->name('locations.inspect.store');
+
+    // Unified Maintenance Inspection (Grouped by Location)
+    Route::get('/maintenance-inspection/{maintenance}', [App\Http\Controllers\Technician\LocationInspectionController::class, 'inspectMaintenance'])->name('locations.maintenance.inspect');
+    Route::post('/maintenance-inspection/{maintenance}', [App\Http\Controllers\Technician\LocationInspectionController::class, 'storeMaintenance'])->name('locations.maintenance.inspect.store');
 
     // Preventive Maintenance Routes
     Route::get('/maintenance/{maintenanceId}/start', [App\Http\Controllers\Technician\MaintenanceController::class, 'start'])->name('maintenance.start');
@@ -251,6 +280,7 @@ Route::prefix('technician')->name('technician.')->middleware(['auth', 'role:tekn
     // Work Order (LK) Creation Routes
     Route::get('/lk/create', [App\Http\Controllers\Technician\LkController::class, 'create'])->name('lk.create');
     Route::post('/lk', [App\Http\Controllers\Technician\LkController::class, 'store'])->name('lk.store');
+
 });
 
 // ====================================================

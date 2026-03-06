@@ -11,8 +11,10 @@ class Maintenance extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'maintenance_plan_id', // NEW: For category-based scheduling
+        'maintenance_plan_id',
         'maintenance_schedule_id',
+        'location_id',
+        'target_asset_ids',
         'scheduled_date',
         'type',
         'checklist_id',
@@ -22,18 +24,24 @@ class Maintenance extends Model
         'status',
         'notes',
         'result_data',
-        'checklist_template_id', // For direct template usage
+        'checklist_template_id',
     ];
 
     protected $casts = [
         'schedule_date' => 'date',
         'scheduled_date' => 'date',
         'result_data' => 'array',
+        'target_asset_ids' => 'array',
     ];
 
     /**
      * Relationships
      */
+    public function location()
+    {
+        return $this->belongsTo(Location::class);
+    }
+
     public function asset()
     {
         return $this->belongsTo(Asset::class);

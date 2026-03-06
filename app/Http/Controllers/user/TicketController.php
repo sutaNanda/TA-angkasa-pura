@@ -20,7 +20,7 @@ class TicketController extends Controller
     {
         // Ambil tiket yang dilaporkan oleh user yang sedang login
         $tickets = WorkOrder::where('reported_by', Auth::id())
-                            ->with(['asset', 'asset.location'])
+                            ->with(['asset', 'asset.location', 'location', 'technician'])
                             ->latest()
                             ->paginate(10);
 
@@ -75,9 +75,12 @@ class TicketController extends Controller
                                ->orWhere('id', $location->id)
                                ->pluck('id');
 
-        // 2. Ambil aset di lokasi-lokasi tersebut
+        // 2. Ambil aset di lokasi-lokasi tersebut DITAMBAH aset Software (Virtual)
         $assets = Asset::whereIn('location_id', $locationIds)
-                       ->select('id', 'name', 'serial_number', 'status')
+                       ->orWhereNull('location_id')
+                       ->with('category') // Eager load category
+                       ->select('id', 'name', 'serial_number', 'status', 'category_id') // Pastikan field yang butuh di-select tersedia
+                       ->orderByRaw('location_id IS NULL DESC') // Prioritaskan software di bawah atau atas (opsional)
                        ->orderBy('name')
                        ->get();
 
@@ -93,34 +96,37 @@ class TicketController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'asset_id' => 'required|exists:assets,id',
+            'location_id' => 'required|exists:locations,id',
+            'asset_id' => 'nullable|exists:assets,id',
             'issue_description' => 'required|string|min:10',
             'priority' => 'required|in:low,medium,high',
-            'photo' => 'nullable|image|max:2048', // Max 2MB
+            'photos' => 'nullable|array|max:5',
+            'photos.*' => 'image|max:2048',
         ]);
 
         try {
-            // 1. Handle File Upload
-            $photoPath = null;
-            if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('tickets', 'public');
+            // 1. Handle Multi-File Upload
+            $photoPaths = [];
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photo) {
+                    $photoPaths[] = $photo->store('tickets', 'public');
+                }
             }
 
-            // 2. Create Ticket
-            // Note: ticket_number handled by Boot method in Model if empty
-            // But we can also set it here if we want specific logic, 
-            // relying on Model boot is safer for consistency.
+            // 2. Determine location_id and asset_id
+            $locationId = $request->location_id;
+            $assetId = $request->asset_id ?: null;
 
             $ticket = WorkOrder::create([
-                // 'ticket_number' => auto-generated,
-                'asset_id' => $request->asset_id,
+                'asset_id' => $assetId,
+                'location_id' => $locationId,
                 'reported_by' => Auth::id(),
                 'issue_description' => $request->issue_description,
                 'priority' => $request->priority,
-                'status' => 'open',           // Default status
-                'source' => 'manual_ticket',  // Penanda manual
-                'initial_photo' => $photoPath, // Tetap simpan di legacy
-                'photo_before' => $photoPath,  // Simpan di kolom utama
+                'status' => 'open',
+                'source' => 'manual_ticket',
+                'initial_photo' => $photoPaths[0] ?? null,
+                'photos_before' => !empty($photoPaths) ? $photoPaths : null,
             ]);
 
             return redirect()->route('user.tickets.index')

@@ -131,7 +131,7 @@
                                 'time' => $item->created_at->format('H:i'),
                                 'status' => $item->status,
                                 'notes' => $item->notes ?? '-', // Handle notes if available
-                                'checklist' => $item->checklistTemplate->items->map(function($q) use ($answers) {
+                                'checklist' => ($item->checklistTemplate && $item->checklistTemplate->items) ? $item->checklistTemplate->items->map(function($q) use ($answers) {
                                     $ans = $answers[$q->id] ?? '-';
                                     
                                     // Determine display text for Pass/Fail
@@ -154,7 +154,7 @@
                                         'answer' => $displayText,
                                         'is_issue' => $isIssueItem
                                     ];
-                                })->values()->toArray() // Reset keys for JSON
+                                })->values()->toArray() : [], // Reset keys and fallback to empty
                             ];
                         @endphp
                         @php
@@ -240,17 +240,19 @@
                             $completedHistory = $item->histories->where('action', 'completed')->last();
                             $woData = [
                                 'ticket_number' => $item->ticket_number,
-                                'asset_name' => $item->asset->name,
-                                'location_name' => $item->asset->location->name,
+                                'asset_name' => $item->asset ? $item->asset->name : ($item->location ? $item->location->name : 'Tidak diketahui'),
+                                'location_name' => $item->asset ? ($item->asset->location->name ?? '-') : ($item->location ? $item->location->name : '-'),
                                 'status' => $item->status,
                                 'issue_description' => $item->issue_description,
                                 'completed_date' => $item->updated_at->format('d M Y, H:i'),
                                 // Data Completed
                                 'photo' => $item->last_progress_photo ? asset('storage/' . $item->last_progress_photo) : null,
                                 'completed_note' => $completedHistory ? $completedHistory->description : 'Perbaikan telah diselesaikan oleh teknisi.',
+                                'completed_photos_urls' => ($completedHistory && is_array($completedHistory->photos)) ? array_map(fn($p) => asset('storage/' . $p), $completedHistory->photos) : [],
                                 // Data Handover
                                 'handover_note' => $handoverHistory ? $handoverHistory->description : 'Tidak ada catatan handover.',
                                 'handover_photo' => ($handoverHistory && $handoverHistory->photo) ? asset('storage/' . $handoverHistory->photo) : null,
+                                'handover_photos_urls' => ($handoverHistory && is_array($handoverHistory->photos)) ? array_map(fn($p) => asset('storage/' . $p), $handoverHistory->photos) : [],
                             ];
 
                             // Status Logic for UI
@@ -301,14 +303,25 @@
                                 <h4 class="font-bold text-gray-800 text-sm mb-2 leading-snug">{{ \Illuminate\Support\Str::limit($item->issue_description, 70) }}</h4>
                                 
                                 <div class="flex flex-col gap-1.5 text-xs text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-4 flex justify-center"><i class="fa-solid fa-cube text-blue-500"></i></div>
-                                        <span class="font-semibold text-gray-700">{{ $item->asset->name }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-4 flex justify-center"><i class="fa-solid fa-location-dot text-red-500"></i></div>
-                                        <span>{{ $item->asset->location->name }}</span>
-                                    </div>
+                                    @if($item->asset)
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-cube text-blue-500"></i></div>
+                                            <span class="font-semibold text-gray-700">{{ $item->asset->name }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-location-dot text-red-500"></i></div>
+                                            <span>{{ $item->asset->location->name ?? '-' }}</span>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-location-dot text-red-500"></i></div>
+                                            <span class="font-semibold text-gray-700">{{ $item->location->name ?? 'Lokasi tidak diketahui' }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-cube text-orange-500"></i></div>
+                                            <span class="text-orange-500 italic">Aset belum pasti</span>
+                                        </div>
+                                    @endif
                                     <div class="flex items-center gap-2 mt-1 pt-1.5 border-t border-gray-200">
                                         <div class="w-4 flex justify-center"><i class="fa-regular fa-clock text-gray-400"></i></div>
                                         <span>Update: <span class="text-gray-700 font-medium">{{ $item->updated_at->format('d M Y, H:i') }}</span></span>
@@ -447,6 +460,20 @@
                                 <span class="bg-white text-green-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">Updated: <span x-text="selectedWorkOrder?.completed_date"></span></span>
                             </div>
                             <p class="text-sm text-green-800 font-medium leading-relaxed drop-shadow-sm relative z-10" x-html="selectedWorkOrder?.completed_note"></p>
+                            
+                            {{-- Foto Bukti Perbaikan --}}
+                            <template x-if="selectedWorkOrder?.completed_photos_urls?.length > 0">
+                                <div class="mt-3 relative z-10">
+                                    <div class="bg-green-100 text-[10px] text-center py-1 font-bold text-green-700 mb-2 rounded">Foto Bukti Perbaikan dari Teknisi</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(url, index) in selectedWorkOrder?.completed_photos_urls" :key="index">
+                                            <div class="rounded-lg overflow-hidden border border-green-200 shadow-sm">
+                                                <img :src="url" class="h-24 w-24 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(url, '_blank')">
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </template>
@@ -462,10 +489,16 @@
                             <p class="text-sm text-yellow-800 font-medium leading-relaxed drop-shadow-sm relative z-10" x-html="selectedWorkOrder?.handover_note"></p>
                             
                             {{-- Foto Bukti Handover --}}
-                            <template x-if="selectedWorkOrder?.handover_photo">
-                                <div class="mt-3 rounded-lg overflow-hidden border border-yellow-200 shadow-sm relative z-10">
-                                    <img :src="selectedWorkOrder?.handover_photo" class="w-full h-40 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(selectedWorkOrder?.handover_photo, '_blank')">
-                                    <div class="bg-yellow-100 text-[10px] text-center py-1 font-bold text-yellow-700">Foto Lampiran Handover</div>
+                            <template x-if="selectedWorkOrder?.handover_photos_urls?.length > 0">
+                                <div class="mt-3 relative z-10">
+                                    <div class="bg-yellow-100 text-[10px] text-center py-1 font-bold text-yellow-700 mb-2 rounded">Foto Lampiran Handover</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(url, index) in selectedWorkOrder?.handover_photos_urls" :key="index">
+                                            <div class="rounded-lg overflow-hidden border border-yellow-200 shadow-sm">
+                                                <img :src="url" class="h-24 w-24 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(url, '_blank')">
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
                             </template>
                         </div>

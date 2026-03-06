@@ -59,9 +59,23 @@
                         </div>
                         
                         {{-- Lokasi & Aset --}}
-                        <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
-                            <i class="fa-solid fa-location-dot text-gray-300"></i>
-                            <span>{{ $task->asset->location->name }} &bull; {{ $task->asset->name }}</span>
+                        <div class="flex items-center gap-2 text-[11px] text-gray-500 mb-4">
+                            @if($task->asset)
+                                @if(!$task->asset->location_id)
+                                    <i class="fa-solid fa-cloud text-blue-500"></i>
+                                    <span>{{ $task->location->name ?? '-' }} &bull; <span class="font-bold text-blue-600">{{ $task->asset->name }}</span></span>
+                                @else
+                                    <i class="fa-solid fa-location-dot text-gray-400"></i>
+                                    <span>{{ $task->asset->location->name ?? '-' }} &bull; <span class="font-bold">{{ $task->asset->name }}</span></span>
+                                @endif
+                            @else
+                                <div class="bg-orange-50 px-2 py-1 rounded inline-flex items-center gap-1.5 border border-orange-100">
+                                    <i class="fa-solid fa-triangle-exclamation text-orange-500"></i>
+                                    <span class="text-orange-700 font-bold">{{ $task->location->name ?? 'Area Tidak Diketahui' }}</span>
+                                    <span class="text-orange-400">&bull;</span>
+                                    <span class="text-orange-600 italic">Identifikasi aset di lokasi</span>
+                                </div>
+                            @endif
                         </div>
 
                         {{-- Action Button --}}
@@ -114,14 +128,40 @@
                         </div>
 
                         <h3 class="font-bold text-gray-800 text-sm mb-1">{{ $task->issue_description }}</h3>
-                            @if($task->reporter && $task->source == 'manual_ticket')
-                                <br><span class="text-purple-600 font-medium mt-1 inline-block"><i class="fa-solid fa-user text-[10px]"></i> {{ $task->reporter->name }}</span>
+                        
+                        <div class="flex items-center gap-2 text-[11px] text-gray-500 mb-2 mt-2">
+                            @if($task->asset)
+                                @if(!$task->asset->location_id)
+                                    <i class="fa-solid fa-cloud text-blue-500"></i>
+                                    <span>{{ $task->location->name ?? '-' }} &bull; <span class="font-bold text-blue-600">{{ $task->asset->name }}</span></span>
+                                @else
+                                    <i class="fa-solid fa-location-dot text-gray-400"></i>
+                                    <span>{{ $task->asset->location->name ?? '-' }} &bull; <span class="font-bold">{{ $task->asset->name }}</span></span>
+                                @endif
+                            @else
+                                <div class="bg-orange-50 px-2 py-1 rounded mt-1 inline-flex items-center gap-1.5 border border-orange-100">
+                                    <i class="fa-solid fa-triangle-exclamation text-orange-500"></i>
+                                    <span class="text-orange-700 font-bold">{{ $task->location->name ?? 'Area Umum' }}</span>
+                                    <span class="text-orange-400">&bull;</span>
+                                    <span class="text-orange-600 italic">Identifikasi aset di lokasi</span>
+                                </div>
                             @endif
-                        </p>
+                        </div>
+
+                        <div>
+                            @if($task->reporter && $task->source == 'manual_ticket')
+                                <span class="text-purple-600 font-medium text-xs inline-block mb-3"><i class="fa-solid fa-user text-[10px]"></i> {{ $task->reporter->name }}</span>
+                            @endif
+                        </div>
 
                         @if($task->initial_photo)
-                            <div class="mb-3 rounded-lg overflow-hidden h-32 border border-gray-200 relative group-hover:opacity-90 transition">
+                            <div class="mb-3 rounded-xl overflow-hidden aspect-video border border-gray-100 bg-gray-50 relative group-hover:opacity-95 transition-opacity shadow-sm">
                                 <img src="{{ asset('storage/' . $task->initial_photo) }}" class="w-full h-full object-cover" alt="Bukti Foto">
+                                @if(is_array($task->photos_before) && count($task->photos_before) > 1)
+                                    <div class="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full font-bold shadow backdrop-blur-sm">
+                                        +{{ count($task->photos_before) - 1 }} Foto
+                                    </div>
+                                @endif
                             </div>
                         @endif
 

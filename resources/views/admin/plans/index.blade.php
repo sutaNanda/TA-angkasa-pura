@@ -10,6 +10,7 @@
             <h1 class="text-2xl font-bold text-gray-800">Rencana Perawatan Aset</h1>
             <p class="text-sm text-gray-500 mt-1">Kelola rencana perawatan otomatis berdasarkan kategori aset</p>
         </div>
+        @if(!auth()->user()->isManajer())
         <div class="flex gap-2">
             <button onclick="generateTasksNow()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
                 <i class="fa-solid fa-bolt"></i> Generate Tasks Sekarang
@@ -18,6 +19,7 @@
                 <i class="fa-solid fa-plus"></i> Tambah Aturan
             </a>
         </div>
+        @endif
     </div>
 
     {{-- Statistics Cards --}}
@@ -95,7 +97,9 @@
                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Jadwal</th>
                     <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Aset Terdampak</th>
                     <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Status</th>
+                    @if(!auth()->user()->isManajer())
                     <th class="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Aksi</th>
+                    @endif
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -109,12 +113,20 @@
                                 <i class="fa-solid fa-layer-group text-gray-400"></i>
                                 <div>
                                     <p class="font-bold text-sm text-gray-800">{{ $plan->name }}</p>
-                                    <p class="text-xs text-gray-500"><span class="font-semibold">Kategori:</span> {{ $plan->category->name }}</p>
+                                    <div class="flex flex-wrap gap-1 mt-1">
+                                        @foreach($plan->categories as $cat)
+                                            <span class="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold uppercase">{{ $cat->name }}</span>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-800 font-medium">
-                            {{ $plan->checklistTemplate->name }}
+                        <td class="px-4 py-3">
+                            <div class="flex flex-col gap-1">
+                                @foreach($plan->templates as $tpl)
+                                    <span class="text-xs text-gray-700 font-medium">• {{ $tpl->name }}</span>
+                                @endforeach
+                            </div>
                         </td>
                         <td class="px-4 py-3">
                             @php
@@ -136,11 +148,18 @@
                             <span class="text-lg font-bold text-gray-700">{{ $plan->affected_assets_count }}</span>
                         </td>
                         <td class="px-4 py-3 text-center">
+                            @if(!auth()->user()->isManajer())
                             <button onclick="toggleActive({{ $plan->id }}, {{ $plan->is_active ? 'true' : 'false' }})" 
                                     class="px-3 py-1 rounded-full text-xs font-bold transition {{ $plan->is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">
                                 {{ $plan->is_active ? 'AKTIF' : 'NONAKTIF' }}
                             </button>
+                            @else
+                            <button class="px-3 py-1 rounded-full text-xs font-bold cursor-default {{ $plan->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
+                                {{ $plan->is_active ? 'AKTIF' : 'NONAKTIF' }}
+                            </button>
+                            @endif
                         </td>
+                        @if(!auth()->user()->isManajer())
                         <td class="px-4 py-3 text-center">
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{{ route('admin.plans.edit', $plan->id) }}" 
@@ -153,6 +172,7 @@
                                 </button>
                             </div>
                         </td>
+                        @endif
                     </tr>
                 @empty
                     <tr>
@@ -244,23 +264,26 @@ function deletePlan(id) {
             fetch(`/admin/plans/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => {
-                if (res.ok) {
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
                     Swal.fire({
                         icon: 'success',
                         title: 'Terhapus!',
-                        text: 'Rencana perawatan berhasil dihapus.',
+                        text: data.message || 'Rencana perawatan berhasil dihapus.',
                         showConfirmButton: false,
                         timer: 1500
                     }).then(() => location.reload());
                 } else {
-                    throw new Error('Gagal menghapus');
+                    throw new Error(data.message || 'Gagal menghapus');
                 }
             })
-            .catch(err => Swal.fire('Error', 'Gagal menghapus data.', 'error'));
+            .catch(err => Swal.fire('Error', err.message || 'Gagal menghapus data.', 'error'));
         }
     });
 }

@@ -14,10 +14,12 @@
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400"></i>
         </form>
 
+        @if(!auth()->user()->isManajer())
         <button onclick="openModal('addUserModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-sm w-full md:w-auto justify-center">
             <i class="fa-solid fa-user-plus"></i>
             Tambah User Baru
         </button>
+        @endif
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -30,7 +32,9 @@
                         <th class="px-6 py-4">Role / Jabatan</th>
                         <th class="px-6 py-4">Status</th>
                         <th class="px-6 py-4">Terdaftar Sejak</th>
+                        @if(!auth()->user()->isManajer())
                         <th class="px-6 py-4 text-center">Aksi</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -80,6 +84,7 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-xs">{{ $user->created_at->format('d M Y') }}</td>
+                            @if(!auth()->user()->isManajer())
                             <td class="px-6 py-4 text-center">
                                 <div class="flex justify-center gap-2">
                                     {{-- Edit Button --}}
@@ -103,6 +108,7 @@
                                     @endif
                                 </div>
                             </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>

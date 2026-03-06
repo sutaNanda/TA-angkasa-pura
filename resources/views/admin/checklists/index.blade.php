@@ -10,9 +10,11 @@
             <input type="text" id="searchInput" placeholder="Cari SOP (misal: Genset)..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 w-full md:w-80 text-sm shadow-sm transition hover:border-blue-400" onkeyup="filterTable()">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400"></i>
         </div>
+        @if(!auth()->user()->isManajer())
         <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg hover:shadow-blue-500/30 transition transform active:scale-95 w-full md:w-auto justify-center">
             <i class="fa-solid fa-plus"></i> Buat SOP Baru
         </button>
+        @endif
     </div>
 
     {{-- Filter Section - Modern Design --}}
@@ -56,28 +58,7 @@
                     </div>
                 </div>
 
-                {{-- Filter Frekuensi --}}
-                <div class="relative">
-                    <label class="block text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                        <i class="fa-solid fa-clock text-blue-600"></i>
-                        Jadwal Pemeliharaan
-                    </label>
-                    <div class="relative">
-                        <select id="filterFrequency" onchange="filterTable()" class="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all hover:border-blue-300 appearance-none cursor-pointer">
-                            <option value="">Semua Jadwal</option>
-                            <option value="daily">Harian</option>
-                            <option value="weekly">Mingguan</option>
-                            <option value="monthly">Bulanan</option>
-                            <option value="yearly">Tahunan</option>
-                        </select>
-                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <i class="fa-solid fa-calendar-days text-sm"></i>
-                        </div>
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <i class="fa-solid fa-chevron-down text-xs"></i>
-                        </div>
-                    </div>
-                </div>
+
 
                 {{-- Action Buttons --}}
                 <div class="flex flex-col justify-end gap-2">
@@ -111,7 +92,6 @@
                     <tr>
                         <th class="px-6 py-4 w-12 text-center">No</th> {{-- Kolom Index --}}
                         <th class="px-6 py-4">Nama SOP</th>
-                        <th class="px-6 py-4">Jadwal</th>
                         <th class="px-6 py-4">Target Aset</th>
                         <th class="px-6 py-4 text-center">Isi Checklist</th>
                         <th class="px-6 py-4 text-center">Aksi</th>
@@ -119,25 +99,9 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     @forelse($templates as $template)
-                        @php
-                            $freqColor = match($template->frequency) {
-                                'daily' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                'weekly' => 'bg-orange-50 text-orange-700 border-orange-200',
-                                'monthly' => 'bg-purple-50 text-purple-700 border-purple-200',
-                                'yearly' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                default => 'bg-gray-50 text-gray-700'
-                            };
-                            $freqLabel = match($template->frequency) {
-                                'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan', default => 'Tidak diketahui'
-                            };
-                            $freqIcon = match($template->frequency) {
-                                'daily' => 'fa-sun', 'weekly' => 'fa-calendar-week', 'monthly' => 'fa-calendar', 'yearly' => 'fa-calendar-days', default => 'fa-circle-question'
-                            };
-                        @endphp
                         <tr class="hover:bg-gray-50 transition group template-row" 
                             data-name="{{ strtolower($template->name) }}" 
-                            data-category="{{ $template->category_id ?? 'umum' }}" 
-                            data-frequency="{{ $template->frequency }}">
+                            data-category="{{ $template->category_id ?? 'umum' }}">
                             {{-- LOGIKA NOMOR URUT (Support Pagination) --}}
                             <td class="px-6 py-4 text-center font-bold text-gray-400 text-xs">
                                 {{ ($templates->currentPage() - 1) * $templates->perPage() + $loop->iteration }}
@@ -146,11 +110,6 @@
                             <td class="px-6 py-4">
                                 <div class="font-bold text-gray-800 text-base">{{ $template->name }}</div>
                                 <div class="text-xs text-gray-500 mt-0.5">{{ Str::limit($template->description, 50) ?: 'Tidak ada deskripsi' }}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center gap-1.5 {{ $freqColor }} px-2.5 py-1 rounded-md text-xs font-bold border">
-                                    <i class="fa-regular {{ $freqIcon }}"></i> {{ $freqLabel }}
-                                </span>
                             </td>
                             <td class="px-6 py-4">
                                 @if($template->category)
@@ -189,7 +148,9 @@
                                 <div class="flex flex-col items-center justify-center text-gray-400">
                                     <i class="fa-regular fa-clipboard text-4xl mb-3"></i>
                                     <p class="text-sm">Belum ada template SOP.</p>
+                                    @if(!auth()->user()->isManajer())
                                     <button onclick="openModal()" class="mt-2 text-blue-600 hover:underline text-sm font-bold">Buat Sekarang</button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -237,40 +198,15 @@
                             </div>
 
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Target Kategori</label>
-                                <select id="category_id" name="category_id" class="w-full border-gray-300 rounded-lg text-sm bg-white border-2 border-gray-300 pl-2 py-2">
-                                    <option value="" class="text-gray-500">Umum / Semua Aset</option>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Target Kategori Aset <span class="text-red-500">*</span></label>
+                                <select id="category_id" name="category_id" class="w-full border-gray-300 rounded-lg text-sm bg-white border-2 border-gray-300 pl-2 py-2" required>
+                                    <option value="" disabled selected>-- Pilih Kategori Aset --</option>
                                     @foreach($categories as $cat)
                                         <option value="{{ $cat->id }}" class="text-gray-500">{{ $cat->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Frekuensi <span class="text-red-500">*</span></label>
-                                <div class="space-y-2">
-                                    <label class="flex items-center p-3 border border-gray-200 rounded-lg bg-white cursor-pointer hover:border-blue-300 transition group has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                                        <input type="radio" name="frequency" value="daily" class="sr-only" checked>
-                                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3"><i class="fa-regular fa-sun"></i></div>
-                                        <div><span class="block text-sm font-bold text-gray-800">Harian</span></div>
-                                    </label>
-                                    <label class="flex items-center p-3 border border-gray-200 rounded-lg bg-white cursor-pointer hover:border-orange-300 transition group has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
-                                        <input type="radio" name="frequency" value="weekly" class="sr-only">
-                                        <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-3"><i class="fa-solid fa-calendar-week"></i></div>
-                                        <div><span class="block text-sm font-bold text-gray-800">Mingguan</span></div>
-                                    </label>
-                                    <label class="flex items-center p-3 border border-gray-200 rounded-lg bg-white cursor-pointer hover:border-purple-300 transition group has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50">
-                                        <input type="radio" name="frequency" value="monthly" class="sr-only">
-                                        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3"><i class="fa-regular fa-calendar"></i></div>
-                                        <div><span class="block text-sm font-bold text-gray-800">Bulanan</span></div>
-                                    </label>
-                                    <label class="flex items-center p-3 border border-gray-200 rounded-lg bg-white cursor-pointer hover:border-emerald-300 transition group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
-                                        <input type="radio" name="frequency" value="yearly" class="sr-only">
-                                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-3"><i class="fa-solid fa-calendar-days"></i></div>
-                                        <div><span class="block text-sm font-bold text-gray-800">Tahunan</span></div>
-                                    </label>
-                                </div>
-                            </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
                                 <textarea id="description" name="description" rows="2" class="w-full border-gray-300 rounded-lg text-sm border-2 border-gray-300 pl-2 py-2 bg-white" placeholder="Deskripsi SOP"></textarea>
@@ -371,21 +307,7 @@
                     document.getElementById('detailDescSOP').innerText = data.description || 'Tidak ada deskripsi tambahan.';
                     document.getElementById('detailCatSOP').innerText = data.category ? data.category.name : 'Umum / Semua Aset';
 
-                    // Badge Frekuensi Logic
-                    const badge = document.getElementById('detailBadge');
-                    let badgeClass = '', badgeIcon = '', badgeText = '';
 
-                    if(data.frequency === 'daily') {
-                        badgeClass = 'bg-blue-100 text-blue-700 border-blue-200'; badgeIcon = 'fa-sun'; badgeText = 'Harian';
-                    } else if(data.frequency === 'weekly') {
-                        badgeClass = 'bg-orange-100 text-orange-700 border-orange-200'; badgeIcon = 'fa-calendar-week'; badgeText = 'Mingguan';
-                    } else if(data.frequency === 'monthly') {
-                        badgeClass = 'bg-purple-100 text-purple-700 border-purple-200'; badgeIcon = 'fa-calendar'; badgeText = 'Bulanan';
-                    } else {
-                        badgeClass = 'bg-emerald-100 text-emerald-700 border-emerald-200'; badgeIcon = 'fa-calendar-days'; badgeText = 'Tahunan';
-                    }
-                    badge.className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border mb-2 ${badgeClass}`;
-                    badge.innerHTML = `<i class="fa-regular ${badgeIcon}"></i> ${badgeText}`;
 
                     // Populate List Items
                     const listContainer = document.getElementById('detailItemsList');
@@ -397,6 +319,7 @@
                             if(item.type === 'pass_fail') typeLabel = '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded border">Pilihan: OK/Rusak</span>';
                             else if(item.type === 'number') typeLabel = `<span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">Angka (${item.unit || '-'})</span>`;
                             else if(item.type === 'checkbox') typeLabel = '<span class="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded border border-green-100">Centang (Ya/Tidak)</span>';
+                            else if(item.type === 'header') typeLabel = '<span class="text-xs bg-gray-600 text-white px-2 py-0.5 rounded border border-gray-700 font-bold uppercase tracking-wider">Header / Judul Bagian</span>';
                             else typeLabel = '<span class="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded border border-yellow-100">Teks Catatan</span>';
 
                             const li = document.createElement('li');
@@ -441,6 +364,7 @@
                                 <option value="number" ${type === 'number' ? 'selected' : ''}>🔢 Isian Angka (Suhu, Volt)</option>
                                 <option value="text" ${type === 'text' ? 'selected' : ''}>📝 Catatan Teks</option>
                                 <option value="checkbox" ${type === 'checkbox' ? 'selected' : ''}>✅ Ya / Tidak (Centang)</option>
+                                <option value="header" ${type === 'header' ? 'selected' : ''}>📑 Header / Judul Bagian</option>
                             </select>
                         </div>
                         <div class="w-1/3 ${type !== 'number' ? 'hidden' : ''} unit-wrapper">
@@ -478,8 +402,6 @@
                     document.getElementById('name').value = data.name;
                     document.getElementById('description').value = data.description;
                     document.getElementById('category_id').value = data.category_id || '';
-                    const radios = document.getElementsByName('frequency');
-                    radios.forEach(r => { if(r.value === data.frequency) r.checked = true; });
                     const container = document.getElementById('itemsContainer');
                     container.innerHTML = '';
                     if(data.items.length > 0) { data.items.forEach(item => addItemRow(item.question, item.type, item.unit)); } else { addItemRow(); }
@@ -506,7 +428,7 @@
             });
             const dataPayload = {
                 name: formData.get('name'), category_id: formData.get('category_id'), description: formData.get('description'),
-                frequency: formData.get('frequency'), questions: questions, types: types, units: units
+                questions: questions, types: types, units: units
             };
             try {
                 const response = await fetch(url, {
@@ -561,7 +483,6 @@
         function filterTable() {
             const searchValue = document.getElementById('searchInput').value.toLowerCase();
             const categoryValue = document.getElementById('filterCategory').value;
-            const frequencyValue = document.getElementById('filterFrequency').value;
             
             const rows = document.querySelectorAll('.template-row');
             let visibleCount = 0;
@@ -569,15 +490,13 @@
             rows.forEach(row => {
                 const name = row.getAttribute('data-name');
                 const category = row.getAttribute('data-category');
-                const frequency = row.getAttribute('data-frequency');
                 
                 // Check all filters
                 const matchSearch = name.includes(searchValue);
                 const matchCategory = !categoryValue || category === categoryValue;
-                const matchFrequency = !frequencyValue || frequency === frequencyValue;
                 
                 // Show/hide row
-                if (matchSearch && matchCategory && matchFrequency) {
+                if (matchSearch && matchCategory) {
                     row.style.display = '';
                     visibleCount++;
                 } else {
@@ -610,11 +529,11 @@
             }
 
             // Update filter display
-            updateFilterDisplay(searchValue, categoryValue, frequencyValue, visibleCount);
+            updateFilterDisplay(searchValue, categoryValue, visibleCount);
         }
 
         // FUNGSI UPDATE FILTER DISPLAY
-        function updateFilterDisplay(search, category, frequency, count) {
+        function updateFilterDisplay(search, category, count) {
             const activeFiltersDiv = document.getElementById('activeFilters');
             const filterBadges = document.getElementById('filterBadges');
             const filterCounter = document.getElementById('filterCounter');
@@ -640,16 +559,7 @@
                 </span>`);
             }
             
-            // Add frequency badge
-            if (frequency) {
-                const frequencySelect = document.getElementById('filterFrequency');
-                const frequencyText = frequencySelect.options[frequencySelect.selectedIndex].text;
-                badges.push(`<span class="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-medium border border-orange-200">
-                    <i class="fa-solid fa-clock"></i>
-                    ${frequencyText}
-                </span>`);
-            }
-            
+
             // Show/hide active filters section
             if (badges.length > 0) {
                 filterBadges.innerHTML = badges.join('');
@@ -666,7 +576,6 @@
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('filterCategory').value = '';
-            document.getElementById('filterFrequency').value = '';
             filterTable();
         }
     </script>

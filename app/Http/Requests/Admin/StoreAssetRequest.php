@@ -45,8 +45,8 @@ class StoreAssetRequest extends FormRequest
             ],
 
             'location_id' => [
-                'required',
-                // Pastikan ID lokasi benar-benar ada di DB
+                'nullable', // Mengizinkan kosong (misal untuk Software/Lisensi)
+                // Pastikan ID lokasi benar-benar ada di DB jika diisi
                 Rule::exists('locations', 'id'),
             ],
 
@@ -65,11 +65,15 @@ class StoreAssetRequest extends FormRequest
             ],
 
             // --- Upload Gambar ---
-            'image' => [
+            'images' => [
                 'nullable',
+                'array',
+                'max:5', // Maksimal unggah 5 gambar sekaligus
+            ],
+            'images.*' => [
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:2048', // 2 MB
+                'max:2048', // 2 MB per gambar
             ],
 
             // --- Spesifikasi (dikirim sebagai dua array paralel dari form) ---
@@ -123,9 +127,10 @@ class StoreAssetRequest extends FormRequest
             'purchase_date.before_or_equal' => 'Tanggal pembelian tidak boleh melebihi hari ini.',
 
             // Gambar
-            'image.image'  => 'File yang diunggah harus berupa gambar.',
-            'image.mimes'  => 'Format gambar yang diizinkan: JPG, JPEG, PNG, atau WebP.',
-            'image.max'    => 'Ukuran gambar tidak boleh melebihi 2 MB.',
+            'images.max'   => 'Maksimal Anda hanya bisa mengunggah 5 gambar sekaligus.',
+            'images.*.image'  => 'File yang diunggah harus berupa gambar.',
+            'images.*.mimes'  => 'Format gambar yang diizinkan: JPG, JPEG, PNG, atau WebP.',
+            'images.*.max'    => 'Ukuran gambar tidak boleh melebihi 2 MB.',
 
             // Spesifikasi
             'specs_key.*.max'   => 'Nama spesifikasi (#:position) terlalu panjang, maksimal 100 karakter.',
