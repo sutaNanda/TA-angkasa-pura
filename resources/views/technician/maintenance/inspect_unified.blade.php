@@ -1,179 +1,200 @@
 @extends('layouts.technician')
 
-@section('header_title', 'Tugas Perawatan')
+@section('header_title', 'Tugas Perawatan Area')
 
 @section('content')
-<div class="container mx-auto px-4 pb-24" x-data="inspectionForm()">
+<div class="container mx-auto px-4 pb-24" x-data="inspectionAreaForm()">
     
     {{-- Info Tugas & Lokasi --}}
     <div class="mb-6 mt-4">
         <span class="bg-orange-100 text-orange-700 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest border border-orange-200 mb-2 inline-block">
-            TUGAS TERJADWAL
+            TUGAS KESATUAN AREA
         </span>
-        <h2 class="text-2xl font-black text-gray-800 uppercase tracking-tight">Perawatan: {{ $maintenance->location->name ?? 'Area Sistem' }}</h2>
+        <h2 class="text-2xl font-black text-gray-800 uppercase tracking-tight">{{ $templateName ?? 'Inspeksi Area' }}</h2>
         <p class="text-gray-500 text-sm mt-1">
-            <i class="fa-solid fa-map-marker-alt text-blue-500 mr-2"></i>{{ $maintenance->location->full_address ?? '-' }}
+            <i class="fa-solid fa-map-marker-alt text-blue-500 mr-2"></i>Lokasi: <span class="font-bold">{{ $maintenance->location->name ?? 'Keseluruhan' }}</span>
         </p>
     </div>
 
-    {{-- PERBAIKAN: Form Action --}}
-    <form action="{{ route('technician.locations.maintenance.inspect.store', $maintenance->id) }}" method="POST" enctype="multipart/form-data" @submit.prevent="handleSubmit($event)">
+    @php
+        $formAction = isset($maintenanceIdsStr) ? route('technician.locations.maintenance.inspect_group.store') : route('technician.locations.maintenance.inspect.store', $maintenance->id);
+    @endphp
+    <form action="{{ $formAction }}" method="POST" enctype="multipart/form-data" @submit.prevent="handleSubmit($event)">
         @csrf
+        @if(isset($maintenanceIdsStr))
+            <input type="hidden" name="maintenance_ids" value="{{ $maintenanceIdsStr }}">
+            <input type="hidden" name="location_id" value="{{ $primaryLocation->id ?? null }}">
+        @endif
+        <input type="hidden" name="primary_template_id" value="{{ $primaryTemplateId }}">
 
-        {{-- WADAH TABEL UTAMA (EXCEL STYLE) --}}
+        {{-- WADAH TABEL UTAMA (EXCEL STYLE CLEAN) --}}
         <div class="bg-white rounded-xl shadow-md border border-gray-300 overflow-hidden mb-8 inspect-wrapper">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal inspect-table">
                     
-                    {{-- HEADER TABEL (Persis seperti Excel) --}}
+                    {{-- HEADER TABEL --}}
                     <thead>
                         <tr class="bg-slate-800 text-white text-xs uppercase tracking-wider border-b-2 border-slate-900">
                             <th class="p-3 text-center w-12 border-r border-slate-700">No</th>
                             <th class="p-3 min-w-[250px] border-r border-slate-700">Deskripsi Pengecekan</th>
                             <th class="p-3 text-center w-20 bg-red-900/50 border-r border-slate-700">Error <i class="fa-solid fa-xmark text-red-400 ml-1"></i></th>
+                            <th class="p-3 text-center w-20 bg-gray-600/50 border-r border-slate-700">N/A <i class="fa-solid fa-minus text-gray-300 ml-1"></i></th>
                             <th class="p-3 text-center w-20 bg-green-900/50 border-r border-slate-700">Normal <i class="fa-solid fa-check text-green-400 ml-1"></i></th>
-                            <th class="p-3 min-w-[200px]">Keterangan</th>
+                            <th class="p-3 min-w-[300px]">Keterangan / Hasil Pengecekan</th>
                         </tr>
                     </thead>
 
-                    {{-- LOOPING ASET (Menggunakan Tbody terpisah per aset) --}}
-                    @foreach($assets as $asset)
+                    <tbody class="border-b-8 border-gray-300">
                         @php
-                            // Ambil template dari array $templates yang dikirim controller
-                            $template = $templates[$asset->category_id] ?? null;
-                            $headerCount = 0;
-                            $itemCount = 0;
                             $alphabets = range('a', 'z');
+                            // Normalize to grouped structure even if single template is passed
+                            $groups = isset($groupedTemplates) ? $groupedTemplates : [
+                                ['category_name' => $templateName, 'items' => $items]
+                            ];
                         @endphp
 
-                        <tbody class="border-b-8 border-gray-300" x-data="{ hasIssue: false, checkIssue() { this.hasIssue = Array.from($el.querySelectorAll('.issue-trigger')).some(input => input.checked); updateGlobalButtonState(); } }">
-                            
-                            {{-- BARIS JUDUL ASET (Pemisah antar aset) --}}
-                            <tr class="bg-slate-200 border-y-2 border-slate-300 asset-header-row">
-                                <td colspan="5" class="p-3">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded bg-slate-800 text-white flex items-center justify-center text-sm shadow">
-                                            <i class="{{ $asset->category->icon ?? 'fa-solid fa-cube' }}"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="font-black text-slate-800 uppercase text-sm leading-none">{{ $asset->name }}</h4>
-                                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{{ $asset->category->name }} | SN: {{ $asset->serial_number ?? '-' }}</span>
-                                        </div>
-                                    </div>
+                        @foreach($groups as $groupIndex => $group)
+                            {{-- MAIN CATEGORY HEADER --}}
+                            <tr class="bg-indigo-900 border-y-2 border-indigo-950 section-header-row">
+                                <td colspan="6" class="p-4 font-black text-white uppercase tracking-widest text-sm text-center shadow-inner">
+                                    Kategori Inspeksi: {{ $group['category_name'] }}
                                 </td>
                             </tr>
+                            
+                            @php
+                                $headerCount = 0;
+                                $itemCount = 0;
+                            @endphp
 
-                            @if($template)
-                                @foreach($template->items as $item)
-                                    @if($item->type === 'header')
-                                        @php $headerCount++; $itemCount = 0; @endphp
-                                        {{-- BARIS HEADER PERTANYAAN (Misal: 1. Hardware) --}}
-                                        <tr class="bg-blue-50/50 border-b border-blue-100 section-header-row">
-                                            <td class="p-2 text-center font-black text-blue-900 border-r border-blue-100 col-header-no">{{ $headerCount }}</td>
-                                            <td colspan="4" class="p-2 font-black text-blue-900 uppercase tracking-wide text-xs col-header-text">
-                                                <span class="mobile-only-number mr-1 hidden">{{ $headerCount }}.</span>{{ $item->question }}
-                                            </td>
-                                        </tr>
-                                    @else
-                                        {{-- BARIS PERTANYAAN (Misal: a. PC) --}}
-                                        <tr class="hover:bg-gray-50 transition-colors border-b border-gray-200 question-row">
-                                            <td class="p-2 text-center text-gray-500 font-bold text-xs border-r border-gray-200 col-alphabet">
-                                                {{ $alphabets[$itemCount] ?? '-' }}.
-                                            </td>
-                                            <td class="p-2 text-gray-800 font-medium whitespace-normal border-r border-gray-200 col-question">
-                                                {{ $item->question }}
-                                            </td>
-                                            
-                                            {{-- KOLOM ERROR --}}
-                                            <td class="p-2 text-center border-r border-gray-200 bg-red-50/30 hover:bg-red-50/80 transition-colors col-error">
-                                                <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="{{ $item->type === 'pass_fail' ? 'fail' : 'no' }}" 
-                                                       class="w-5 h-5 text-red-600 border-gray-400 focus:ring-red-500 cursor-pointer radio-input issue-trigger" 
-                                                       required @change="checkIssue">
-                                            </td>
-                                            
-                                            {{-- KOLOM NORMAL --}}
-                                            <td class="p-2 text-center border-r border-gray-200 bg-green-50/30 hover:bg-green-50/80 transition-colors col-normal">
-                                                <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="{{ $item->type === 'pass_fail' ? 'pass' : 'yes' }}" 
-                                                       class="w-5 h-5 text-green-600 border-gray-400 focus:ring-green-500 cursor-pointer radio-input" 
-                                                       required @change="checkIssue">
-                                            </td>
-                                            
-                                            {{-- KOLOM KETERANGAN --}}
-                                            <td class="p-2 col-notes">
-                                                @if($item->type === 'number')
-                                                    <input type="number" step="any" name="notes[{{ $asset->id }}][{{ $item->id }}]" class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500" placeholder="Masukkan Angka..." required>
-                                                @else
-                                                    <input type="text" name="notes[{{ $asset->id }}][{{ $item->id }}]" class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500" placeholder="Keterangan (Opsional)...">
-                                                @endif
-                                            </td>
-                                        </tr>
-                                        @php $itemCount++; @endphp
-                                    @endif
-                                @endforeach
-
-                                {{-- BARIS CATATAN GLOBAL & FOTO PER ASET (BERUBAH MENJADI FORM LAPORAN KERUSAKAN JIKA ERROR) --}}
-                                <tr class="bg-gray-50/80 global-notes-row transition-all duration-300" :class="hasIssue ? 'bg-red-50/80 ring-2 ring-red-400 inset-0' : ''">
-                                    <td colspan="5" class="p-4" x-data="{ assetId: {{ $asset->id }} }">
-                                        
-                                        <div class="flex flex-col md:flex-row gap-6">
-                                            <div class="flex-1">
-                                                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1 transition-colors" :class="hasIssue ? 'text-red-700' : ''">
-                                                    <i class="fa-solid" :class="hasIssue ? 'fa-triangle-exclamation text-red-600 animate-pulse' : 'fa-comment-dots text-blue-500'"></i> 
-                                                    <span x-text="hasIssue ? 'Detail Laporan Kerusakan Aset' : 'Kesimpulan / Catatan Aset'"></span> 
-                                                    <span x-show="hasIssue" class="text-red-500 ml-2 bg-red-100 px-2 py-0.5 rounded">*Wajib</span>
-                                                </label>
-                                                <textarea name="global_notes[{{ $asset->id }}]" rows="2" 
-                                                          :class="hasIssue ? 'border-red-400 bg-white focus:ring-red-500 placeholder-red-300' : 'border-gray-300 focus:ring-blue-500'"
-                                                          class="w-full p-2 border rounded-lg text-sm transition-colors" 
-                                                          :placeholder="hasIssue ? 'Jelaskan secara detail kerusakan yang ditemukan pada aset ini...' : 'Catatan tambahan untuk aset ini...'" :required="hasIssue"></textarea>
-                                            </div>
-                                            <div class="w-full md:w-1/3">
-                                                <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-1 transition-colors" :class="hasIssue ? 'text-red-700' : ''">
-                                                    <i class="fa-solid fa-camera" :class="hasIssue ? 'text-red-500' : 'text-blue-500'"></i> Foto Bukti
-                                                    <span x-show="hasIssue" class="text-red-500 ml-2 bg-red-100 px-2 py-0.5 rounded">*Wajib</span>
-                                                </label>
-                                                <div class="flex flex-wrap gap-2">
-                                                    <template x-for="(photo, index) in photos[assetId]" :key="index">
-                                                        <div class="relative w-12 h-12 rounded border border-gray-300 overflow-hidden group">
-                                                            <img :src="photo.preview" class="w-full h-full object-cover">
-                                                            <button type="button" @click="removePhoto(assetId, index)" class="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>
-                                                        </div>
-                                                    </template>
-                                                    <label class="w-12 h-12 rounded border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors"
-                                                           :class="hasIssue ? 'border-red-300 hover:bg-red-100 text-red-400 bg-white' : 'border-gray-300 hover:bg-gray-100 text-gray-400'">
-                                                        <input type="file" accept="image/*" class="hidden" @change="addPhoto(assetId, $event)" :required="hasIssue && photos[assetId].length === 0">
-                                                        <i class="fa-solid fa-plus text-xs"></i>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
+                            @foreach($group['items'] as $item)
+                            @if($item->type === 'header')
+                                @php $headerCount++; $itemCount = 0; @endphp
+                                {{-- BARIS HEADER KATEGORI --}}
+                                <tr class="bg-blue-50/80 border-y-2 border-blue-100 section-header-row">
+                                    <td class="p-3 text-center font-black text-blue-900 border-r border-blue-100 text-sm col-header-no">{{ $headerCount }}</td>
+                                    <td colspan="5" class="p-3 font-black text-blue-900 uppercase tracking-widest text-xs col-header-text">
+                                        <span class="mobile-only-number mr-1 hidden">{{ $headerCount }}.</span>{{ $item->question }}
                                     </td>
                                 </tr>
                             @else
-                                <tr>
-                                    <td colspan="5" class="p-6 text-center text-sm text-yellow-600 bg-yellow-50 font-bold border-b border-yellow-200">
-                                        <i class="fa-solid fa-triangle-exclamation mr-2"></i> Template Perawatan (SOP) tidak ditemukan untuk aset ini.
+                                {{-- BARIS PERTANYAAN --}}
+                                <tr x-data="{ isError: false }" class="hover:bg-gray-50 transition-colors border-b border-gray-200 question-row" :class="isError ? 'bg-red-50/40' : ''">
+                                    
+                                    <td class="p-2 text-center text-gray-500 font-bold text-xs border-r border-gray-200 col-alphabet">
+                                        {{ $alphabets[$itemCount] ?? '-' }}.
+                                    </td>
+                                    
+                                    <td class="p-2 text-gray-800 font-bold whitespace-normal border-r border-gray-200 pl-4 text-sm col-question">
+                                        {{ $item->question }}
+                                    </td>
+                                    
+                                    <td class="p-2 text-center border-r border-gray-200 bg-red-50/30 hover:bg-red-50/80 transition-colors col-error">
+                                        <input type="radio" name="answers[{{ $item->id }}]" value="fail" 
+                                               class="w-5 h-5 text-red-600 border-gray-400 focus:ring-red-500 cursor-pointer radio-input issue-trigger" 
+                                               required @change="isError = true; checkGlobalIssue()">
+                                    </td>
+
+                                    <td class="p-2 text-center border-r border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors col-na">
+                                        <input type="radio" name="answers[{{ $item->id }}]" value="na" 
+                                               class="w-5 h-5 text-gray-500 border-gray-400 focus:ring-gray-400 cursor-pointer radio-input" 
+                                               required @change="isError = false; checkGlobalIssue()">
+                                    </td>
+                                    
+                                    <td class="p-2 text-center border-r border-gray-200 bg-green-50/30 hover:bg-green-50/80 transition-colors col-normal">
+                                        <input type="radio" name="answers[{{ $item->id }}]" value="pass" 
+                                               class="w-5 h-5 text-green-600 border-gray-400 focus:ring-green-500 cursor-pointer radio-input" 
+                                               required @change="isError = false; checkGlobalIssue()">
+                                    </td>
+                                    
+                                    {{-- KOLOM KETERANGAN (MENGGUNAKAN LOGIKA TIPE PERTANYAAN) --}}
+                                    <td class="p-2 col-notes align-top">
+                                        <div class="space-y-2">
+                                            {{-- MUNCULKAN INPUT SESUAI TIPE DI ADMIN --}}
+                                            @if($item->type === 'number')
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" step="any" name="notes[{{ $item->id }}]" class="w-full text-sm px-3 py-2 border-2 border-blue-300 bg-blue-50 focus:bg-white rounded-lg focus:ring-blue-500 font-bold text-blue-900 shadow-sm" placeholder="Ketik Angka Hasil..." required>
+                                                    @if($item->unit)
+                                                        <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-2 rounded-md border border-gray-200">{{ $item->unit }}</span>
+                                                    @endif
+                                                </div>
+                                            @elseif($item->type === 'text')
+                                                <input type="text" name="notes[{{ $item->id }}]" class="w-full text-sm px-3 py-2 border-2 border-blue-300 bg-blue-50 focus:bg-white rounded-lg focus:ring-blue-500 font-bold text-blue-900 shadow-sm" placeholder="Ketik Hasil Pengecekan..." required>
+                                            @else
+                                                <input type="text" name="notes[{{ $item->id }}]" class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 bg-white" placeholder="Keterangan opsional...">
+                                            @endif
+                                            
+                                            {{-- DROPDOWN ASET (HANYA MUNCUL JIKA ERROR DIKLIK) --}}
+                                            <div x-show="isError" x-collapse x-cloak class="mt-2">
+                                                <select name="failed_asset_ids[{{ $item->id }}]" class="w-full text-xs px-3 py-2 border border-red-300 bg-red-50 text-red-800 rounded-lg focus:ring-red-500 font-bold shadow-sm" :required="isError">
+                                                    <option value="">-- Tandai Aset yang Rusak --</option>
+                                                    <option value="area_general">⚠️ Bukan Aset (Masalah Ruangan Umum)</option>
+                                                    <optgroup label="Daftar Aset di Area Ini">
+                                                        @foreach($assets as $assetOption)
+                                                            <option value="{{ $assetOption->id }}">{{ $assetOption->name }} (SN: {{ $assetOption->serial_number ?? '-' }})</option>
+                                                        @endforeach
+                                                    </optgroup>
+                                                </select>
+                                                <p class="text-[9px] text-red-500 mt-1 font-bold ml-1"><i class="fa-solid fa-link"></i> Pilih aset agar masuk riwayat kerusakan.</p>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
+                                @php $itemCount++; @endphp
                             @endif
-                        </tbody>
-                    @endforeach
+                            @endforeach
+                        @endforeach
+
+                        {{-- WADAH GLOBAL LAPORAN KERUSAKAN --}}
+                        <tr class="bg-gray-50/80 global-notes-row transition-all duration-300" :class="hasGlobalIssue ? 'bg-red-50/80 ring-2 ring-red-400 inset-0' : 'hidden'" x-show="hasGlobalIssue" x-cloak>
+                            <td colspan="6" class="p-5">
+                                <div class="flex flex-col md:flex-row gap-6">
+                                    <div class="flex-1">
+                                        <label class="text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-1 text-red-700">
+                                            <i class="fa-solid fa-triangle-exclamation text-red-600 animate-pulse"></i> 
+                                            <span>Detail Laporan Kerusakan</span> 
+                                            <span class="text-red-500 ml-2 bg-red-100 px-2 py-0.5 rounded">*Wajib</span>
+                                        </label>
+                                        <textarea name="global_notes" rows="3" 
+                                                  class="w-full p-3 border border-red-400 bg-white focus:ring-red-500 rounded-lg text-sm transition-colors" 
+                                                  placeholder="Jelaskan detail kerusakannya secara keseluruhan di sini..." :required="hasGlobalIssue"></textarea>
+                                    </div>
+                                    <div class="w-full md:w-1/3">
+                                        <label class="text-[10px] font-black text-red-700 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                            <i class="fa-solid fa-camera text-red-500"></i> Upload Foto Bukti Area
+                                        </label>
+                                        <div class="flex flex-wrap gap-2">
+                                            <template x-for="(photo, index) in globalPhotos" :key="index">
+                                                <div class="relative w-16 h-16 rounded border border-gray-300 overflow-hidden group">
+                                                    <img :src="photo.preview" class="w-full h-full object-cover">
+                                                    <button type="button" @click="removePhoto(index)" class="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-xmark"></i></button>
+                                                </div>
+                                            </template>
+                                            <label class="w-16 h-16 rounded border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors border-red-300 hover:bg-red-100 text-red-400 bg-white">
+                                                <input type="file" accept="image/*" class="hidden" multiple @change="addPhoto($event)">
+                                                <i class="fa-solid fa-plus text-sm"></i>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        {{-- Tombol Kirim Gabungan --}}
-        <div class="sticky bottom-6 z-40 px-4 md:px-0">
+        {{-- Tombol Kirim --}}
+        <div class="sticky bottom-6 z-40 px-4 md:px-0 mt-8">
             <button type="submit" id="submitBtn" class="w-full md:w-1/2 mx-auto bg-green-600 hover:bg-green-700 text-white font-black py-4 px-8 rounded-2xl shadow-2xl transition transform active:scale-[0.98] flex items-center justify-center gap-3 text-lg border-2 border-white disabled:opacity-70 disabled:cursor-not-allowed">
                 <i id="submitIcon" class="fa-solid fa-check-circle"></i> 
-                <span id="submitText">TANDAI TUGAS SELESAI</span>
+                <span id="submitText">TANDAI AREA SELESAI DI-CEK</span>
             </button>
         </div>
     </form>
 
-    {{-- TRIAGE MODAL --}}
-    <div x-data="{ show: false, ticketUrl: '#', locationUrl: '#' }"
-         @open-triage-modal.window="show = true; ticketUrl = $event.detail.ticketUrl; locationUrl = $event.detail.locationUrl"
+    {{-- MODAL TRIAGE --}}
+    <div x-data="{ show: false, ticketUrl: '#', locationUrl: '#', isSubmitting: false }"
+         @open-triage-modal.window="show = true; ticketUrl = $event.detail.ticketUrl; locationUrl = $event.detail.locationUrl; isSubmitting = false"
          x-show="show" style="display: none;" 
          class="fixed inset-0 z-[60] flex items-center justify-center p-4"
          x-transition:enter="transition ease-out duration-300"
@@ -187,9 +208,9 @@
                 <i class="fa-solid fa-triangle-exclamation text-3xl text-red-600"></i>
             </div>
             
-            <h3 class="font-bold text-xl text-gray-800 mb-2">Masalah Terdeteksi!</h3>
+            <h3 class="font-bold text-xl text-gray-800 mb-2">Temuan Masalah!</h3>
             <p class="text-sm text-gray-500 mb-6 leading-relaxed">
-                Tugas Perawatan selesai, namun ada aset yang ditandai <b>RUSAK</b>. Tiket perbaikan telah dibuat secara otomatis. Apakah Anda ingin memperbaikinya sekarang?
+                Anda mendeteksi kerusakan pada area ini. Tiket perbaikan telah dibuat secara otomatis. Apakah Anda ingin memperbaikinya sekarang?
             </p>
 
             <div class="grid grid-cols-2 gap-3">
@@ -210,55 +231,45 @@
 </div>
 
 <script>
-// Fungsi untuk mengecek secara global apakah ada isu di seluruh form
-function updateGlobalButtonState() {
-    const hasAnyIssue = Array.from(document.querySelectorAll('.issue-trigger')).some(input => input.checked);
-    const submitBtn = document.getElementById('submitBtn');
-    const submitText = document.getElementById('submitText');
-    const submitIcon = document.getElementById('submitIcon');
-
-    if (hasAnyIssue) {
-        submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-        submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-        submitText.innerText = 'SELESAI & LAPORKAN MASALAH';
-        submitIcon.className = 'fa-solid fa-triangle-exclamation animate-pulse';
-    } else {
-        submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-        submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-        submitText.innerText = 'TANDAI TUGAS SELESAI';
-        submitIcon.className = 'fa-solid fa-check-circle';
-    }
-}
-
-function inspectionForm() {
+function inspectionAreaForm() {
     return {
-        photos: {}, 
-        init() {
-            @foreach($assets as $asset)
-                this.photos[{{ $asset->id }}] = [];
-            @endforeach
-            setTimeout(() => { updateGlobalButtonState(); }, 100);
+        hasGlobalIssue: false,
+        globalPhotos: [], 
+        
+        checkGlobalIssue() {
+            this.hasGlobalIssue = Array.from(document.querySelectorAll('.issue-trigger')).some(input => input.checked);
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const submitIcon = document.getElementById('submitIcon');
+
+            if (this.hasGlobalIssue) {
+                submitBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                submitText.innerText = 'SELESAI & BUAT TIKET MASALAH';
+                submitIcon.className = 'fa-solid fa-triangle-exclamation animate-pulse';
+            } else {
+                submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                submitText.innerText = 'TANDAI AREA SELESAI DI-CEK';
+                submitIcon.className = 'fa-solid fa-check-circle';
+            }
         },
-        addPhoto(assetId, event) {
+
+        addPhoto(event) {
             const files = event.target.files;
             if (!files.length) return;
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (e) => { 
-                    this.photos[assetId].push({ file: file, preview: e.target.result }); 
-                    event.target.required = false; 
+                    this.globalPhotos.push({ file: file, preview: e.target.result }); 
                 };
                 reader.readAsDataURL(file);
             });
             event.target.value = '';
         },
-        removePhoto(assetId, index) { 
-            this.photos[assetId].splice(index, 1); 
-            const fileInput = document.querySelector(`tbody[x-data*="${assetId}"] input[type="file"]`);
-            const hasIssue = document.querySelector(`tbody[x-data*="${assetId}"] .issue-trigger:checked`) !== null;
-            if (fileInput && this.photos[assetId].length === 0 && hasIssue) {
-                fileInput.required = true;
-            }
+        removePhoto(index) { 
+            this.globalPhotos.splice(index, 1); 
         },
         
         async handleSubmit(event) {
@@ -276,24 +287,27 @@ function inspectionForm() {
             try {
                 const formData = new FormData(form);
                 
-                Object.keys(this.photos).forEach(assetId => {
-                    const files = this.photos[assetId].map(p => p.file);
-                    files.forEach(f => formData.append(`photos[${assetId}][]`, f));
+                this.globalPhotos.forEach(p => {
+                    formData.append(`photos[]`, p.file);
                 });
 
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    },
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.message || 'Terjadi kesalahan jaringan atau server.');
+                let result;
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
+                    result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Terjadi kesalahan internal server.');
+                    }
+                } catch (e) {
+                    throw new Error(e.message || 'Gagal terhubung ke server. Cek koneksi Anda.');
                 }
 
                 if (result.status === 'success') {
@@ -313,7 +327,7 @@ function inspectionForm() {
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('Gagal menyimpan inspeksi: ' + error.message);
+                alert('Gagal menyimpan:\n' + error.message);
                 
                 submitBtn.disabled = false;
                 submitText.innerText = originalText;
@@ -324,7 +338,6 @@ function inspectionForm() {
 }
 </script>
 
-{{-- MAGIC RESPONSIVE CSS HANYA UNTUK HP --}}
 <style>
     [x-cloak] { display: none !important; }
     input[type="number"]::-webkit-inner-spin-button,
@@ -332,91 +345,80 @@ function inspectionForm() {
         -webkit-appearance: none;
         margin: 0;
     }
-
+    
     @media (max-width: 767px) {
-        .inspect-table, .inspect-table tbody, .inspect-table tr, .inspect-table td, .inspect-table th {
-            display: block;
-            width: 100%;
-        }
+        .inspect-table, .inspect-table tbody, .inspect-table tr, .inspect-table td, .inspect-table th { display: block; width: 100%; }
         .inspect-table thead { display: none; }
-        .inspect-table tbody {
-            margin-bottom: 24px;
-            border: 1px solid #d1d5db !important;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        
+        .inspect-table tbody { 
+            margin-bottom: 24px; 
+            border: 1px solid #d1d5db !important; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
+            background: white;
         }
+        
         .col-alphabet { display: none !important; }
-        .asset-header-row td { padding: 16px !important; }
         .col-header-no { display: none !important; } 
         .mobile-only-number { display: inline !important; } 
+        
         .section-header-row td { 
             border: none !important; 
             padding: 12px 16px !important; 
-            font-size: 14px !important;
+            font-size: 14px !important; 
         }
-        .question-row {
-            display: flex;
-            flex-wrap: wrap;
-            padding: 16px;
-            gap: 12px;
-            border-bottom: 1px solid #e5e7eb;
+        
+        .question-row { 
+            display: flex; 
+            flex-wrap: wrap; 
+            padding: 16px; 
+            gap: 12px; 
+            border-bottom: 1px solid #e5e7eb; 
         }
-        .col-question {
-            flex: 0 0 100%;
-            border: none !important;
-            padding: 0 !important;
-            font-size: 14px !important;
-            font-weight: 700 !important;
-            color: #1f2937 !important;
+        
+        .col-question { 
+            flex: 0 0 100%; 
+            border: none !important; 
+            padding: 0 !important; 
+            font-size: 14px !important; 
+            font-weight: 700 !important; 
+            color: #1f2937 !important; 
         }
-        .col-error, .col-normal {
-            flex: 1;
-            border: 1px solid #e5e7eb !important;
-            border-radius: 12px;
-            padding: 12px !important;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
+        
+        .col-error, .col-na, .col-normal { 
+            flex: 1; 
+            border: 1px solid #e5e7eb !important; 
+            border-radius: 12px; 
+            padding: 12px !important; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative; 
         }
-        .col-error::before {
-            content: "ERROR ✖";
-            font-size: 11px;
-            font-weight: 900;
-            color: #dc2626;
-            margin-bottom: 8px;
+        
+        .col-error::before { content: "ERROR ✖"; font-size: 11px; font-weight: 900; color: #dc2626; margin-bottom: 8px; }
+        .col-na::before { content: "N/A ➖"; font-size: 11px; font-weight: 900; color: #6b7280; margin-bottom: 8px; }
+        .col-normal::before { content: "NORMAL ✔"; font-size: 11px; font-weight: 900; color: #16a34a; margin-bottom: 8px; }
+        
+        .radio-input { width: 24px !important; height: 24px !important; }
+        
+        .col-notes { 
+            flex: 0 0 100%; 
+            border: none !important; 
+            padding: 4px 0 0 0 !important; 
         }
-        .col-normal::before {
-            content: "NORMAL ✔";
-            font-size: 11px;
-            font-weight: 900;
-            color: #16a34a;
-            margin-bottom: 8px;
+        
+        .col-notes input, .col-notes select { 
+            padding: 12px 16px !important; 
+            border-radius: 10px !important; 
+            background-color: #f9fafb; 
+            border: 1px solid #d1d5db !important;
         }
-        .radio-input {
-            width: 24px !important;
-            height: 24px !important;
-        }
-        .col-notes {
-            flex: 0 0 100%;
-            border: none !important;
-            padding: 4px 0 0 0 !important;
-        }
-        .col-notes input {
-            padding: 12px 16px !important;
-            border-radius: 10px !important;
-            background-color: #f9fafb;
-        }
-        .global-notes-row td {
-            padding: 16px !important;
-        }
-        .inspect-wrapper {
-            background-color: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
+        
+        .global-notes-row td { padding: 16px !important; }
+        .inspect-wrapper { background-color: transparent !important; border: none !important; box-shadow: none !important; }
     }
 </style>
 @endsection

@@ -11,6 +11,7 @@ class MaintenancePlan extends Model
 {
     protected $fillable = [
         'name',
+        'target_type',
         'template_configs',
         'frequency',
         'start_date',
@@ -55,6 +56,11 @@ class MaintenancePlan extends Model
     public function assets(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Asset::class, 'maintenance_plan_assets');
+    }
+
+    public function locations(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Location::class, 'maintenance_plan_locations');
     }
 
     /**
@@ -113,12 +119,21 @@ class MaintenancePlan extends Model
      */
     public function getAffectedAssetsCountAttribute(): int
     {
-        // 1. Prioritaskan jika user memilih aset secara spesifik
-        if ($this->assets()->exists()) {
+        // 1. Jika target_type == 'location', hitung jumlah aset di lokasi-lokasi tersebut (dan childnya jika area-centric)
+        // Disini kita approach sederhana dulu, count per location
+        if ($this->target_type === 'location' && $this->locations()->exists()) {
+            $locationIds = $this->locations()->pluck('locations.id');
+            // Menghitung jumlah aset hardware yang ada di lokasi-lokasi tersebut (boleh beserta anak lokasinya)
+            // Untuk sementara kita count direct assets di lokasi tersebut
+            return Asset::whereIn('location_id', $locationIds)->count();
+        }
+
+        // 2. Prioritaskan jika user memilih aset secara spesifik
+        if ($this->target_type === 'asset' && $this->assets()->exists()) {
             return $this->assets()->count();
         }
 
-        // 2. Fallback: Hitung semua aset dalam kategori yang dipilih
+        // 3. Fallback: Hitung semua aset dalam kategori yang dipilih
         if (empty($this->template_configs)) return 0;
         
         $categoryIds = collect($this->template_configs)->pluck('category_id')->unique()->toArray();

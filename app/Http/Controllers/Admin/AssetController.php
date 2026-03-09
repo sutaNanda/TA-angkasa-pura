@@ -122,19 +122,19 @@ class AssetController extends Controller
 
     public function store(StoreAssetRequest $request)
     {
-        // 1. Ambil data yang sudah divalidasi (aman dari mass-assignment)
         $data = $request->validated();
 
-        // 2. Proses Spesifikasi: buat array asosiatif dari dua array paralel
+        // Logika Parent-Child (Software)
+        if (!empty($data['parent_asset_id'])) {
+            $data['location_id'] = null;
+        }
+
         $data['specifications'] = $this->formatSpecifications(
             $request->input('specs_key', []),
             $request->input('specs_value', [])
         );
-
-        // 3. Bersihkan key yang bukan kolom DB agar tidak error saat insert
         unset($data['specs_key'], $data['specs_value']);
 
-        // 4. Upload & Optimasi Gambar → otomatis di-resize & dikonversi ke WebP
         if ($request->hasFile('images')) {
             $files = $request->file('images');
             if (!is_array($files)) {
@@ -152,27 +152,52 @@ class AssetController extends Controller
                 }
             }
             $data['images'] = $imagePaths;
-            $data['image'] = null; // Clear old single image column to prevent duplication
+            $data['image'] = null;
         }
 
-        // 5. Simpan (uuid di-generate otomatis oleh boot() di Model)
-        $asset = Asset::create($data);
+        // --- BULK ASSIGNMENT LOGIC ---
+        // Jika parent_asset_id adalah array (user memilih lebih dari 1 PC/Hardware induk)
+        if (isset($data['parent_asset_id']) && is_array($data['parent_asset_id'])) {
+            $createdAssets = [];
+            $parentIds = $data['parent_asset_id'];
+            
+            // Loop sejumlah hardware yang dipilih
+            foreach ($parentIds as $parentId) {
+                $assetData = $data; // Copy data dasar
+                $assetData['parent_asset_id'] = $parentId; // Assign parent_asset_id spesifik
+                
+                // Unique Validation Bypass (optional, but needed if SN must be unique per row):
+                // Jika ingin UUID/SN spesifik per instalasi, handle di sini.
+                // Untuk Bulk, biasanya SN diizinkan kembar (karena itu Volume License), 
+                // atau ditambahkan suffix (opsional). Di sini kita simpan apa adanya (identik).
+                
+                $createdAssets[] = Asset::create($assetData)->load(['category', 'location', 'parentAsset']);
+            }
+            
+            return response()->json([
+                'status'  => 'success',
+                'message' => count($parentIds) . ' Aset perangkat lunak (Bulk Assignment) berhasil ditambahkan.',
+                'data'    => $createdAssets[0], // Return salah satu untuk compatibility frontend sementara
+            ], 201);
+            
+        } else {
+            // Pembuatan aset tunggal (normal)
+            $asset = Asset::create($data);
 
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Aset berhasil ditambahkan.',
-            'data'    => $asset->load(['category', 'location']),
-        ], 201);
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Aset berhasil ditambahkan.',
+                'data'    => $asset->load(['category', 'location', 'parentAsset']),
+            ], 201);
+        }
     }
 
     /**
-     * Show (Detail Aset)
-     * FIX BUG: Tambahkan 'location' di with()
+     * Show (Detail Aset) — eager-load parent, children, category, location
      */
     public function show($id)
     {
-        // PERBAIKAN DISINI: load relasi 'location' agar namanya muncul di modal detail
-        $asset = Asset::with(['category', 'location'])->findOrFail($id);
+        $asset = Asset::with(['category', 'location', 'parentAsset.location', 'childAssets.category'])->findOrFail($id);
 
         // Generate full URLs for multiple images
         $asset->image_urls = [];
@@ -186,39 +211,34 @@ class AssetController extends Controller
         ]);
     }
 
-    // ... method update & destroy biarkan sama seperti sebelumnya ...
     public function update(UpdateAssetRequest $request, $id)
     {
         $asset = Asset::findOrFail($id);
-
-        // 1. Ambil data yang sudah divalidasi
         $data = $request->validated();
 
-        // 2. Proses Spesifikasi
+        // Logika Parent-Child: Software mengikuti lokasi induknya
+        if (!empty($data['parent_asset_id'])) {
+            $data['location_id'] = null;
+        }
+
         $data['specifications'] = $this->formatSpecifications(
             $request->input('specs_key', []),
             $request->input('specs_value', [])
         );
-
-        // 3. Bersihkan key yang bukan kolom DB
         unset($data['specs_key'], $data['specs_value'], $data['kept_images']);
 
-        // 4. Proses gambar: gabungkan kept_images + upload baru
+        // Proses gambar
         $keptImages = $request->input('kept_images', []);
         $allOldImages = is_array($asset->images) ? $asset->images : [];
-
-        // Hapus gambar yang TIDAK ada di kept_images
         foreach ($allOldImages as $oldImg) {
             if (!in_array($oldImg, $keptImages)) {
                 $this->deleteOldImage($oldImg);
             }
         }
 
-        // Upload gambar baru
         $newImagePaths = [];
         if ($request->hasFile('images')) {
             $files = $request->file('images');
-            // Pastikan selalu array (jika hanya 1 file, bisa non-array)
             if (!is_array($files)) {
                 $files = [$files];
             }
@@ -234,17 +254,15 @@ class AssetController extends Controller
             }
         }
 
-        // Merge: existing yang dipertahankan + yang baru diupload
         $data['images'] = array_merge($keptImages, $newImagePaths);
-        $data['image'] = null; // Clear old single image column
+        $data['image'] = null;
 
-        // 5. Update
         $asset->update($data);
 
         return response()->json([
             'status'  => 'success',
             'message' => 'Data aset berhasil diperbarui.',
-            'data'    => $asset->fresh()->load(['category', 'location']),
+            'data'    => $asset->fresh()->load(['category', 'location', 'parentAsset']),
         ]);
     }
 
@@ -265,11 +283,36 @@ class AssetController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Deleted']);
     }
 
+    /**
+     * API: Ambil daftar aset Hardware (non-software) di lokasi tertentu.
+     * Digunakan oleh dropdown "Induk Aset" pada form Software/Lisensi.
+     */
+    public function getHardwareByLocation($locationId)
+    {
+        $location = Location::with('childrenRecursive')->find($locationId);
+        if (!$location) {
+            return response()->json(['status' => 'success', 'data' => []]);
+        }
+
+        $locationIds = $this->getAllLocationIds($location);
+
+        // Ambil hanya aset yang TIDAK memiliki parent (= hardware fisik), bukan software
+        $assets = Asset::whereIn('location_id', $locationIds)
+                    ->whereNull('parent_asset_id')
+                    ->with('category')
+                    ->orderBy('name', 'asc')
+                    ->get(['id', 'name', 'serial_number', 'category_id']);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $assets
+        ]);
+    }
+
     private function formatSpecifications(array $keys, array $values): array
     {
         $specs = [];
         foreach ($keys as $index => $key) {
-            // Hanya simpan jika Key tidak kosong & Value ada di index yang sama
             if (!empty($key) && isset($values[$index])) {
                 $specs[$key] = $values[$index];
             }

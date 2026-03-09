@@ -5,14 +5,6 @@
 @section('content')
 <div class="space-y-6">
 
-    {{-- HEADER KEMBALI --}}
-    <div class="flex items-center gap-3">
-        <a href="{{ route('technician.locations.index') }}" class="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition shadow-sm">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h2 class="text-xl font-bold text-gray-800">Detail Ruangan / Area</h2>
-    </div>
-
     {{-- KARTU INFO LOKASI --}}
     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
         {{-- Dekorasi Latar --}}

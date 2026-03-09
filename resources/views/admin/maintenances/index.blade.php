@@ -4,7 +4,7 @@
 @section('page-title', 'Logbook Pengecekan Rutin')
 
 @section('content')
-    {{-- FILTER SECTION --}}
+    {{-- FILTER SECTION (Desain Asli) --}}
     <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
         <form method="GET" action="{{ route('admin.maintenances.index') }}" class="flex flex-col md:flex-row gap-4 items-end">
             <div class="w-full md:w-auto">
@@ -47,110 +47,101 @@
         </form>
     </div>
 
-    {{-- TABLE DATA --}}
+    {{-- TABLE DATA (Desain Asli dengan perbaikan Status Tindakan) --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <table class="w-full text-sm text-left text-gray-600">
             <thead class="bg-gray-50 text-gray-700 uppercase font-bold text-xs">
                 <tr>
                     <th class="px-6 py-4 w-12 text-center">No</th>
                     <th class="px-6 py-4">Waktu Pengecekan</th>
-                    <th class="px-6 py-4">Aset</th>
-                    <th class="px-6 py-4">Teknisi</th>
-                    <th class="px-6 py-4">Temuan</th> {{-- KOLOM BARU 1 --}}
-                    <th class="px-6 py-4">Status Tindakan</th> {{-- KOLOM BARU 2 --}}
+                    <th class="px-6 py-4">Target Inspeksi</th>
+                    <th class="px-6 py-4">Tipe</th>
+                    <th class="px-6 py-4 text-center">Temuan</th>
+                    <th class="px-6 py-4 text-center">Status Tindakan</th>
                     <th class="px-6 py-4 text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($logs as $log)
                     @php
-                        // 1. LOGIKA BADGE TEMUAN (NORMAL vs ISU)
                         $findingBadge = '';
                         $rowClass = 'hover:bg-gray-50 border-l-4 border-transparent';
 
-                        if ($log->status == 'normal') {
+                        // Ambil status dari status utama PatrolLog
+                        if ($log->status == 'normal' || $log->status == 'pass') {
                             $findingBadge = '<span class="inline-flex items-center gap-1 text-green-700 font-bold text-xs"><i class="fa-solid fa-check-circle"></i> Normal</span>';
                         } else {
                             $rowClass = 'bg-red-50/30 hover:bg-red-50 border-l-4 border-red-400';
-                            $findingBadge = '<span class="inline-flex items-center gap-1 text-red-600 font-bold text-xs"><i class="fa-solid fa-triangle-exclamation"></i> Ada Masalah</span>';
+                            $findingBadge = '<span class="inline-flex items-center gap-1 text-red-600 font-bold text-xs"><i class="fa-solid fa-triangle-exclamation"></i> Masalah</span>';
                         }
 
-                        // 2. LOGIKA BADGE STATUS TINDAKAN (WORK ORDER)
-                        if ($log->status != 'normal') {
-                            $wo = optional($log->workOrder);
+                        // Logika Badge Work Order (Status Tindakan)
+                        $actionBadge = '';
+                        if ($log->status != 'normal' && $log->status != 'pass') {
+                            // Cek relasi workOrder (belongsTo ke WorkOrder model)
+                            $wo = $log->workOrder; 
                             
-                            if (!$wo->exists) {
-                                $actionBadge = '<span class="bg-gray-200 text-gray-500 px-2 py-1 rounded text-[10px] font-bold">Belum Ada Tiket</span>';
-                            } elseif ($wo->status == 'verified') {
-                                $rowClass = 'bg-green-50/30 hover:bg-green-50 border-l-4 border-green-500'; // Override jadi hijau kalau sudah verified
-                                $actionBadge = '<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold border border-green-200"><i class="fa-solid fa-check-double"></i> Selesai & Terverifikasi</span>';
-                            } elseif ($wo->status == 'completed') {
-                                $actionBadge = '<span class="bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-bold border border-yellow-200"><i class="fa-solid fa-hourglass-half"></i> Butuh Verifikasi</span>';
-                            } elseif ($wo->status == 'in_progress') {
-                                $techName = $wo->technician ? explode(' ', $wo->technician->name)[0] : 'Teknisi';
-                                $actionBadge = '<span class="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs font-bold border border-blue-200"><i class="fa-solid fa-person-digging"></i> Dikerjakan: '.$techName.'</span>';
-                            } elseif ($wo->status == 'pending_part') {
-                                $actionBadge = '<span class="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-bold border border-purple-200"><i class="fa-solid fa-box-open"></i> Tunggu Sparepart</span>';
-                            } elseif ($wo->status == 'handover') {
-                                $actionBadge = '<span class="bg-pink-100 text-pink-700 px-2.5 py-1 rounded-full text-xs font-bold border border-pink-200"><i class="fa-solid fa-handshake"></i> Handover Shift</span>';
+                            if (!$wo) {
+                                $actionBadge = '<span class="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-[10px] font-bold uppercase border border-gray-200">Belum Ada Tiket</span>';
                             } else {
-                                // Open
-                                $actionBadge = '<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold border border-red-200"><i class="fa-regular fa-clock"></i> Belum Dikerjakan</span>';
+                                $statusMap = [
+                                    'open'        => ['label' => 'Menunggu', 'class' => 'bg-rose-50 text-rose-600 border-rose-100'],
+                                    'in_progress' => ['label' => 'Dikerjakan', 'class' => 'bg-blue-50 text-blue-600 border-blue-100'],
+                                    'completed'   => ['label' => 'Selesai', 'class' => 'bg-amber-50 text-amber-600 border-amber-100'],
+                                    'verified'    => ['label' => 'Terverifikasi', 'class' => 'bg-emerald-50 text-emerald-600 border-emerald-100'],
+                                ];
+
+                                $currentStatus = $statusMap[strtolower($wo->status)] ?? ['label' => $wo->status, 'class' => 'bg-slate-50 text-slate-600 border-slate-100'];
+                                
+                                $actionBadge = '<span class="'.$currentStatus['class'].' px-3 py-1 rounded-full text-[10px] font-bold border uppercase">'.$currentStatus['label'].'</span>';
                             }
                         } else {
-                            $actionBadge = '<span class="bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full text-xs font-bold border border-gray-200"><i class="fa-solid fa-minus"></i> Tidak Ada Tindakan</span>';
+                            // Jika normal, otomatis Selesai
+                            $actionBadge = '<span class="bg-emerald-50 border border-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase"><i class="fa-solid fa-check-double mr-1"></i> Aman</span>';
                         }
                     @endphp
 
                     <tr class="{{ $rowClass }} transition">
-                        {{-- NOMOR --}}
                         <td class="px-6 py-4 text-center font-bold text-gray-400 text-xs">
                             {{ ($logs->currentPage() - 1) * $logs->perPage() + $loop->iteration }}
                         </td>
 
                         <td class="px-6 py-4">
-                            <div class="font-medium text-gray-900">{{ $log->created_at ? $log->created_at->format('d M Y') : '-' }}</div>
-                            <div class="text-xs text-gray-500">{{ $log->created_at ? $log->created_at->format('H:i') . ' WITA' : '-' }}</div>
+                            <div class="font-medium text-gray-900 text-xs">{{ $log->created_at ? $log->created_at->format('d M Y') : '-' }}</div>
+                            <div class="text-[10px] text-gray-500">{{ $log->created_at ? $log->created_at->format('H:i') . ' WITA' : '-' }}</div>
                         </td>
+
                         <td class="px-6 py-4">
-                            <div class="font-bold text-gray-800">{{ $log->asset->name ?? 'Aset Terhapus' }}</div>
-                            <div class="text-xs text-gray-500">SN: {{ $log->asset->serial_number ?? '-' }}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            @if($log->technician)
-                                <div class="flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
-                                        <i class="fa-solid fa-user"></i>
-                                    </div>
-                                    <span>{{ $log->technician->name }}</span>
-                                </div>
+                            @if($log->asset)
+                                <div class="font-bold text-gray-800 text-xs">{{ $log->asset->name }}</div>
+                                <div class="text-[10px] text-gray-500">SN: {{ $log->asset->serial_number ?? '-' }}</div>
+                            @elseif($log->location)
+                                <div class="font-bold text-blue-700 text-xs"><i class="fa-solid fa-layer-group mr-1"></i> {{ $log->location->name }}</div>
                             @else
-                                <span class="text-gray-400 italic text-xs">Belum dikerjakan</span>
+                                <div class="font-bold text-red-500 text-xs italic">Aset Tidak Teridentifikasi</div>
+                            @endif
+                        </td>
+
+                        <td class="px-6 py-4">
+                            @if(!$log->asset_id)
+                                <span class="bg-blue-100 text-blue-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Kesatuan Area</span>
+                            @else
+                                <span class="bg-gray-100 text-gray-600 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Aset Tunggal</span>
                             @endif
                         </td>
                         
-                        {{-- KOLOM TEMUAN --}}
-                        <td class="px-6 py-4">
-                            {!! $findingBadge !!}
-                        </td>
-
-                        {{-- KOLOM STATUS TINDAKAN --}}
-                        <td class="px-6 py-4">
-                            {!! $actionBadge !!}
-                        </td>
+                        <td class="px-6 py-4 text-center">{!! $findingBadge !!}</td>
+                        <td class="px-6 py-4 text-center">{!! $actionBadge !!}</td>
 
                         <td class="px-6 py-4 text-center">
-                            <button onclick="showDetailLog({{ $log->id }})" class="text-blue-600 hover:text-blue-800 font-medium text-xs border border-blue-200 hover:bg-blue-50 px-3 py-1 rounded transition">
-                                Lihat Detail
+                            <button onclick="showDetailLog({{ $log->id }})" class="text-blue-600 hover:text-blue-800 font-bold text-[10px] uppercase border border-blue-200 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition">
+                                <i class="fa-solid fa-eye mr-1"></i> Detail
                             </button>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-12 text-gray-400">
-                            <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
-                            <p>Belum ada riwayat pengecekan.</p>
-                        </td>
+                        <td colspan="7" class="text-center py-12 text-gray-400 italic">Belum ada riwayat pengecekan.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -162,83 +153,92 @@
         {{ $logs->withQueryString()->links() }}
     </div>
 
-    {{-- MODAL DETAIL (AJAX) --}}
+    {{-- MODAL DETAIL (Desain Baru: Bersih, Modern, Minimalis) --}}
     <div id="detailLogModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal()"></div>
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/40 transition-opacity" onclick="closeModal()"></div>
 
-            <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-200">
+            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full max-w-4xl border border-slate-200">
                 
                 {{-- Header Modal --}}
-                <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
+                <div class="bg-white px-8 py-5 border-b border-slate-100 flex justify-between items-center">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-800">Detail Riwayat Patroli</h3>
-                        <p class="text-xs text-gray-500" id="modalLogId">ID Log: -</p>
+                        <h3 class="text-lg font-bold text-slate-800">Detail Laporan Inspeksi</h3>
+                        <p class="text-xs font-medium text-slate-400 mt-1 font-mono uppercase" id="modalLogId">ID Log: -</p>
                     </div>
                 </div>
 
                 {{-- Body Modal --}}
-                <div class="bg-white px-6 py-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div class="bg-slate-50/50 px-8 py-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                     
-                    {{-- Info Aset & Teknisi --}}
-                    <div class="grid grid-cols-2 gap-4 mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase font-bold">Aset</p>
-                            <p class="text-sm font-semibold text-gray-800" id="modalAssetName">-</p>
-                            <p class="text-xs text-gray-600" id="modalAssetLoc">-</p>
+                    {{-- Informasi Target & Waktu (Bersih) --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="space-y-1.5">
+                            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Target Inspeksi</p>
+                            <div id="modalAssetName" class="text-slate-800">-</div>
+                            <div id="modalAssetLoc" class="text-slate-500 mt-1">-</div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs text-gray-500 uppercase font-bold">Teknisi</p>
-                            <p class="text-sm font-semibold text-gray-800" id="modalTechName">-</p>
-                            <p class="text-xs text-gray-600" id="modalTime">-</p>
+                        <div class="md:text-right space-y-1.5 border-t border-slate-100 pt-4 md:border-t-0 md:pt-0">
+                            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Pelaksana & Waktu</p>
+                            <p class="text-base font-bold text-slate-800" id="modalTechName">-</p>
+                            <p class="text-sm font-medium text-slate-500 flex items-center gap-1.5 md:justify-end">
+                                <i class="fa-regular fa-clock text-slate-400"></i> <span id="modalTime">-</span>
+                            </p>
                         </div>
                     </div>
 
-                    {{-- [NEW] Vertical Activity Timeline (Riwayat Aktivitas & Handover) --}}
-                    <div id="timelineSection" class="mb-4 hidden">
-                        <h4 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2 flex items-center">
-                            <i class="fa-solid fa-timeline mr-2 text-blue-600"></i> Kronologi Pengerjaan
+                    <h4 class="text-sm font-bold text-slate-700 flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-list-check text-slate-400"></i> Rincian Hasil Pemeriksaan
+                    </h4>
+                    
+                    {{-- Tabel Checklist Modal (Gaya Bersih, tidak ada gradient gelap) --}}
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-xs uppercase tracking-wide">
+                                <tr>
+                                    <th class="px-5 py-3 w-12 text-center">No</th>
+                                    <th class="px-5 py-3">Poin Pemeriksaan</th>
+                                    <th class="px-5 py-3 text-center w-32">Status</th>
+                                    <th class="px-5 py-3">Hasil / Catatan Teknisi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-600" id="modalChecklistBody">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    {{-- Timeline Tindakan (Baru) --}}
+                    <div id="modalTimelineSection" class="mt-6 hidden">
+                        <h4 class="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4">
+                            <i class="fa-solid fa-clock-rotate-left text-slate-400"></i> Alur Penanganan Tiket
                         </h4>
-                        
-                        <div class="relative border-l-2 border-gray-200 ml-4 space-y-6" id="modalTimelineBody">
-                            {{-- Timeline Items akan di-inject via JS --}}
+                        <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                            <div id="modalTimelineBody" class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-slate-200 before:via-slate-200 before:to-transparent">
+                                {{-- Items rendered via JS --}}
+                            </div>
                         </div>
                     </div>
 
-                    {{-- Tabel Checklist --}}
-                    <h4 class="text-sm font-bold text-gray-800 mb-3 border-b pb-2">Hasil Checklist</h4>
-                    <table class="w-full text-sm text-left border rounded-lg overflow-hidden">
-                        <thead class="bg-gray-100 text-gray-700 font-bold text-xs uppercase">
-                            <tr>
-                                <th class="px-4 py-2 w-10 text-center">#</th>
-                                <th class="px-4 py-2">Pertanyaan</th>
-                                <th class="px-4 py-2">Jawaban</th>
-                                <th class="px-4 py-2 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100" id="modalChecklistBody">
-                            {{-- Data via JS --}}
-                        </tbody>
-                    </table>
-
-                    {{-- Global Notes --}}
-                    <div id="modalNotesSection" class="mt-4 bg-yellow-50 p-4 rounded-lg border border-yellow-100 hidden">
-                        <h5 class="text-xs font-bold text-yellow-800 uppercase mb-1">Catatan Patroli</h5>
-                        <p class="text-sm text-gray-700" id="modalNotesText">-</p>
+                    {{-- Kesimpulan / Notes (Desain Rapi) --}}
+                    <div id="modalNotesSection" class="mt-6 bg-white p-5 rounded-xl border border-slate-200 shadow-sm hidden">
+                        <h5 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i class="fa-regular fa-comment-dots text-slate-400"></i> Kesimpulan Akhir
+                        </h5>
+                        <p class="text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100" id="modalNotesText">-</p>
                     </div>
+                </div>
 
-                {{-- Footer --}}
-                <div class="bg-gray-50 px-6 py-3 flex justify-end gap-2">
-                    <a href="#" id="modalExportBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2">
-                        <i class="fa-solid fa-file-pdf"></i> Cetak Laporan
+                {{-- Footer Modal --}}
+                <div class="bg-white px-8 py-4 flex justify-end gap-3 border-t border-slate-100">
+                    <button onclick="closeModal()" class="bg-white border border-slate-300 text-slate-700 px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">Tutup</button>
+                    <a href="#" id="modalExportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> Unduh PDF
                     </a>
-                    <button onclick="closeModal()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50">Tutup</button>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- SCRIPT --}}
     <script>
         function closeModal() {
             document.getElementById('detailLogModal').classList.add('hidden');
@@ -246,202 +246,243 @@
 
         async function showDetailLog(id) {
             try {
-                // Fetch data dari API Controller
                 const response = await fetch(`/admin/maintenances/${id}`);
                 const result = await response.json();
 
                 if(result.status === 'success') {
                     const data = result.data;
 
-                    // Isi Header
                     document.getElementById('modalLogId').innerText = 'ID Log: #PTR-' + data.id;
-                    document.getElementById('modalAssetName').innerText = data.asset ? data.asset.name : 'Aset Terhapus';
-                    document.getElementById('modalAssetLoc').innerText = data.asset.location ? data.asset.location.name : '-';
-                    document.getElementById('modalTechName').innerText = data.technician ? data.technician.name : '-';
-                    document.getElementById('modalTime').innerText = new Date(data.created_at).toLocaleString('id-ID');
-
-                    // Set link Export PDF
-                    document.getElementById('modalExportBtn').href = `/admin/export/maintenances/${data.id}`;
-
-                    // [NEW] Logic Timeline
-                    const timelineBody = document.getElementById('modalTimelineBody');
-                    const timelineSection = document.getElementById('timelineSection');
-                    timelineBody.innerHTML = '';
                     
-                    if(data.work_order && data.work_order.histories && data.work_order.histories.length > 0) {
-                        timelineSection.classList.remove('hidden');
-                        
-                                // 1. Initial State (Patroli)
-                        timelineBody.innerHTML += `
-                            <div class="relative mb-8">
-                                <span class="absolute -left-2.5 top-0 flex items-center justify-center w-5 h-5 bg-blue-100 rounded-full ring-4 ring-white z-10">
-                                    <i class="fa-solid fa-clipboard-check text-blue-600 text-[10px]"></i>
-                                </span>
-                                <div class="ml-10">
-                                    <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">Patroli Selesai (Isu Ditemukan)</h3>
-                                    <time class="block mb-2 text-xs font-normal leading-none text-gray-400">
-                                        ${new Date(data.created_at).toLocaleString('id-ID')} - Oleh ${data.technician ? data.technician.name : 'Sistem'}
-                                    </time>
-                                    <p class="mb-4 text-xs text-gray-500">
-                                        Patroli rutin menemukan ketidaknormalan pada aset. Tiket otomatis dibuat.
-                                    </p>
-                                </div>
-                            </div>
-                        `;
+                    const elAssetName = document.getElementById('modalAssetName');
+                    const elAssetLoc  = document.getElementById('modalAssetLoc');
 
-                        // 2. Loop History
-                        data.work_order.histories.forEach(history => {
-                            let icon = 'fa-circle-check';
-                            let color = 'bg-gray-200';
-                            let iconColor = 'text-gray-500';
-                            let title = history.action;
+                    const isAreaInspection = data.location || !data.asset_id;
+                    const locationName = data.location 
+                        ? data.location.name 
+                        : (data.asset && data.asset.location ? data.asset.location.name : null);
 
-                            if(history.action === 'created') {
-                                icon = 'fa-ticket'; color = 'bg-purple-100'; iconColor = 'text-purple-600';
-                                title = 'Tiket Perbaikan Dibuat';
-                            } else if(history.action === 'in_progress') {
-                                icon = 'fa-person-digging'; color = 'bg-blue-100'; iconColor = 'text-blue-600';
-                                title = 'Sedang Dikerjakan';
-                            } else if(history.action === 'handover') {
-                                icon = 'fa-arrow-right-arrow-left'; color = 'bg-yellow-100'; iconColor = 'text-yellow-600';
-                                title = 'Handover (Alih Tugas)';
-                            } else if(history.action === 'completed') {
-                                icon = 'fa-check'; color = 'bg-green-100'; iconColor = 'text-green-600';
-                                title = 'Pekerjaan Selesai';
-                            }
-
-                            timelineBody.innerHTML += `
-                                <div class="relative mb-8">
-                                    <span class="absolute -left-2.5 top-0 flex items-center justify-center w-5 h-5 ${color} rounded-full ring-4 ring-white z-10">
-                                        <i class="fa-solid ${icon} ${iconColor} text-[10px]"></i>
-                                    </span>
-                                    <div class="ml-10">
-                                        <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">
-                                            ${title} 
-                                            ${history.action === 'handover' ? '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded ml-2">Penting</span>' : ''}
-                                        </h3>
-                                        <time class="block mb-2 text-xs font-normal leading-none text-gray-400">
-                                            ${new Date(history.created_at).toLocaleString('id-ID')} - Oleh ${history.user ? history.user.name : '-'}
-                                        </time>
-                                        <p class="mb-2 text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-100 italic">
-                                            "${history.description || '-'}"
-                                        </p>
-                                    </div>
-                                </div>
-                            `;
-                        });
-
-                    } else if(data.status === 'issue_found') {
-                        // Kasus Issue Found tapi belum ada History (Baru dibuat)
-                        timelineSection.classList.remove('hidden');
-                        timelineBody.innerHTML = `
-                            <div class="relative mb-8">
-                                <span class="absolute -left-2.5 top-0 flex items-center justify-center w-5 h-5 bg-red-100 rounded-full ring-4 ring-white z-10">
-                                    <i class="fa-solid fa-triangle-exclamation text-red-600 text-[10px]"></i>
-                                </span>
-                                <div class="ml-10">
-                                    <h3 class="flex items-center mb-1 text-sm font-semibold text-gray-900">Menunggu Tindakan</h3>
-                                    <p class="mb-4 text-xs text-gray-500">Tiket perbaikan belum diproses oleh teknisi.</p>
-                                </div>
-                            </div>
-                        `;
+                    // Render Informasi Target yang lebih rapi
+                    if (isAreaInspection && locationName) {
+                        elAssetName.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <span class="text-base font-bold text-slate-800">${locationName}</span>
+                                <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-100 uppercase">Kesatuan Area</span>
+                            </div>`;
+                        elAssetLoc.innerHTML = `
+                            <span class="text-xs text-slate-500 flex items-center gap-1.5">
+                                <i class="fa-solid fa-location-dot text-slate-400"></i> Mencakup semua aset di area ini
+                            </span>`;
+                    } else if (data.asset) {
+                        elAssetName.innerHTML = `
+                            <div class="flex flex-col">
+                                <span class="text-base font-bold text-slate-800">${data.asset.name}</span>
+                                ${data.asset.serial_number ? `<span class="text-xs text-slate-400 font-mono mt-0.5">SN: ${data.asset.serial_number}</span>` : ''}
+                            </div>`;
+                        elAssetLoc.innerHTML = `
+                            <span class="text-xs text-slate-500 flex items-center gap-1.5">
+                                <i class="fa-solid fa-location-dot text-slate-400"></i> ${data.asset.location ? data.asset.location.name : 'Lokasi tidak diketahui'}
+                            </span>`;
                     } else {
-                        // Normal, sembunyikan timeline
-                        timelineSection.classList.add('hidden');
+                        elAssetName.innerHTML = '<span class="italic text-slate-400 text-sm">Data Tidak Tersedia</span>';
+                        elAssetLoc.innerHTML = '';
                     }
 
-                    // Isi Tabel Checklist
+                    document.getElementById('modalTechName').innerText = data.technician ? data.technician.name : 'Tidak diketahui';
+                    document.getElementById('modalTime').innerText = new Date(data.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                    document.getElementById('modalExportBtn').href = `/admin/export/maintenances/${data.id}`;
+
+                    // Parser JSON Checklist
                     const tbody = document.getElementById('modalChecklistBody');
                     tbody.innerHTML = '';
 
-                    const templateItems = data.checklist_template ? data.checklist_template.items : [];
-                    let answers = data.inspection_data || {};
-                    if (typeof answers === 'string') {
-                        try {
-                            answers = JSON.parse(answers);
-                        } catch(e) {
-                            answers = {};
-                        }
+                    const groupedItems = data.grouped_items || [];
+                    let parsedData = data.inspection_data || {};
+                    if (typeof parsedData === 'string') {
+                        try { parsedData = JSON.parse(parsedData); } catch(e) { parsedData = {}; }
                     }
 
-                    if(templateItems.length > 0) {
-                        templateItems.forEach((item, index) => {
-                            // Ambil jawaban dari JSON (key = item.id)
-                            let answerValue = answers[item.id] || '-';
-                            let isIssue = false;
+                    const isNewFormat = parsedData.hasOwnProperty('answers');
+                    let answers      = isNewFormat ? (parsedData.answers || {}) : parsedData;
+                    let itemNotes    = isNewFormat ? (parsedData.notes || {}) : {};
+                    let failedAssets = isNewFormat ? (parsedData.failed_assets || {}) : {};
 
-                            // Logika Tampilan Jawaban
-                            if (item.type === 'pass_fail') {
-                                if (answerValue === 'pass') {
-                                    answerValue = '<span class="text-green-600 font-bold">Normal</span>';
-                                } else if (answerValue === 'fail') {
-                                    answerValue = '<span class="text-red-600 font-bold">Masalah</span>';
-                                    isIssue = true;
-                                }
-                            } else if (item.type === 'numeric' && item.unit) {
-                                answerValue += ' ' + item.unit;
-                            }
+                    if (groupedItems.length > 0) {
+                        let count = 1;
 
-                            // Icon Status
-                            let statusIcon = isIssue 
-                                ? '<i class="fa-solid fa-triangle-exclamation text-red-500 text-lg"></i>' 
-                                : '<i class="fa-solid fa-check-circle text-green-500 text-lg"></i>';
-                            
-                            let row = `
-                                <tr>
-                                    <td class="px-4 py-2 text-center text-gray-400 text-xs">${index + 1}</td>
-                                    <td class="px-4 py-2 text-gray-700 font-medium">
-                                        ${item.question}
+                        groupedItems.forEach((group) => {
+                            // Header Kategori Bersih (Pengganti bg-indigo-900)
+                            tbody.innerHTML += `
+                                <tr class="bg-slate-50 border-y border-slate-200">
+                                    <td colspan="4" class="px-5 py-3">
+                                        <span class="text-slate-700 text-xs font-bold uppercase tracking-wider">
+                                            Kategori: ${group.template_name}
+                                        </span>
                                     </td>
-                                    <td class="px-4 py-2">${answerValue}</td>
-                                    <td class="px-4 py-2 text-center">${statusIcon}</td>
-                                </tr>
-                            `;
-                            tbody.innerHTML += row;
-                        });
-                    } else if (Object.keys(answers).length > 0) {
-                        // Fallback jika tidak ada template (Legacy Data / Template Terhapus)
-                        // Coba iterate answers langsung (hanya key/value)
-                        Object.keys(answers).forEach((key, index) => {
-                             let row = `
-                                <tr>
-                                    <td class="px-4 py-2 text-center text-gray-400 text-xs">${index + 1}</td>
-                                    <td class="px-4 py-2 text-gray-700 italic">Item #${key} (Template Hilang)</td>
-                                    <td class="px-4 py-2">${answers[key]}</td>
-                                    <td class="px-4 py-2 text-center">-</td>
-                                </tr>
-                            `;
-                            tbody.innerHTML += row;
+                                </tr>`;
+
+                            group.items.forEach((item) => {
+                                // Sub-header (Pengganti bg-gradient)
+                                if (item.type === 'header') {
+                                    tbody.innerHTML += `
+                                        <tr class="bg-white">
+                                            <td colspan="4" class="px-5 py-3 border-b border-slate-100">
+                                                <span class="text-slate-800 text-sm font-semibold border-l-2 border-blue-500 pl-2">
+                                                    ${item.question}
+                                                </span>
+                                            </td>
+                                        </tr>`;
+                                    return;
+                                }
+
+                                const answerValue = answers[item.id] !== undefined ? answers[item.id] : '-';
+                                const noteValue   = itemNotes[item.id] || '';
+                                let isIssue       = false;
+                                let displayAnswer = '';
+
+                                // Logika Label Jawaban (Bersih, flat color, tidak norak)
+                                if (answerValue === 'pass' || answerValue === 'ya') {
+                                    displayAnswer = `<span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1.5 rounded-md text-xs font-semibold border border-emerald-100/50 w-full justify-center"><i class="fa-solid fa-check text-emerald-500"></i> ${answerValue === 'ya' ? 'Ya' : 'Normal'}</span>`;
+                                } else if (answerValue === 'fail' || answerValue === 'tidak') {
+                                    displayAnswer = `<span class="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 px-2.5 py-1.5 rounded-md text-xs font-semibold border border-rose-100/50 w-full justify-center"><i class="fa-solid fa-xmark text-rose-500"></i> ${answerValue === 'tidak' ? 'Tidak' : 'Masalah'}</span>`;
+                                    isIssue = true;
+                                } else if (answerValue === 'na') {
+                                    displayAnswer = `<span class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-500 px-2.5 py-1.5 rounded-md text-xs font-semibold border border-slate-200/50 w-full justify-center">N/A</span>`;
+                                } else if (answerValue === '-') {
+                                    displayAnswer = `<span class="text-slate-300 italic text-xs w-full text-center block">Kosong</span>`;
+                                } else {
+                                    displayAnswer = `<span class="text-slate-700 font-medium text-sm">${answerValue} ${item.unit ? `<span class="text-slate-400 text-xs ml-1">${item.unit}</span>` : ''}</span>`;
+                                }
+
+                                // Info aset rusak jika ada
+                                let assetTag = '';
+                                if (isIssue && failedAssets[item.id]) {
+                                    assetTag = `
+                                        <div class="mt-2 inline-flex items-center gap-1.5 text-xs text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100">
+                                            <i class="fa-solid fa-arrow-turn-down -rotate-90 text-rose-400"></i>
+                                            Aset Terkait: <span class="font-semibold">${failedAssets[item.id]}</span>
+                                        </div>`;
+                                }
+
+                                // Catatan
+                                let noteHtml = noteValue ? `<p class="text-sm text-slate-600 mt-1">${noteValue}</p>` : '<span class="text-slate-300">-</span>';
+                                
+                                // Efek warna baris jika bermasalah
+                                const rowBg = isIssue ? 'bg-rose-50/20' : 'bg-white hover:bg-slate-50/50 transition-colors';
+
+                                let row = `
+                                    <tr class="${rowBg}">
+                                        <td class="px-5 py-4 text-center text-slate-400 text-sm align-top font-medium">${count++}</td>
+                                        <td class="px-5 py-4 align-top">
+                                            <p class="text-slate-700 text-sm font-medium">${item.question}</p>
+                                            ${assetTag}
+                                        </td>
+                                        <td class="px-5 py-4 text-center align-top">
+                                            ${displayAnswer}
+                                        </td>
+                                        <td class="px-5 py-4 align-top">
+                                            ${noteHtml}
+                                        </td>
+                                    </tr>
+                                `;
+                                tbody.innerHTML += row;
+                            });
                         });
                     } else {
-                        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-gray-400">Tidak ada detail checklist.</td></tr>';
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="4" class="px-5 py-12 text-center text-slate-400">
+                                    <i class="fa-regular fa-folder-open text-3xl mb-3 block text-slate-300"></i>
+                                    Tidak ada rincian data inspeksi.
+                                </td>
+                            </tr>`;
                     }
 
-                    // Update Notes Section
+                    // ── 5. Render Timeline Perbaikan (Baru) ──
+                    const timelineSection = document.getElementById('modalTimelineSection');
+                    const timelineBody = document.getElementById('modalTimelineBody');
+                    
+                    // Handle both snake_case and camelCase for relationships
+                    const wo = data.work_order || data.workOrder;
+                    
+                    if (wo) {
+                        timelineSection.classList.remove('hidden');
+                        timelineBody.innerHTML = '';
+                        
+                        const histories = wo.histories || [];
+                        
+                        // 1. Paporan (Dibuat)
+                        timelineBody.innerHTML += `
+                            <div class="relative pl-10">
+                                <span class="absolute left-0 top-1 flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 ring-4 ring-white">
+                                    <i class="fa-solid fa-flag text-blue-600 text-[10px]"></i>
+                                </span>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800">Tiket Dilaporkan (#${wo.ticket_number})</p>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">Dilaporkan Oleh: <span class="font-semibold text-slate-700">${wo.reporter ? wo.reporter.name : 'Teknisi Patroli'}</span></p>
+                                    <p class="text-[10px] text-slate-400 mt-1 uppercase font-mono">${new Date(wo.created_at).toLocaleString('id-ID', {dateStyle:'medium', timeStyle:'short'})}</p>
+                                </div>
+                            </div>`;
+                        
+                        // 2. Histori Dinamis
+                        histories.forEach(h => {
+                            let icon = 'fa-arrow-right-arrow-left';
+                            let color = 'bg-slate-100 text-slate-500';
+                            let actionLabel = h.action;
+
+                            const statusThemes = {
+                                'open': { label: 'Dibuka Kembali', icon: 'fa-folder-open', color: 'bg-rose-100 text-rose-600' },
+                                'in_progress': { label: 'Mulai Dikerjakan', icon: 'fa-screwdriver-wrench', color: 'bg-blue-100 text-blue-600' },
+                                'handover': { label: 'Serah Terima (Handover)', icon: 'fa-hands-holding', color: 'bg-indigo-100 text-indigo-600' },
+                                'completed': { label: 'Perbaikan Selesai', icon: 'fa-check-double', color: 'bg-emerald-100 text-emerald-600' },
+                                'verified': { label: 'Diverifikasi oleh Admin', icon: 'fa-certificate', color: 'bg-green-100 text-green-600' },
+                                'pending_part': { label: 'Menunggu Suku Cadang', icon: 'fa-clock', color: 'bg-amber-100 text-amber-600' }
+                            };
+
+                            const theme = statusThemes[h.action] || { label: h.action, icon: 'fa-circle-dot', color: 'bg-slate-100 text-slate-500' };
+                            
+                            timelineBody.innerHTML += `
+                                <div class="relative pl-10">
+                                    <span class="absolute left-0 top-1 flex items-center justify-center w-5 h-5 rounded-full ${theme.color} ring-4 ring-white">
+                                        <i class="fa-solid ${theme.icon} text-[10px]"></i>
+                                    </span>
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-800">${theme.label}</p>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">Oleh: <span class="font-semibold text-slate-700">${h.user ? h.user.name : 'N/A'}</span></p>
+                                        ${h.notes ? `<p class="text-[11px] text-slate-600 italic mt-1.5 p-2 bg-slate-50 rounded border border-slate-100">"${h.notes}"</p>` : ''}
+                                        <p class="text-[10px] text-slate-400 mt-1 uppercase font-mono">${new Date(h.created_at).toLocaleString('id-ID', {dateStyle:'medium', timeStyle:'short'})}</p>
+                                    </div>
+                                </div>`;
+                        });
+                    } else {
+                        timelineSection.classList.add('hidden');
+                    }
+
+                    // Menampilkan Notes
                     const notesSection = document.getElementById('modalNotesSection');
                     const notesText = document.getElementById('modalNotesText');
-                    
-                    if(data.notes && data.notes !== '-') {
+                    if (data.notes && data.notes.trim() !== '' && data.notes !== '-') {
                         notesSection.classList.remove('hidden');
                         notesText.innerText = data.notes;
                     } else {
                         notesSection.classList.add('hidden');
-                        notesText.innerText = '-';
                     }
 
                     document.getElementById('detailLogModal').classList.remove('hidden');
                 }
             } catch (error) {
-                Swal.fire('Gagal!', 'Gagal mengambil data detail.', 'error');
-                console.error(error);
+                console.error('Error:', error);
+                alert('Gagal memuat detail riwayat: ' + error.message);
             }
         }
     </script>
     
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        /* Scrollbar yang lebih bersih */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        [x-cloak] { display: none !important; }
     </style>
 @endsection

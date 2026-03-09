@@ -45,16 +45,24 @@ class StoreAssetRequest extends FormRequest
             ],
 
             'location_id' => [
-                'nullable', // Mengizinkan kosong (misal untuk Software/Lisensi)
-                // Pastikan ID lokasi benar-benar ada di DB jika diisi
+                'nullable',
                 Rule::exists('locations', 'id'),
             ],
 
-            // --- Status: enum DB reference ---
+            // --- Induk Aset (untuk Software/Lisensi) ---
+            // Bisa menerima ID tunggal atau Array ID (untuk Bulk Assignment)
+            'parent_asset_id' => [
+                'nullable',
+            ],
+            'parent_asset_id.*' => [
+                'nullable',
+                Rule::exists('assets', 'id'),
+            ],
+
+            // --- Status: enum DB reference (termasuk status software) ---
             'status' => [
                 'required',
-                // Cocokkan tepat dengan nilai ENUM di tabel assets
-                Rule::in(['normal', 'rusak', 'maintenance', 'hilang']),
+                Rule::in(['normal', 'rusak', 'maintenance', 'hilang', 'aktif', 'kedaluwarsa', 'ditangguhkan']),
             ],
 
             // --- Tanggal: tidak boleh tanggal masa depan ---

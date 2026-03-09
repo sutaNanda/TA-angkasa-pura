@@ -52,14 +52,20 @@ class UpdateAssetRequest extends FormRequest
             ],
 
             'location_id' => [
-                'nullable', // Mengizinkan kosong (misal untuk Software/Lisensi)
+                'nullable',
                 Rule::exists('locations', 'id'),
             ],
 
-            // --- Status ---
+            // --- Induk Aset (untuk Software/Lisensi) ---
+            'parent_asset_id' => [
+                'nullable',
+                Rule::exists('assets', 'id'),
+            ],
+
+            // --- Status (termasuk status software) ---
             'status' => [
                 'required',
-                Rule::in(['normal', 'rusak', 'maintenance', 'hilang']),
+                Rule::in(['normal', 'rusak', 'maintenance', 'hilang', 'aktif', 'kedaluwarsa', 'ditangguhkan']),
             ],
 
             // --- Tanggal ---

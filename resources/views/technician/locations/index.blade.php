@@ -6,7 +6,7 @@
 <div class="space-y-6">
 
     {{-- HEADER & PENCARIAN & ACTION --}}
-    <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+    <div class="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
         <form action="{{ route('technician.locations.index') }}" method="GET" class="flex flex-col md:flex-row gap-4 w-full md:w-3/4">
             <div class="flex-1 relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>

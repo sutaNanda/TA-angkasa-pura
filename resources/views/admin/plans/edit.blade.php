@@ -96,20 +96,55 @@
                             @error('configs') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
-                        {{-- Target Assets Selection --}}
-                        <div x-show="selectedCategoryIds.length > 0" class="mt-8 border border-gray-200 rounded-xl overflow-hidden shadow-inner bg-gray-50/30">
+                        {{-- Target Type Selector --}}
+                        <div class="mt-8 border-t border-gray-100 pt-6">
+                            <label class="block text-sm font-bold text-gray-700 mb-3">Target Pengecekan <span class="text-red-500">*</span></label>
+                            <div class="flex gap-4">
+                                <label class="flex-1 cursor-pointer group">
+                                    <input type="radio" name="target_type" value="asset" x-model="targetType" class="peer sr-only">
+                                    <div class="p-3 rounded-xl border-2 transition-all duration-200 peer-checked:border-blue-500 peer-checked:bg-blue-50/50 hover:bg-gray-50 border-gray-200">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                                <i class="fa-solid fa-box text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-gray-800 text-sm">Per Aset</div>
+                                                <div class="text-[10px] text-gray-500">Buat tiket terpisah untuk tiap aset</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="flex-1 cursor-pointer group">
+                                    <input type="radio" name="target_type" value="location" x-model="targetType" class="peer sr-only">
+                                    <div class="p-3 rounded-xl border-2 transition-all duration-200 peer-checked:border-purple-500 peer-checked:bg-purple-50/50 hover:bg-gray-50 border-gray-200">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                                                <i class="fa-solid fa-layer-group text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-gray-800 text-sm">Kesatuan Lokasi</div>
+                                                <div class="text-[10px] text-gray-500">Tiket gabungan untuk 1 area (Area-Centric)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {{-- Target Assets Selection (Visible if Target = Asset) --}}
+                        <div x-show="targetType === 'asset' && selectedCategoryIds.length > 0" x-transition class="mt-6 border border-gray-200 rounded-xl overflow-hidden shadow-inner bg-gray-50/30">
                             <div class="bg-gray-100/50 px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
                                     <h4 class="font-bold text-gray-800 text-sm">Pilih Aset Spesifik</h4>
-                                    <p class="text-xs text-gray-500 italic">Biarkan kosong jika ingin berlaku untuk <strong>semua</strong> aset di kategori terpilih.</p>
+                                    <p class="text-xs text-gray-500 italic">Biarkan kosong jika ingin berlaku untuk <strong>semua</strong> aset di kategori-kategori terpilih.</p>
                                 </div>
                                 
                                 <div class="flex items-center gap-2">
                                     <div class="relative">
                                         <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                                        <input type="text" x-model="searchQuery" placeholder="Cari by nama/SN..." class="pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48 shadow-sm">
+                                        <input type="text" x-model="searchQueryAsset" placeholder="Cari by nama/SN..." class="pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full sm:w-48 shadow-sm">
                                     </div>
-                                    <button type="button" @click="selectAll()" class="text-xs bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap shadow-sm">
+                                    <button type="button" @click="selectAllAssets()" class="text-xs bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap shadow-sm">
                                         <span x-text="selectedAssets.length === filteredAssets.length && filteredAssets.length > 0 ? 'Batal Pilih Semua' : 'Pilih Semua'"></span>
                                     </button>
                                 </div>
@@ -118,12 +153,12 @@
                             <div class="p-0 max-h-[400px] overflow-y-auto bg-white">
                                 <div x-show="isLoading" class="p-12 text-center text-gray-500">
                                     <i class="fa-solid fa-spinner fa-spin text-2xl mb-3 text-blue-500"></i>
-                                    <p class="text-sm font-medium">Sinkronisasi daftar aset...</p>
+                                    <p class="text-sm font-medium">Mengambil daftar aset dari berbagai kategori...</p>
                                 </div>
                                 
                                 <div x-show="!isLoading && filteredAssets.length === 0" style="display: none;" class="p-12 text-center text-gray-500">
                                     <i class="fa-solid fa-box-open text-4xl mb-4 text-gray-200"></i>
-                                    <p class="text-sm">Tidak ada aset ditemukan.</p>
+                                    <p class="text-sm">Tidak ada aset ditemukan pada kategori tersebut.</p>
                                 </div>
 
                                 <ul x-show="!isLoading && filteredAssets.length > 0" class="divide-y divide-gray-100">
@@ -161,8 +196,60 @@
                                     <i class="fa-solid fa-check-double mr-1.5"></i>
                                     <span x-text="`${selectedAssets.length} aset terpilih`"></span>
                                 </div>
-                                <div x-show="selectedAssets.length === 0" class="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] uppercase tracking-widest">
+                                <div x-show="selectedAssets.length === 0" class="bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] uppercase tracking-widest animate-pulse">
                                     Berlaku untuk SEMUA aset
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Target Locations Selection (Visible if Target = Location) --}}
+                        <div x-show="targetType === 'location'" x-transition class="mt-6 border border-gray-200 rounded-xl overflow-hidden shadow-inner bg-gray-50/30">
+                            <div class="bg-purple-50/50 px-4 py-3 border-b border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-sm text-purple-900">Pilih Lokasi Ruangan</h4>
+                                    <p class="text-xs text-gray-500 italic">Pilih area/kesatuan ruang mana saja yang termasuk dalam jadwal perlakuan ini.</p>
+                                </div>
+                                
+                                <div class="flex items-center gap-2">
+                                    <div class="relative">
+                                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                        <input type="text" x-model="searchQueryLocation" placeholder="Cari by nama..." class="pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 w-full sm:w-48 shadow-sm">
+                                    </div>
+                                    <button type="button" @click="selectAllLocations()" class="text-xs bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap shadow-sm">
+                                        <span x-text="selectedLocations.length === filteredLocations.length && filteredLocations.length > 0 ? 'Batal Pilih Semua' : 'Pilih Semua'"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="p-0 max-h-[400px] overflow-y-auto bg-white">
+                                <ul x-show="filteredLocations.length > 0" class="divide-y divide-gray-100">
+                                    <template x-for="location in filteredLocations" :key="location.id">
+                                        <li>
+                                            <label class="flex items-start gap-3 p-4 hover:bg-purple-50/30 cursor-pointer transition">
+                                                <div class="pt-1">
+                                                    <input type="checkbox" name="location_ids[]" :value="location.id" x-model="selectedLocations" class="w-4.5 h-4.5 text-purple-600 rounded focus:ring-purple-500 border-gray-300 transition-all cursor-pointer">
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-bold text-sm text-gray-900" x-text="location.name"></span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <div x-show="filteredLocations.length === 0" class="p-12 text-center text-gray-500">
+                                    <i class="fa-solid fa-location-dot text-4xl mb-4 text-gray-200"></i>
+                                    <p class="text-sm">Tidak ada lokasi ditemukan.</p>
+                                </div>
+                            </div>
+                            <div class="bg-purple-50/50 px-5 py-3 border-t border-purple-200 text-xs text-purple-700 flex justify-between font-bold items-center">
+                                <div>
+                                    <i class="fa-solid fa-check-double mr-1.5"></i>
+                                    <span x-text="`${selectedLocations.length} lokasi terpilih`"></span>
+                                </div>
+                                <div x-show="selectedLocations.length === 0" class="text-red-500">
+                                    Mohon pilih minimal 1 lokasi!
                                 </div>
                             </div>
                         </div>
@@ -297,16 +384,21 @@
 <script>
     function maintenancePlanForm() {
         return {
+            targetType: '{{ old('target_type', $plan->target_type) }}',
             frequency: '{{ old('frequency', $plan->frequency) }}',
             configs: {!! json_encode(old('configs', $plan->template_configs ?? [['category_id' => '', 'template_id' => '']])) !!},
             assets: {!! json_encode($allCategoryAssets) !!},
             selectedAssets: {!! json_encode(old('asset_ids', $plan->assets->pluck('id')->map(fn($id) => (string)$id)->toArray())) !!},
-            searchQuery: '',
+            locations: {!! json_encode($locations) !!},
+            selectedLocations: {!! json_encode(old('location_ids', $plan->locations->pluck('id')->map(fn($id) => (string)$id)->toArray())) !!},
+            searchQueryAsset: '',
+            searchQueryLocation: '',
             isLoading: false,
 
             init() {
                 // Ensure IDs are strings for comparison
                 this.selectedAssets = this.selectedAssets.map(id => id.toString());
+                this.selectedLocations = this.selectedLocations.map(id => id.toString());
                 
                 // If assets are already loaded by PHP, no need for immediate fetch
                 if (this.assets.length === 0 && this.selectedCategoryIds.length > 0) {
@@ -330,13 +422,23 @@
             },
 
             get filteredAssets() {
-                if (this.searchQuery === '') {
+                if (this.searchQueryAsset === '') {
                     return this.assets;
                 }
-                const lowerCaseQuery = this.searchQuery.toLowerCase();
+                const lowerCaseQuery = this.searchQueryAsset.toLowerCase();
                 return this.assets.filter(asset => {
                     return asset.name.toLowerCase().includes(lowerCaseQuery) || 
                            (asset.serial_number && asset.serial_number.toLowerCase().includes(lowerCaseQuery));
+                });
+            },
+
+            get filteredLocations() {
+                if (this.searchQueryLocation === '') {
+                    return this.locations;
+                }
+                const lowerCaseQuery = this.searchQueryLocation.toLowerCase();
+                return this.locations.filter(location => {
+                    return location.name.toLowerCase().includes(lowerCaseQuery);
                 });
             },
 
@@ -368,11 +470,19 @@
                 }
             },
 
-            selectAll() {
+            selectAllAssets() {
                 if (this.selectedAssets.length === this.filteredAssets.length && this.filteredAssets.length > 0) {
                     this.selectedAssets = [];
                 } else {
                     this.selectedAssets = this.filteredAssets.map(asset => asset.id.toString());
+                }
+            },
+
+            selectAllLocations() {
+                if (this.selectedLocations.length === this.filteredLocations.length && this.filteredLocations.length > 0) {
+                    this.selectedLocations = [];
+                } else {
+                    this.selectedLocations = this.filteredLocations.map(location => location.id.toString());
                 }
             }
         }

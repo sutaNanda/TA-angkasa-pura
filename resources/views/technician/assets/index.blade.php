@@ -18,7 +18,7 @@
     {{-- SIDEBAR: LOCATION TREE --}}
     <div :class="showSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
          id="locationSidebar" 
-         class="fixed lg:relative inset-y-0 left-0 z-50 w-80 lg:w-1/3 bg-white rounded-xl shadow-2xl lg:shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-100px)] lg:h-full transform transition-transform duration-300">
+         class="fixed lg:relative inset-y-0 left-0 z-50 w-80 lg:w-1/3 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-[calc(100vh-100px)] lg:h-full transform transition-transform duration-300">
         
         {{-- Overlay untuk mobile --}}
         <div x-show="showSidebar" @click="showSidebar = false" x-transition.opacity

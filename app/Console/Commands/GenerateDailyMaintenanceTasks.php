@@ -27,7 +27,7 @@ class GenerateDailyMaintenanceTasks extends Command
         
         // Get all active maintenance plans
         $plans = MaintenancePlan::where('is_active', true)
-            ->with(['assets'])
+            ->with(['assets', 'locations'])
             ->get();
         
         if ($plans->isEmpty()) {
@@ -52,15 +52,34 @@ class GenerateDailyMaintenanceTasks extends Command
             $configCategoryIds = collect($plan->template_configs)->pluck('category_id')->toArray();
             
             // 1. Get all assets that SHOULD be covered by this plan
-            if ($plan->assets->isNotEmpty()) {
-                // Filter plan specific assets to ensure they belong to requested categories
+            $targetAssetIds = [];
+            
+            if ($plan->target_type === 'location' && $plan->locations->isNotEmpty()) {
+                $locationIds = $plan->locations->pluck('id')->toArray();
+                
+                $physicalAssets = Asset::whereIn('location_id', $locationIds)
+                    ->whereIn('category_id', $configCategoryIds)
+                    ->pluck('id')->toArray();
+                    
+                $softwareAssets = Asset::whereHas('parentAsset', function($q) use ($locationIds) {
+                        $q->whereIn('location_id', $locationIds);
+                    })
+                    ->whereIn('category_id', $configCategoryIds)
+                    ->pluck('id')->toArray();
+                    
+                $targetAssetIds = array_unique(array_merge($physicalAssets, $softwareAssets));
+                
+            } elseif ($plan->target_type === 'asset' && $plan->assets->isNotEmpty()) {
                 $targetAssetIds = $plan->assets
                     ->whereIn('category_id', $configCategoryIds)
                     ->pluck('id')
                     ->toArray();
             } else {
-                // Get all assets in the specified categories
-                $targetAssetIds = Asset::whereIn('category_id', $configCategoryIds)->pluck('id')->toArray();
+                if ($plan->assets->isNotEmpty()) {
+                    $targetAssetIds = $plan->assets->whereIn('category_id', $configCategoryIds)->pluck('id')->toArray();
+                } else {
+                    $targetAssetIds = Asset::whereIn('category_id', $configCategoryIds)->pluck('id')->toArray();
+                }
             }
 
             if (empty($targetAssetIds)) {
@@ -89,7 +108,7 @@ class GenerateDailyMaintenanceTasks extends Command
                 continue;
             }
 
-            $assets = Asset::whereIn('id', $remainingAssetIds)->get();
+            $assets = Asset::with(['parentAsset', 'category'])->whereIn('id', $remainingAssetIds)->get();
             
             $categoryNames = collect($plan->template_configs)
                 ->map(fn($c) => \App\Models\Category::find($c['category_id'])->name ?? '?')
@@ -99,15 +118,20 @@ class GenerateDailyMaintenanceTasks extends Command
             $this->line("    → {$assets->count()} new assets to process");
             
             if (!$isDryRun) {
-                // 4. GROUP BY Location ID
-                $groupedAssets = $assets->groupBy('location_id');
+                // 4. GROUP BY Location ID (Resolving physical location for software)
+                $groupedAssets = $assets->groupBy(function ($asset) {
+                    if ($asset->location_id) return $asset->location_id;
+                    if ($asset->parentAsset && $asset->parentAsset->location_id) return $asset->parentAsset->location_id;
+                    return 'virtual';
+                });
 
                 foreach ($groupedAssets as $locationId => $assetsInLocation) {
                     try {
+                        $dbLocationId = $locationId === 'virtual' ? null : $locationId;
                         Maintenance::create([
                             'maintenance_plan_id' => $plan->id,
                             'checklist_template_id' => null, // Multiple templates handled by plan
-                            'location_id' => $locationId ?: null,
+                            'location_id' => $dbLocationId,
                             'target_asset_ids' => $assetsInLocation->pluck('id')->toArray(),
                             'scheduled_date' => $today,
                             'type' => 'preventive',

@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    {{-- Favicon --}}
+    <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
+    
     <title>Login - Asset Monitoring</title>
 
     {{-- Memuat CSS & JS via Vite --}}
@@ -20,12 +24,12 @@
     <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in">
 
         {{-- Header / Logo --}}
-        <div class="bg-blue-600 p-8 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 text-white mb-4 backdrop-blur-sm">
-                <i class="fa-solid fa-cube text-3xl"></i>
+        <div class="bg-blue-600 p-8 text-center uppercase tracking-widest">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-4 shadow-lg">
+                <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
-            <h2 class="text-2xl font-bold text-white">Selamat Datang</h2>
-            <p class="text-blue-100 text-sm mt-1">Sistem Monitoring Aset</p>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Angkasa Pura</h2>
+            <p class="text-blue-100 text-xs mt-1 font-medium italic opacity-80">Asset Monitoring System</p>
         </div>
 
         {{-- Form Login --}}

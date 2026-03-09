@@ -6,10 +6,7 @@ use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\AssetController;
 use App\Http\Controllers\Admin\ChecklistController;
 use App\Http\Controllers\Admin\MaintenanceController;
-
 use App\Http\Controllers\Technician\DashboardController;
-
-// Import Controller dari folder Auth yang baru
 use App\Http\Controllers\Auth\AuthController;
 
 /*
@@ -89,6 +86,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
         
         // Specific API Helper Routes (Must be above /{id} to avoid collision)
         Route::get('/by-location/{id}', [AssetController::class, 'getByLocation'])->name('by-location');
+        Route::get('/hardware-by-location/{id}', [AssetController::class, 'getHardwareByLocation'])->name('hardware-by-location');
         Route::get('/by-category/{id}', [AssetController::class, 'getByCategory'])->name('by-category');
         Route::get('/by-categories', [AssetController::class, 'getByCategories'])->name('by-categories');
 
@@ -133,8 +131,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
     // })->name('checklists.index');
 
     // ... di dalam group admin ...
-    Route::get('/maintenances', [MaintenanceController::class, 'index'])->name('maintenances.index');
-    Route::get('/maintenances/{id}', [MaintenanceController::class, 'show'])->name('maintenances.show');
+    Route::get('/maintenances', [App\Http\Controllers\Admin\MaintenanceController::class, 'index'])->name('maintenances.index');
+    Route::get('/maintenances/{id}', [App\Http\Controllers\Admin\MaintenanceController::class, 'show'])->name('maintenances.show');
+    
+    // Task Management (Reschedule)
+    Route::get('/maintenance-tasks', [App\Http\Controllers\Admin\MaintenanceController::class, 'tasks'])->name('maintenances.tasks');
+    Route::post('/maintenance-tasks/{id}/reschedule', [App\Http\Controllers\Admin\MaintenanceController::class, 'reschedule'])->name('maintenances.reschedule');
     Route::get('/export/maintenances/{id}', [App\Http\Controllers\Admin\ExportController::class, 'exportMaintenance'])->name('maintenances.export');
     
     // Export All Maintenances Logbook
@@ -268,6 +270,9 @@ Route::prefix('technician')->name('technician.')->middleware(['auth', 'role:tekn
     // Unified Maintenance Inspection (Grouped by Location)
     Route::get('/maintenance-inspection/{maintenance}', [App\Http\Controllers\Technician\LocationInspectionController::class, 'inspectMaintenance'])->name('locations.maintenance.inspect');
     Route::post('/maintenance-inspection/{maintenance}', [App\Http\Controllers\Technician\LocationInspectionController::class, 'storeMaintenance'])->name('locations.maintenance.inspect.store');
+
+    Route::get('/maintenance-group-inspection', [App\Http\Controllers\Technician\LocationInspectionController::class, 'inspectMaintenanceGroup'])->name('locations.maintenance.inspect_group');
+    Route::post('/maintenance-group-inspection', [App\Http\Controllers\Technician\LocationInspectionController::class, 'storeMaintenanceGroup'])->name('locations.maintenance.inspect_group.store');
 
     // Preventive Maintenance Routes
     Route::get('/maintenance/{maintenanceId}/start', [App\Http\Controllers\Technician\MaintenanceController::class, 'start'])->name('maintenance.start');

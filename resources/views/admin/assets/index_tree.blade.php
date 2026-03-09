@@ -235,14 +235,14 @@
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
                                 <select name="category_id" id="assetCategory" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" required>
                                     <option value="">Pilih Kategori</option>
-                                    @foreach($categories as $cat) <option value="{{ $cat->id }}">{{ $cat->name }}</option> @endforeach
+                                    @foreach($categories as $cat) <option value="{{ $cat->id }}" data-name="{{ $cat->name }}">{{ $cat->name }}</option> @endforeach
                                 </select>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-1">Serial Number</label>
+                                <label class="block text-sm font-bold text-gray-700 mb-1" id="labelSN">Serial Number</label>
                                 <input type="text" name="serial_number" id="assetSN" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" placeholder="SN-12345">
                             </div>
                             <div>
@@ -258,6 +258,22 @@
                                 <label class="block text-sm font-bold text-gray-700 mb-1">Tanggal Perolehan</label>
                                 <input type="date" name="purchase_date" id="assetDate" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500">
                             </div>
+                        </div>
+
+                        {{-- Parent Asset Group (Software/Lisensi Only) --}}
+                        <div id="parentAssetGroup" class="hidden">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">
+                                <i class="fa-solid fa-link text-purple-500 mr-1"></i> Diinstal Pada (Induk Aset) <span class="text-red-500">*</span>
+                            </label>
+                            <select name="parent_asset_id[]" id="parentAssetId" multiple class="w-full rounded-lg text-sm border-2 border-purple-400 pl-2 py-2 bg-purple-50/50 focus:ring-purple-500 focus:border-purple-500 min-h-[100px] custom-scrollbar">
+                                <option value="" disabled>-- Pilih Aset Hardware Induk --</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
+                                <i class="fa-solid fa-keyboard text-gray-400"></i> Tahan tombol <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-[10px] font-mono mx-0.5">CTRL</kbd> (Windows) atau <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-[10px] font-mono mx-0.5">CMD</kbd> (Mac) untuk memilih > 1 PC sekaligus.
+                            </p>
+                            <p class="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-info text-purple-400"></i> Software/Lisensi akan mengikuti lokasi fisik aset induknya.
+                            </p>
                         </div>
 
                         <div>
@@ -325,10 +341,23 @@
                     </button>
                 </div>
 
-                <div class="p-6">
+                <div class="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {{-- Parent Asset Badge (untuk Software) --}}
+                    <div id="detailParentAsset" class="hidden mb-4">
+                        <div class="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-link text-purple-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-purple-500 font-bold uppercase tracking-wider">Terinstal di</p>
+                                <p class="text-sm font-bold text-purple-800" id="detailParentName">-</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-x-8 gap-y-6 mb-6">
                         <div>
-                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Serial Number</p>
+                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1" id="detailSNLabel">Serial Number</p>
                             <p class="text-gray-800 font-mono font-medium text-sm border-b border-gray-100 pb-1" id="detailSN">-</p>
                         </div>
                         <div>
@@ -343,11 +372,21 @@
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-4">
                         <h3 class="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2">
                             <i class="fa-solid fa-list-check text-blue-500"></i> Spesifikasi Teknis
                         </h3>
                         <div id="detailSpecs" class="space-y-2 text-sm text-gray-600"></div>
+                    </div>
+
+                    {{-- Child Assets / Software Terinstal Section --}}
+                    <div id="detailChildAssetsSection" class="hidden">
+                        <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                            <h3 class="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-microchip text-indigo-500"></i> Komponen & Software Terinstal
+                            </h3>
+                            <div id="detailChildAssets"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -388,7 +427,102 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', () => fetchLocations());
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchLocations();
+            initCategoryListener();
+        });
+
+        // --- PARENT-CHILD ASSET LOGIC ---
+        function initCategoryListener() {
+            const categorySelect = document.getElementById('assetCategory');
+            categorySelect.addEventListener('change', async function(e) {
+                // Determine if event is triggered manually by JS editAsset (which passes detail)
+                const isEditTrigger = e.detail && e.detail.isEdit === true;
+                
+                const selectedOption = this.options[this.selectedIndex];
+                const categoryName = selectedOption.getAttribute('data-name') || '';
+                const isSoftware = categoryName.toLowerCase().includes('software') || categoryName.toLowerCase().includes('lisensi');
+
+                const labelSN = document.getElementById('labelSN');
+                const statusSelect = document.getElementById('assetStatus');
+                const parentGroup = document.getElementById('parentAssetGroup');
+                const parentSelect = document.getElementById('parentAssetId');
+
+                // Preserve current status/parent if we are editing
+                const currentStatus = statusSelect.value;
+
+                if (isSoftware) {
+                    labelSN.innerText = 'License Key / Product Key';
+                    statusSelect.innerHTML = `
+                        <option value="aktif">Aktif</option>
+                        <option value="kedaluwarsa">Kedaluwarsa (Expired)</option>
+                        <option value="ditangguhkan">Ditangguhkan</option>
+                    `;
+                    // Attempt to restore status if valid for software
+                    if (['aktif', 'kedaluwarsa', 'ditangguhkan'].includes(currentStatus)) {
+                        statusSelect.value = currentStatus;
+                    }
+                    parentGroup.classList.remove('hidden');
+                    parentSelect.required = true;
+                    
+                    // Only fetch here if it was a user click. 
+                    // If it's from editAsset, editAsset will handle the fetch to ensure correct targetLocId
+                    if (!isEditTrigger) {
+                        await fetchParentAssets(currentLocId);
+                    }
+                    
+                } else {
+                    labelSN.innerText = 'Serial Number';
+                    statusSelect.innerHTML = `
+                        <option value="normal">Normal</option>
+                        <option value="rusak">Rusak</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="hilang">Hilang</option>
+                    `;
+                    // Attempt to restore status if valid for hardware
+                    if (['normal', 'rusak', 'maintenance', 'hilang'].includes(currentStatus)) {
+                        statusSelect.value = currentStatus;
+                    }
+                    parentGroup.classList.add('hidden');
+                    parentSelect.required = false;
+                    parentSelect.innerHTML = '<option value="" disabled>-- Pilih Aset Hardware Induk --</option>';
+                }
+            });
+        }
+
+        async function fetchParentAssets(locationId) {
+            if (!locationId) return;
+            const parentSelect = document.getElementById('parentAssetId');
+            
+            // Try parse prefill as array or split by comma
+            let currentSelected = [];
+            if (parentSelect.dataset.prefill) {
+                try {
+                    currentSelected = JSON.parse(parentSelect.dataset.prefill);
+                    if (!Array.isArray(currentSelected)) currentSelected = [currentSelected];
+                } catch(e) {
+                    currentSelected = parentSelect.dataset.prefill.split(',');
+                }
+            }
+
+            parentSelect.innerHTML = '<option value="" disabled>Memuat aset induk...</option>';
+            try {
+                const res = await fetch(`/admin/assets/hardware-by-location/${locationId}`);
+                const json = await res.json();
+                parentSelect.innerHTML = '';
+                
+                if (json.status === 'success' && json.data.length > 0) {
+                    json.data.forEach(asset => {
+                        const isSelected = currentSelected.includes(asset.id.toString()) || currentSelected.includes(asset.id) ? 'selected' : '';
+                        parentSelect.innerHTML += `<option value="${asset.id}" ${isSelected}>${asset.name} (${asset.serial_number || '-'})</option>`;
+                    });
+                } else {
+                    parentSelect.innerHTML = '<option value="" disabled>-- Tidak ada hardware di lokasi ini --</option>';
+                }
+            } catch (e) {
+                parentSelect.innerHTML = '<option value="" disabled>-- Gagal memuat data --</option>';
+            }
+        }
 
         // HELPERS
         function closeModal(id) {
@@ -766,7 +900,17 @@
 
                     document.getElementById('detailStatus').className = `px-3 py-1 text-white rounded shadow-sm text-[10px] font-bold uppercase tracking-wider mb-2 inline-block ${statusClass}`;
 
-                    document.getElementById('detailLoc').innerText = asset.location ? asset.location.name : '-';
+                    if (asset.location) {
+                        document.getElementById('detailLoc').innerHTML = `<span class="text-gray-800">${asset.location.name}</span>`;
+                    } else if (asset.parent_asset) {
+                        const parentLocName = asset.parent_asset.location ? asset.parent_asset.location.name : 'Lokasi tidak diketahui';
+                        document.getElementById('detailLoc').innerHTML = `
+                            <span class="text-blue-600 font-bold">${parentLocName}</span><br>
+                            <span class="text-[11px] text-gray-500"><i class="fa-solid fa-microchip text-purple-400 mr-1"></i>Diinstal pada: ${asset.parent_asset.name}</span>
+                        `;
+                    } else {
+                        document.getElementById('detailLoc').innerHTML = `<span class="italic text-gray-400">Virtual / Tanpa Lokasi</span>`;
+                    }
                     document.getElementById('detailDate').innerText = asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
 
                     const specBox = document.getElementById('detailSpecs');
@@ -783,6 +927,63 @@
                     } else {
                         specBox.innerHTML = '<p class="text-gray-400 italic text-center py-4">Tidak ada spesifikasi khusus.</p>';
                     }
+
+                    // --- Render Parent Asset Badge (Software) ---
+                    const parentBadge = document.getElementById('detailParentAsset');
+                    if (asset.parent_asset) {
+                        parentBadge.classList.remove('hidden');
+                        document.getElementById('detailParentName').innerText = asset.parent_asset.name + (asset.parent_asset.serial_number ? ` (${asset.parent_asset.serial_number})` : '');
+                    } else {
+                        parentBadge.classList.add('hidden');
+                    }
+
+                    // --- Render Child Assets Section (Hardware) ---
+                    const childAssetsSection = document.getElementById('detailChildAssetsSection');
+                    const childAssetsContainer = document.getElementById('detailChildAssets');
+                    
+                    if (asset.child_assets && asset.child_assets.length > 0) {
+                        childAssetsSection.classList.remove('hidden');
+                        let childHtml = '<div class="space-y-3">';
+                        asset.child_assets.forEach(child => {
+                            // Tentukan warna badge status software
+                            let cStatusClass = 'bg-gray-500 text-white';
+                            if(child.status === 'aktif') cStatusClass = 'bg-green-100 text-green-700 border border-green-200';
+                            else if(child.status === 'kedaluwarsa') cStatusClass = 'bg-red-100 text-red-700 border border-red-200';
+                            else if(child.status === 'ditangguhkan') cStatusClass = 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+                            else if(child.status === 'normal') cStatusClass = 'bg-green-500 text-white'; // Fallback
+                            
+                            childHtml += `
+                                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                                            <i class="fa-solid fa-compact-disc text-indigo-500"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm cursor-pointer hover:text-blue-600 transition" onclick="showAssetDetail(${child.id})">${child.name}</p>
+                                            <p class="text-[11px] text-gray-500 mt-0.5">Key: <span class="font-mono text-gray-700">${child.serial_number || '-'}</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide ${cStatusClass}">${child.status}</span>
+                                        <p class="text-[10px] text-gray-400 mt-1">${child.category ? child.category.name : 'Software'}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        childHtml += '</div>';
+                        childAssetsContainer.innerHTML = childHtml;
+                    } else {
+                        // Jika bukan software (hardware normal) dan tidak punya parent (bukan software)
+                        // Tampilkan section dengan pesan kosong agar terlihat bahwa ini hardware
+                        if (!asset.parent_asset) {
+                            childAssetsSection.classList.remove('hidden');
+                            childAssetsContainer.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-4 bg-white rounded-lg border border-dashed border-gray-200">Tidak ada komponen atau software yang diinstal pada aset ini.</p>';
+                        } else {
+                            // Jika dia itu software, sembunyikan section child assets
+                            childAssetsSection.classList.add('hidden');
+                        }
+                    }
+
                     document.getElementById('detailModal').classList.remove('hidden');
                 }
             } catch (e) { Swal.fire('Error', 'Gagal memuat detail data.', 'error'); }
@@ -800,6 +1001,13 @@
             document.getElementById('modalLocationName').innerText = currentLocName;
             document.getElementById('assetModalTitle').innerText = 'Tambah Aset Baru';
             
+            // PARENT-CHILD RESET
+            const categorySelect = document.getElementById('assetCategory');
+            categorySelect.value = '';
+            document.getElementById('parentAssetId').dataset.prefill = '';
+            // Trigger change event to reset fields
+            categorySelect.dispatchEvent(new Event('change'));
+
             document.getElementById('previewImagesContainer').innerHTML = '';
             document.getElementById('existingImagesContainer').innerHTML = '';
             document.getElementById('existingImagesLabel').style.display = 'none';
@@ -825,9 +1033,30 @@
 
                     document.getElementById('assetName').value = asset.name;
                     document.getElementById('assetCategory').value = asset.category_id;
+                    
+                    // PREFILL STATUS & PARENT ASSET FOR EVENT LISTENER
                     document.getElementById('assetStatus').value = asset.status;
+                    if(asset.parent_asset_id) {
+                        document.getElementById('parentAssetId').dataset.prefill = asset.parent_asset_id;
+                    } else {
+                        document.getElementById('parentAssetId').dataset.prefill = '';
+                    }
+                    
                     document.getElementById('assetSN').value = asset.serial_number || '';
                     document.getElementById('assetDate').value = asset.purchase_date ? asset.purchase_date.split('T')[0] : '';
+                    
+                    // Trigger Event Listener untuk mengubah label & opsi status
+                    // Pass isEdit: true agar initCategoryListener tidak fetch ulang sembarangan
+                    document.getElementById('assetCategory').dispatchEvent(new CustomEvent('change', { detail: { isEdit: true } }));
+
+                    // Fetch parent assets secara eksplisit jika dia software
+                    const catSelect = document.getElementById('assetCategory');
+                    const catName = catSelect.options[catSelect.selectedIndex].getAttribute('data-name') || '';
+                    if (catName.toLowerCase().includes('software') || catName.toLowerCase().includes('lisensi')) {
+                        // Cari lokasi dari induknya jika punya, atau dari currentLocId
+                        let targetLocId = asset.parent_asset ? asset.parent_asset.location_id : currentLocId;
+                        await fetchParentAssets(targetLocId);
+                    }
 
                     // Clear previous kept_images hidden inputs
                     document.querySelectorAll('input[name="kept_images[]"]').forEach(el => el.remove());

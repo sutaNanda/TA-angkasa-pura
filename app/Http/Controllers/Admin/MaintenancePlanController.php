@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\MaintenancePlan;
 use App\Models\Category;
 use App\Models\ChecklistTemplate;
+use App\Models\Location;
 use Illuminate\Support\Facades\Artisan;
 
 class MaintenancePlanController extends Controller
@@ -39,8 +40,9 @@ class MaintenancePlanController extends Controller
     {
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
+        $locations = Location::orderBy('name')->get();
         
-        return view('admin.plans.create', compact('categories', 'templates'));
+        return view('admin.plans.create', compact('categories', 'templates', 'locations'));
     }
 
     /**
@@ -50,6 +52,7 @@ class MaintenancePlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'target_type' => 'required|in:asset,location',
             'configs' => 'required|array|min:1',
             'configs.*.category_id' => 'required|exists:categories,id',
             'configs.*.template_id' => 'required|exists:checklist_templates,id',
@@ -59,6 +62,8 @@ class MaintenancePlanController extends Controller
             'notes' => 'nullable|string',
             'asset_ids' => 'nullable|array',
             'asset_ids.*' => 'exists:assets,id',
+            'location_ids' => 'nullable|array',
+            'location_ids.*' => 'exists:locations,id',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
@@ -66,8 +71,16 @@ class MaintenancePlanController extends Controller
 
         $plan = MaintenancePlan::create($validated);
 
-        if ($request->has('asset_ids')) {
-            $plan->assets()->sync($request->asset_ids);
+        if ($validated['target_type'] === 'asset') {
+            if ($request->has('asset_ids')) {
+                $plan->assets()->sync($request->asset_ids);
+            }
+            $plan->locations()->detach();
+        } else if ($validated['target_type'] === 'location') {
+            if ($request->has('location_ids')) {
+                $plan->locations()->sync($request->location_ids);
+            }
+            $plan->assets()->detach();
         }
 
         return redirect()->route('admin.plans.index')
@@ -79,9 +92,10 @@ class MaintenancePlanController extends Controller
      */
     public function edit($id)
     {
-        $plan = MaintenancePlan::with(['assets.category', 'assets.location'])->findOrFail($id);
+        $plan = MaintenancePlan::with(['assets.category', 'assets.location', 'locations'])->findOrFail($id);
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
+        $locations = Location::orderBy('name')->get();
 
         // Fetch all current assets in category for selection list
         $categoryIds = collect($plan->template_configs)->pluck('category_id')->unique()->toArray();
@@ -90,7 +104,7 @@ class MaintenancePlanController extends Controller
             ->orderBy('name')
             ->get();
         
-        return view('admin.plans.edit', compact('plan', 'categories', 'templates', 'allCategoryAssets'));
+        return view('admin.plans.edit', compact('plan', 'categories', 'templates', 'allCategoryAssets', 'locations'));
     }
 
     /**
@@ -102,6 +116,7 @@ class MaintenancePlanController extends Controller
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'target_type' => 'required|in:asset,location',
             'configs' => 'required|array|min:1',
             'configs.*.category_id' => 'required|exists:categories,id',
             'configs.*.template_id' => 'required|exists:checklist_templates,id',
@@ -111,6 +126,8 @@ class MaintenancePlanController extends Controller
             'notes' => 'nullable|string',
             'asset_ids' => 'nullable|array',
             'asset_ids.*' => 'exists:assets,id',
+            'location_ids' => 'nullable|array',
+            'location_ids.*' => 'exists:locations,id',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
@@ -118,9 +135,19 @@ class MaintenancePlanController extends Controller
 
         $plan->update($validated);
 
-        if ($request->has('asset_ids')) {
-            $plan->assets()->sync($request->asset_ids);
-        } else {
+        if ($validated['target_type'] === 'asset') {
+            if ($request->has('asset_ids')) {
+                $plan->assets()->sync($request->asset_ids);
+            } else {
+                $plan->assets()->detach();
+            }
+            $plan->locations()->detach();
+        } else if ($validated['target_type'] === 'location') {
+            if ($request->has('location_ids')) {
+                $plan->locations()->sync($request->location_ids);
+            } else {
+                $plan->locations()->detach();
+            }
             $plan->assets()->detach();
         }
 

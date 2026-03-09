@@ -116,10 +116,20 @@
                         @forelse($patrols as $locationId => $items)
                             @php
                                 $firstItem = $items->first();
-                                $location = $firstItem->location ?? ($firstItem->asset->location ?? null);
+                                $location = $firstItem->location ?? ($firstItem->asset->location ?? ($firstItem->asset->parentAsset->location ?? null));
+                                
+                                if (!$location && $firstItem->target_asset_ids && is_array($firstItem->target_asset_ids) && count($firstItem->target_asset_ids) > 0) {
+                                    $firstId = $firstItem->target_asset_ids[0];
+                                    $fallbackAsset = \App\Models\Asset::with('parentAsset')->find($firstId);
+                                    if ($fallbackAsset) {
+                                        $location = $fallbackAsset->location ?? ($fallbackAsset->parentAsset->location ?? null);
+                                    }
+                                }
+
                                 $locationName = $locationId == 0 ? 'Virtual / Software' : ($location->name ?? 'Lokasi Tidak Diketahui');
                                 $pendingCount = $items->count();
                                 $previewItems = $items->take(4);
+                                $maintenanceIds = $items->pluck('id')->implode(',');
                             @endphp
 
                             <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors duration-300">
@@ -153,18 +163,11 @@
                                     @endif
                                 </div>
 
-                                {{-- Locked Indicator / Virtual Bypass Button --}}
-                                @if($locationId == 0)
-                                    <a href="{{ route('technician.scan.show', 0) }}" class="mt-2 bg-blue-50 hover:bg-blue-100 rounded-xl py-3 px-4 flex items-center justify-center gap-2 border border-blue-200 shadow-sm transition-colors active:scale-95 cursor-pointer group-hover:border-blue-300">
-                                        <i class="fa-solid fa-cloud-arrow-up text-blue-600 text-sm"></i>
-                                        <span class="text-[9px] font-black text-blue-700 uppercase tracking-widest leading-none">Mulai Patroli Virtual</span>
-                                    </a>
-                                @else
-                                    <div class="mt-2 bg-gray-50 rounded-xl py-3 px-4 flex items-center justify-center gap-2 border border-gray-100 border-dashed">
-                                        <i class="fa-solid fa-qrcode text-gray-300 text-xs"></i>
-                                        <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Scan QR Lokasi</span>
-                                    </div>
-                                @endif
+                                {{-- Single Unified Inspect Button --}}
+                                <a href="{{ route('technician.locations.maintenance.inspect_group') }}?ids={{ $maintenanceIds }}" class="mt-2 bg-blue-50 hover:bg-blue-100 rounded-xl py-3 px-4 flex items-center justify-center gap-2 border border-blue-200 shadow-sm transition-colors active:scale-95 cursor-pointer group-hover:border-blue-300">
+                                    <i class="fa-solid fa-play text-blue-600 text-sm"></i>
+                                    <span class="text-[9px] font-black text-blue-700 uppercase tracking-widest leading-none">Mulai Patroli Area</span>
+                                </a>
                             </div>
                         @empty
                             <div class="col-span-full text-center py-16 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-200">

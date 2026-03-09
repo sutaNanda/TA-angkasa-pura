@@ -8,6 +8,9 @@
     {{-- Font Awesome (Boleh pakai CDN jika belum install via NPM) --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    {{-- Favicon --}}
+    <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
+
     {{-- VITE: Ini sudah memuat Tailwind CSS & SweetAlert dari 'app.js' --}}
     {{-- Posisi harus DI DALAM <head>, bukan sebagai atribut --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])

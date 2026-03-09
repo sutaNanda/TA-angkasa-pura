@@ -136,20 +136,6 @@
     </script>
     @endif
 
-    {{-- KARTU QR CODE KHUSUS (BUATAN / VIRTUAL) --}}
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-6">
-        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 shrink-0">
-            {!! QrCode::size(120)->generate($asset->uuid) !!}
-        </div>
-        <div class="text-center md:text-left">
-            <h3 class="font-bold text-gray-800 mb-2">QR Code Inventaris</h3>
-            <p class="text-sm text-gray-500 mb-4 max-w-sm">Scan QR Code ini dengan aplikasi scanner patroli Anda untuk memulai inspeksi harian/mingguan pada mesin ini secara acak (manual).</p>
-            <a href="{{ route('technician.inspection.show', $asset->id) }}" class="inline-block bg-blue-100 hover:bg-blue-600 text-blue-700 hover:text-white px-5 py-2 rounded-xl text-sm font-bold transition-colors">
-                <i class="fa-solid fa-stethoscope mr-1"></i> Mulai Inspeksi Sekarang
-            </a>
-        </div>
-    </div>
-
     {{-- RIWAYAT KERUSAKAN / TIKET TERAKHIR --}}
     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
         <h3 class="font-bold text-gray-800 mb-6 flex items-center gap-2">

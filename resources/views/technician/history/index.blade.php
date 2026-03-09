@@ -118,43 +118,60 @@
                         @php
                             $isIssue = $item->status == 'issue_found';
                             
-                            // Parse Inspection Data (handle double encoding if necessary)
-                            $answers = $item->inspection_data;
-                            if (is_string($answers)) {
-                                $answers = json_decode($answers, true);
-                            }
-
                             // Prepare data for Alpine (Checklist)
+                            $inspectionData = $item->inspection_data;
+                            if (is_string($inspectionData)) {
+                                $inspectionData = json_decode($inspectionData, true);
+                            }
+                            $answers = isset($inspectionData['answers']) ? $inspectionData['answers'] : (is_array($inspectionData) ? $inspectionData : []);
+                            $failedAssets = isset($inspectionData['failed_assets']) ? $inspectionData['failed_assets'] : [];
+
+                            // Filter checklist items that actually have answers in this log
+                            $relevantItems = collect($item->all_checklist_items)->only(array_keys($answers));
+
                             $patrolData = [
-                                'asset_name' => $item->asset->name,
-                                'location_name' => $item->asset->location->name,
+                                'asset_name' => $item->asset ? $item->asset->name : ($item->location ? $item->location->name : 'Area Umum'),
+                                'location_name' => $item->asset ? ($item->asset->location->name ?? '-') : ($item->location ? $item->location->name : '-'),
                                 'time' => $item->created_at->format('H:i'),
                                 'status' => $item->status,
-                                'notes' => $item->notes ?? '-', // Handle notes if available
-                                'checklist' => ($item->checklistTemplate && $item->checklistTemplate->items) ? $item->checklistTemplate->items->map(function($q) use ($answers) {
-                                    $ans = $answers[$q->id] ?? '-';
-                                    
-                                    // Determine display text for Pass/Fail
-                                    $displayText = $ans;
-                                    $isIssueItem = false;
-
-                                    if ($q->type == 'pass_fail') {
-                                        if ($ans == 'pass') {
-                                            $displayText = 'Normal / OK';
-                                        } elseif ($ans == 'fail') {
-                                            $displayText = 'Ada Masalah';
-                                            $isIssueItem = true;
-                                        }
-                                    } elseif ($q->type == 'numeric' && $q->unit) {
-                                        $displayText .= ' ' . $q->unit;
-                                    }
-
+                                'ticket_number' => $item->workOrder ? $item->workOrder->ticket_number : null,
+                                'notes' => $item->notes ?? '-',
+                                'failed_assets' => $failedAssets,
+                                'grouped_checklist' => $relevantItems->groupBy('checklist_template_id')->map(function($items, $templateId) use ($answers, $failedAssets) {
+                                    $templateName = $items->first()->template ? $items->first()->template->name : 'Umum';
                                     return [
-                                        'question' => $q->question,
-                                        'answer' => $displayText,
-                                        'is_issue' => $isIssueItem
+                                        'template_name' => $templateName,
+                                        'items' => $items->map(function($q) use ($answers, $failedAssets) {
+                                            $ans = $answers[$q->id] ?? '-';
+                                            $displayText = $ans;
+                                            $isIssueItem = false;
+
+                                            // Extended Issue Detection
+                                            $failValues = ['fail', 'broken', 'no', 'rusak', 'tidak_oke'];
+                                            if (in_array(strtolower($ans), $failValues)) {
+                                                $isIssueItem = true;
+                                            }
+
+                                            if ($q->type == 'pass_fail') {
+                                                if ($ans == 'pass') $displayText = 'Normal / OK';
+                                                elseif ($ans == 'fail') $displayText = 'Ada Masalah';
+                                            } elseif ($q->type == 'checkbox') {
+                                                if ($ans == 'yes') $displayText = 'Ya';
+                                                elseif ($ans == 'no') $displayText = 'Tidak';
+                                            } elseif ($q->type == 'numeric' && $q->unit) {
+                                                $displayText .= ' ' . $q->unit;
+                                            }
+
+                                            return [
+                                                'id' => $q->id,
+                                                'question' => $q->question,
+                                                'answer' => $displayText,
+                                                'is_issue' => $isIssueItem,
+                                                'failed_asset_name' => $failedAssets[$q->id] ?? null
+                                            ];
+                                        })->values()->toArray()
                                     ];
-                                })->values()->toArray() : [], // Reset keys and fallback to empty
+                                })->values()->toArray(),
                             ];
                         @endphp
                         @php
@@ -180,9 +197,9 @@
                                 </button>
                             </div>
 
-                            <h4 class="font-bold text-gray-800 text-sm line-clamp-1">{{ $item->asset->name }}</h4>
+                            <h4 class="font-bold text-gray-800 text-sm line-clamp-1">{{ $item->asset ? $item->asset->name : ($item->location ? $item->location->name : 'Area Umum') }}</h4>
                             <p class="text-xs text-gray-500 mb-1">
-                                <i class="fa-solid fa-location-dot mr-1"></i> {{ $item->asset->location->name }}
+                                <i class="fa-solid fa-location-dot mr-1"></i> {{ $item->asset ? ($item->asset->location->name ?? '-') : ($item->location ? $item->location->name : '-') }}
                             </p>
                         </div>
                     @endforeach
@@ -364,23 +381,57 @@
                 </button>
             </div>
             <div class="p-4 overflow-y-auto" x-if="selectedPatrol">
-                <div class="mb-4">
-                    <h4 class="font-bold text-gray-800 text-lg" x-text="selectedPatrol?.asset_name"></h4>
-                    <p class="text-xs text-gray-500"><i class="fa-solid fa-location-dot"></i> <span x-text="selectedPatrol?.location_name"></span> &bull; <span x-text="selectedPatrol?.time"></span></p>
+                <div class="mb-4 pb-4 border-b border-gray-100">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-lg" x-text="selectedPatrol?.asset_name"></h4>
+                            <p class="text-xs text-gray-500"><i class="fa-solid fa-location-dot"></i> <span x-text="selectedPatrol?.location_name"></span> &bull; <span x-text="selectedPatrol?.time"></span></p>
+                        </div>
+                        <template x-if="selectedPatrol?.ticket_number">
+                            <span class="bg-red-50 text-red-600 px-2 py-1 rounded font-mono text-[10px] font-bold border border-red-100 shadow-sm" x-text="'#' + selectedPatrol?.ticket_number"></span>
+                        </template>
+                    </div>
                 </div>
 
-                {{-- Checklist Table --}}
-                <div class="border rounded-lg overflow-hidden">
-                    <template x-for="(item, index) in selectedPatrol?.checklist" :key="index">
-                        <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50">
-                            <div class="flex-1 pr-2">
-                                <p class="text-xs font-semibold text-gray-700" x-text="item.question"></p>
+                {{-- Grouped Checklist Table --}}
+                <div class="space-y-4">
+                    <template x-for="(group, gIndex) in selectedPatrol?.grouped_checklist" :key="gIndex">
+                        <div class="border rounded-xl overflow-hidden shadow-sm bg-white">
+                            {{-- Template Header --}}
+                            <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest" x-text="group.template_name"></span>
+                                <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" x-text="group.items.length + ' Poin'"></span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold" 
-                                      :class="item.is_issue ? 'text-red-600' : 'text-green-600'" 
-                                      x-text="item.answer"></span>
-                                <i class="fa-solid" :class="item.is_issue ? 'fa-triangle-exclamation text-red-500' : 'fa-check text-green-500'"></i>
+                            
+                            {{-- Items --}}
+                            <div class="divide-y divide-gray-50">
+                                <template x-for="(item, iIndex) in group.items" :key="iIndex">
+                                    <div class="p-3.5 hover:bg-gray-50/50 transition-colors">
+                                        <div class="flex justify-between items-start gap-3">
+                                            <div class="flex-1">
+                                                <p class="text-xs font-semibold text-gray-700 leading-normal" x-text="item.question"></p>
+                                                
+                                                {{-- Failed Asset Info --}}
+                                                <template x-if="item.is_issue && item.failed_asset_name">
+                                                    <div class="mt-2 inline-flex items-center gap-1.5 text-[10px] text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100">
+                                                        <i class="fa-solid fa-cube text-[9px]"></i>
+                                                        Aset: <span class="font-bold" x-text="item.failed_asset_name"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <span class="text-[11px] font-bold" 
+                                                      :class="item.is_issue ? 'text-red-600' : 'text-green-600'" 
+                                                      x-text="item.answer"></span>
+                                                <i class="fa-solid" 
+                                                   :class="item.is_issue 
+                                                                ? 'fa-circle-exclamation text-red-500 animate-pulse' 
+                                                                : 'fa-circle-check text-green-500'" 
+                                                   style="font-size: 14px;"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </template>
