@@ -8,6 +8,7 @@ use App\Models\MaintenancePlan;
 use App\Models\Category;
 use App\Models\ChecklistTemplate;
 use App\Models\Location;
+use App\Models\Shift;
 use Illuminate\Support\Facades\Artisan;
 
 class MaintenancePlanController extends Controller
@@ -17,7 +18,8 @@ class MaintenancePlanController extends Controller
      */
     public function index()
     {
-        $plans = MaintenancePlan::orderBy('is_active', 'desc')
+        $plans = MaintenancePlan::with('shift')
+            ->orderBy('is_active', 'desc')
             ->orderBy('name')
             ->paginate(20);
         
@@ -41,8 +43,9 @@ class MaintenancePlanController extends Controller
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
         $locations = Location::orderBy('name')->get();
+        $shifts = Shift::orderBy('id')->get();
         
-        return view('admin.plans.create', compact('categories', 'templates', 'locations'));
+        return view('admin.plans.create', compact('categories', 'templates', 'locations', 'shifts'));
     }
 
     /**
@@ -60,6 +63,7 @@ class MaintenancePlanController extends Controller
             'start_date' => 'required|date',
             'is_active' => 'boolean',
             'notes' => 'nullable|string',
+            'shift_id' => 'nullable|exists:shifts,id',
             'asset_ids' => 'nullable|array',
             'asset_ids.*' => 'exists:assets,id',
             'location_ids' => 'nullable|array',
@@ -96,6 +100,7 @@ class MaintenancePlanController extends Controller
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
         $locations = Location::orderBy('name')->get();
+        $shifts = Shift::orderBy('id')->get();
 
         // Fetch all current assets in category for selection list
         $categoryIds = collect($plan->template_configs)->pluck('category_id')->unique()->toArray();
@@ -104,7 +109,7 @@ class MaintenancePlanController extends Controller
             ->orderBy('name')
             ->get();
         
-        return view('admin.plans.edit', compact('plan', 'categories', 'templates', 'allCategoryAssets', 'locations'));
+        return view('admin.plans.edit', compact('plan', 'categories', 'templates', 'allCategoryAssets', 'locations', 'shifts'));
     }
 
     /**
@@ -124,6 +129,7 @@ class MaintenancePlanController extends Controller
             'start_date' => 'required|date',
             'is_active' => 'boolean',
             'notes' => 'nullable|string',
+            'shift_id' => 'nullable|exists:shifts,id',
             'asset_ids' => 'nullable|array',
             'asset_ids.*' => 'exists:assets,id',
             'location_ids' => 'nullable|array',

@@ -97,9 +97,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
     });
 
     // 3. MASTER DATA: LOKASI (API TREE)
-    // PENTING: Ini dikeluarkan dari prefix 'assets' agar URL-nya benar: /admin/api/locations/...
     Route::get('/locations', [LocationController::class, 'index'])->name('locations.index');
-    Route::get('/export/locations-assets', [App\Http\Controllers\Admin\ExportController::class, 'exportAssetLocation'])->name('locations.export');
     Route::prefix('api/locations')->name('locations.')->group(function() {
         Route::get('/tree', [LocationController::class, 'getTree'])->name('tree');
         Route::post('/', [LocationController::class, 'store'])->name('store');
@@ -107,13 +105,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
         Route::delete('/{id}', [LocationController::class, 'destroy'])->name('destroy');
     });
 
+    // 4. MASTER DATA: CHECKLISTS & KATEGORI
     Route::get('/checklists', [ChecklistController::class, 'index'])->name('checklists.index');
     Route::get('/checklists/{id}', [ChecklistController::class, 'show'])->name('checklists.show');
     Route::post('/checklists', [ChecklistController::class, 'store'])->name('checklists.store');
     Route::put('/checklists/{id}', [ChecklistController::class, 'update'])->name('checklists.update');
     Route::delete('/checklists/{id}', [ChecklistController::class, 'destroy'])->name('checklists.destroy');
 
-    // 4. MASTER DATA: KATEGORI
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [CategoryController::class, 'index'])->name('index');
         Route::post('/', [CategoryController::class, 'store'])->name('store');
@@ -121,26 +119,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
         Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
     });
 
-
-
-    // ===========================
-    // 5. MASTER DATA: TEMPLATE CHECKLIST
-    // ===========================
-    // Route::get('/checklists', function () {
-    //     return view('admin.checklists.index');
-    // })->name('checklists.index');
-
-    // ... di dalam group admin ...
+    // 5. OPERASIONAL: RIWAYAT PATROLI
     Route::get('/maintenances', [App\Http\Controllers\Admin\MaintenanceController::class, 'index'])->name('maintenances.index');
     Route::get('/maintenances/{id}', [App\Http\Controllers\Admin\MaintenanceController::class, 'show'])->name('maintenances.show');
     
     // Task Management (Reschedule)
     Route::get('/maintenance-tasks', [App\Http\Controllers\Admin\MaintenanceController::class, 'tasks'])->name('maintenances.tasks');
     Route::post('/maintenance-tasks/{id}/reschedule', [App\Http\Controllers\Admin\MaintenanceController::class, 'reschedule'])->name('maintenances.reschedule');
-    Route::get('/export/maintenances/{id}', [App\Http\Controllers\Admin\ExportController::class, 'exportMaintenance'])->name('maintenances.export');
-    
-    // Export All Maintenances Logbook
-    Route::get('/export/all-maintenances', [App\Http\Controllers\Admin\ExportController::class, 'exportMaintenances'])->name('export.maintenances');
 
     // Maintenance Plans (PM System - Rule-Based)
     Route::prefix('plans')->name('plans.')->group(function() {
@@ -154,52 +139,49 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
         Route::post('/generate-now', [App\Http\Controllers\Admin\MaintenancePlanController::class, 'generateNow'])->name('generate-now');
     });
 
-    // ===========================
-    // 6. OPERASIONAL
-    // ===========================
-
-    // Monitoring Patroli
-    // Route::get('/maintenances', function () {
-    //     return view('admin.maintenances.index');
-    // })->name('maintenances.index');
-
-    // Laporan Kegiatan (LK)
-
-    // ... route logbook ...
-
-    // ===========================
-    // MANAJEMEN TIKET (WORK ORDER)
-    // ===========================
+    // 6. MANAJEMEN TIKET (WORK ORDER)
     Route::get('/work-orders', [App\Http\Controllers\Admin\WorkOrderController::class, 'index'])->name('work-orders.index');
-    Route::get('/export/work-orders', [App\Http\Controllers\Admin\ExportController::class, 'exportWorkOrders'])->name('work-orders.export');
     Route::post('/work-orders', [App\Http\Controllers\Admin\WorkOrderController::class, 'store'])->name('work-orders.store');
-
-    // API Detail untuk Modal
     Route::get('/work-orders/{id}', [App\Http\Controllers\Admin\WorkOrderController::class, 'show'])->name('work-orders.show');
-
-    // Aksi Tombol
     Route::put('/work-orders/{id}/assign', [App\Http\Controllers\Admin\WorkOrderController::class, 'assign'])->name('work-orders.assign');
     Route::post('/work-orders/verify-all', [App\Http\Controllers\Admin\WorkOrderController::class, 'verifyAll'])->name('work-orders.verify-all');
     Route::post('/work-orders/{id}/verify', [App\Http\Controllers\Admin\WorkOrderController::class, 'verify'])->name('work-orders.verify');
     Route::post('/work-orders/{id}/reopen', [App\Http\Controllers\Admin\WorkOrderController::class, 'reopen'])->name('work-orders.reopen');
 
-    // Route::get('/work-orders', function () {
-    //     return view('admin.work_orders.index');
-    // })->name('work-orders.index');
-
-    // ===========================
     // 7. PENGATURAN & KEAMANAN
-    // ===========================
-
-    // USER MANAGEMENT
+    Route::put('/profile/update', [App\Http\Controllers\Admin\UserController::class, 'updateProfile'])->name('profile.update');
     Route::resource('users', App\Http\Controllers\Admin\UserController::class)->except(['create', 'show', 'edit']);
-
-    // Route::get('/users', function () {
-    //     return view('admin.users.index');
-    // })->name('users.index');
-
     Route::get('/audit-logs', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
-    Route::get('/export/audit-logs', [App\Http\Controllers\Admin\ExportController::class, 'exportAuditLogs'])->name('audit.export');
+
+    // ===========================
+    // 8. KHUSUS MANAJER: EXPORT & LAPORAN
+    // ===========================
+    Route::middleware(['role:manajer'])->group(function() {
+        // Export Master Data
+        Route::get('/export/locations-assets', [App\Http\Controllers\Admin\ExportController::class, 'exportAssetLocation'])->name('locations.export');
+        
+        // Export Operasional
+        Route::get('/export/maintenances/{id}', [App\Http\Controllers\Admin\ExportController::class, 'exportMaintenance'])->name('maintenances.export');
+        Route::get('/export/all-maintenances', [App\Http\Controllers\Admin\ExportController::class, 'exportMaintenances'])->name('export.maintenances');
+        Route::get('/export/work-orders', [App\Http\Controllers\Admin\ExportController::class, 'exportWorkOrders'])->name('work-orders.export');
+        
+        // Export Manajemen & Audit
+        Route::get('/export/technician-productivity', [App\Http\Controllers\Admin\UserReportController::class, 'exportProductivity'])->name('export.technician-productivity');
+        Route::get('/export/audit-logs', [App\Http\Controllers\Admin\ExportController::class, 'exportAuditLogs'])->name('audit.export');
+
+        // Modul Laporan (Reporting)
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/work-orders', [App\Http\Controllers\Admin\WorkOrderReportController::class, 'index'])->name('work-orders.index');
+            Route::get('/work-orders/pdf', [App\Http\Controllers\Admin\WorkOrderReportController::class, 'printPdf'])->name('work-orders.pdf');
+            
+            Route::get('/assets', [App\Http\Controllers\Admin\AssetReportController::class, 'index'])->name('assets.index');
+            Route::get('/assets/pdf', [App\Http\Controllers\Admin\AssetReportController::class, 'printPdf'])->name('assets.pdf');
+            
+            Route::get('/patrol-logs', [App\Http\Controllers\Admin\PatrolLogReportController::class, 'index'])->name('patrol-logs.index');
+            Route::get('/patrol-logs/pdf', [App\Http\Controllers\Admin\PatrolLogReportController::class, 'printPdf'])->name('patrol-logs.pdf');
+        });
+    });
+
 });
 
 

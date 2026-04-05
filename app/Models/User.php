@@ -27,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
         'division',
         'requires_password_reset',
         'avatar',
+        'shift_id',
     ];
 
     /**
@@ -58,6 +59,11 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
 
     // --- RELASI ---
 
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class);
+    }
+
     // Divisi disimpan sebagai string sederhana (tanpa relasi ke tabel divisions)
 
     // Teknisi bisa punya banyak riwayat pengecekan rutin
@@ -70,6 +76,11 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
     public function assignedWorkOrders()
     {
         return $this->hasMany(WorkOrder::class, 'technician_id');
+    }
+
+    public function patrolLogs()
+    {
+        return $this->hasMany(PatrolLog::class, 'technician_id');
     }
 
     // --- HELPER FUNCTION (Opsional, biar gampang di Blade nanti) ---

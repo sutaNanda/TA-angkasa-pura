@@ -17,6 +17,7 @@ class MaintenancePlan extends Model
         'start_date',
         'is_active',
         'notes',
+        'shift_id',
     ];
 
     protected $casts = [
@@ -28,6 +29,11 @@ class MaintenancePlan extends Model
     /**
      * Relationships
      */
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
+    }
+
     public function maintenances(): HasMany
     {
         return $this->hasMany(Maintenance::class);

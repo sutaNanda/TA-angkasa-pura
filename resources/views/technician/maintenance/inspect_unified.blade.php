@@ -3,7 +3,7 @@
 @section('header_title', 'Tugas Perawatan Area')
 
 @section('content')
-<div class="container mx-auto px-4 pb-24" x-data="inspectionAreaForm()">
+<div class="container mx-auto px-4 pb-28" x-data="inspectionAreaForm()">
     
     {{-- Info Tugas & Lokasi --}}
     <div class="mb-6 mt-4">
@@ -27,40 +27,49 @@
         @endif
         <input type="hidden" name="primary_template_id" value="{{ $primaryTemplateId }}">
 
-        {{-- WADAH TABEL UTAMA (EXCEL STYLE CLEAN) --}}
-        <div class="bg-white rounded-xl shadow-md border border-gray-300 overflow-hidden mb-8 inspect-wrapper">
+        {{-- WADAH TABEL UTAMA --}}
+        <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden mb-6 inspect-wrapper">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal inspect-table">
-                    
+
                     {{-- HEADER TABEL --}}
-                    <thead>
-                        <tr class="bg-slate-800 text-white text-xs uppercase tracking-wider border-b-2 border-slate-900">
-                            <th class="p-3 text-center w-12 border-r border-slate-700">No</th>
-                            <th class="p-3 min-w-[250px] border-r border-slate-700">Deskripsi Pengecekan</th>
-                            <th class="p-3 text-center w-20 bg-red-900/50 border-r border-slate-700">Error <i class="fa-solid fa-xmark text-red-400 ml-1"></i></th>
-                            <th class="p-3 text-center w-20 bg-gray-600/50 border-r border-slate-700">N/A <i class="fa-solid fa-minus text-gray-300 ml-1"></i></th>
-                            <th class="p-3 text-center w-20 bg-green-900/50 border-r border-slate-700">Normal <i class="fa-solid fa-check text-green-400 ml-1"></i></th>
-                            <th class="p-3 min-w-[300px]">Keterangan / Hasil Pengecekan</th>
+                    <thead class="bg-slate-50 border-b border-gray-100">
+                        <tr>
+                            <th class="px-5 py-4 text-left w-12 text-xs font-semibold text-slate-500 uppercase tracking-wider">No</th>
+                            <th class="px-5 py-4 text-left min-w-[250px] text-xs font-semibold text-slate-500 uppercase tracking-wider">Deskripsi Pengecekan</th>
+                            <th class="px-5 py-4 text-center w-24 text-xs font-semibold text-slate-500 uppercase tracking-wider">Error</th>
+                            <th class="px-5 py-4 text-center w-20 text-xs font-semibold text-slate-500 uppercase tracking-wider">N/A</th>
+                            <th class="px-5 py-4 text-center w-24 text-xs font-semibold text-slate-500 uppercase tracking-wider">Normal</th>
+                            <th class="px-5 py-4 text-left min-w-[280px] text-xs font-semibold text-slate-500 uppercase tracking-wider">Keterangan / Hasil</th>
                         </tr>
                     </thead>
 
-                    <tbody class="border-b-8 border-gray-300">
+                    <tbody class="divide-y divide-gray-50">
                         @php
                             $alphabets = range('a', 'z');
-                            // Normalize to grouped structure even if single template is passed
                             $groups = isset($groupedTemplates) ? $groupedTemplates : [
-                                ['category_name' => $templateName, 'items' => $items]
+                                ['template_name' => $templateName, 'category_name' => $templateName, 'category_id' => null, 'items' => $items]
                             ];
                         @endphp
 
                         @foreach($groups as $groupIndex => $group)
-                            {{-- MAIN CATEGORY HEADER --}}
-                            <tr class="bg-indigo-900 border-y-2 border-indigo-950 section-header-row">
-                                <td colspan="6" class="p-4 font-black text-white uppercase tracking-widest text-sm text-center shadow-inner">
-                                    Kategori Inspeksi: {{ $group['category_name'] }}
+
+                            {{-- LEVEL 1: BARIS KATEGORI SOP (misal: HARDWARE, ACCESS POINT) --}}
+                            <tr class="section-header-row">
+                                <td colspan="6" class="bg-slate-100 px-5 py-3 border-y border-gray-200">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="flex-shrink-0 w-5 h-5 rounded bg-slate-400/20 flex items-center justify-center">
+                                            <i class="fa-solid fa-layer-group text-[10px] text-slate-500"></i>
+                                        </span>
+                                        <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">{{ $group['category_name'] ?? 'Umum' }}</span>
+                                        @if(($group['template_name'] ?? '') !== ($group['category_name'] ?? '') && !empty($group['template_name']))
+                                            <span class="text-gray-300 select-none">›</span>
+                                            <span class="text-xs font-semibold text-slate-500">{{ $group['template_name'] }}</span>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
-                            
+
                             @php
                                 $headerCount = 0;
                                 $itemCount = 0;
@@ -69,79 +78,162 @@
                             @foreach($group['items'] as $item)
                             @if($item->type === 'header')
                                 @php $headerCount++; $itemCount = 0; @endphp
-                                {{-- BARIS HEADER KATEGORI --}}
-                                <tr class="bg-blue-50/80 border-y-2 border-blue-100 section-header-row">
-                                    <td class="p-3 text-center font-black text-blue-900 border-r border-blue-100 text-sm col-header-no">{{ $headerCount }}</td>
-                                    <td colspan="5" class="p-3 font-black text-blue-900 uppercase tracking-widest text-xs col-header-text">
-                                        <span class="mobile-only-number mr-1 hidden">{{ $headerCount }}.</span>{{ $item->question }}
-                                    </td>
-                                </tr>
-                            @else
-                                {{-- BARIS PERTANYAAN --}}
-                                <tr x-data="{ isError: false }" class="hover:bg-gray-50 transition-colors border-b border-gray-200 question-row" :class="isError ? 'bg-red-50/40' : ''">
-                                    
-                                    <td class="p-2 text-center text-gray-500 font-bold text-xs border-r border-gray-200 col-alphabet">
-                                        {{ $alphabets[$itemCount] ?? '-' }}.
-                                    </td>
-                                    
-                                    <td class="p-2 text-gray-800 font-bold whitespace-normal border-r border-gray-200 pl-4 text-sm col-question">
-                                        {{ $item->question }}
-                                    </td>
-                                    
-                                    <td class="p-2 text-center border-r border-gray-200 bg-red-50/30 hover:bg-red-50/80 transition-colors col-error">
-                                        <input type="radio" name="answers[{{ $item->id }}]" value="fail" 
-                                               class="w-5 h-5 text-red-600 border-gray-400 focus:ring-red-500 cursor-pointer radio-input issue-trigger" 
-                                               required @change="isError = true; checkGlobalIssue()">
-                                    </td>
-
-                                    <td class="p-2 text-center border-r border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors col-na">
-                                        <input type="radio" name="answers[{{ $item->id }}]" value="na" 
-                                               class="w-5 h-5 text-gray-500 border-gray-400 focus:ring-gray-400 cursor-pointer radio-input" 
-                                               required @change="isError = false; checkGlobalIssue()">
-                                    </td>
-                                    
-                                    <td class="p-2 text-center border-r border-gray-200 bg-green-50/30 hover:bg-green-50/80 transition-colors col-normal">
-                                        <input type="radio" name="answers[{{ $item->id }}]" value="pass" 
-                                               class="w-5 h-5 text-green-600 border-gray-400 focus:ring-green-500 cursor-pointer radio-input" 
-                                               required @change="isError = false; checkGlobalIssue()">
-                                    </td>
-                                    
-                                    {{-- KOLOM KETERANGAN (MENGGUNAKAN LOGIKA TIPE PERTANYAAN) --}}
-                                    <td class="p-2 col-notes align-top">
-                                        <div class="space-y-2">
-                                            {{-- MUNCULKAN INPUT SESUAI TIPE DI ADMIN --}}
-                                            @if($item->type === 'number')
-                                                <div class="flex items-center gap-2">
-                                                    <input type="number" step="any" name="notes[{{ $item->id }}]" class="w-full text-sm px-3 py-2 border-2 border-blue-300 bg-blue-50 focus:bg-white rounded-lg focus:ring-blue-500 font-bold text-blue-900 shadow-sm" placeholder="Ketik Angka Hasil..." required>
-                                                    @if($item->unit)
-                                                        <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-2 rounded-md border border-gray-200">{{ $item->unit }}</span>
-                                                    @endif
-                                                </div>
-                                            @elseif($item->type === 'text')
-                                                <input type="text" name="notes[{{ $item->id }}]" class="w-full text-sm px-3 py-2 border-2 border-blue-300 bg-blue-50 focus:bg-white rounded-lg focus:ring-blue-500 font-bold text-blue-900 shadow-sm" placeholder="Ketik Hasil Pengecekan..." required>
-                                            @else
-                                                <input type="text" name="notes[{{ $item->id }}]" class="w-full text-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 bg-white" placeholder="Keterangan opsional...">
-                                            @endif
-                                            
-                                            {{-- DROPDOWN ASET (HANYA MUNCUL JIKA ERROR DIKLIK) --}}
-                                            <div x-show="isError" x-collapse x-cloak class="mt-2">
-                                                <select name="failed_asset_ids[{{ $item->id }}]" class="w-full text-xs px-3 py-2 border border-red-300 bg-red-50 text-red-800 rounded-lg focus:ring-red-500 font-bold shadow-sm" :required="isError">
-                                                    <option value="">-- Tandai Aset yang Rusak --</option>
-                                                    <option value="area_general">⚠️ Bukan Aset (Masalah Ruangan Umum)</option>
-                                                    <optgroup label="Daftar Aset di Area Ini">
-                                                        @foreach($assets as $assetOption)
-                                                            <option value="{{ $assetOption->id }}">{{ $assetOption->name }} (SN: {{ $assetOption->serial_number ?? '-' }})</option>
-                                                        @endforeach
-                                                    </optgroup>
-                                                </select>
-                                                <p class="text-[9px] text-red-500 mt-1 font-bold ml-1"><i class="fa-solid fa-link"></i> Pilih aset agar masuk riwayat kerusakan.</p>
-                                            </div>
+                                {{-- LEVEL 2: BARIS SUB-HEADER ITEM --}}
+                                <tr class="section-header-row">
+                                    <td colspan="6" class="bg-slate-50 px-5 py-2.5 border-b border-gray-100">
+                                        <div class="flex items-center gap-2 pl-4">
+                                            <span class="w-1 h-4 rounded-full bg-slate-300 flex-shrink-0"></span>
+                                            <span class="text-sm font-semibold text-slate-700 col-header-text">
+                                                <span class="col-header-no inline-block w-6 text-slate-400 font-bold">{{ $headerCount }}.</span>
+                                                <span class="mobile-only-number mr-1 hidden">{{ $headerCount }}.</span>{{ $item->question }}
+                                            </span>
                                         </div>
                                     </td>
                                 </tr>
+                            @else
+                                @php
+                                    // Cari aset yang relevan untuk kategori ini
+                                    $groupCategoryId = $group['category_id'] ?? null;
+                                    $relevantAssets = $groupCategoryId && isset($assetsByCategory[$groupCategoryId])
+                                        ? $assetsByCategory[$groupCategoryId]
+                                        : ($assets ?? collect());
+                                    $gridId = 'triage-grid-' . $item->id;
+                                @endphp
+
+                                {{-- LEVEL 3: BARIS PERTANYAAN --}}
+                                <tr x-data="{ isError: false }"
+                                    class="border-b border-gray-100 hover:bg-slate-50/50 transition-colors duration-150 question-row"
+                                    :class="isError ? 'bg-red-50/30' : ''">
+
+                                    {{-- No. Sub-item --}}
+                                    <td class="px-5 py-4 align-middle text-center w-12 col-alphabet">
+                                        <span class="text-xs font-medium text-slate-400">{{ $alphabets[$itemCount] ?? '-' }}.</span>
+                                    </td>
+
+                                    {{-- Deskripsi Pertanyaan --}}
+                                    <td class="px-5 py-4 align-middle whitespace-normal col-question">
+                                        <span class="text-sm text-gray-800 leading-snug">{{ $item->question }}</span>
+                                    </td>
+
+                                    {{-- Radio: Error --}}
+                                    <td class="px-5 py-4 align-middle text-center col-error">
+                                        <input type="radio" name="answers[{{ $item->id }}]" value="fail"
+                                               id="radio-fail-{{ $item->id }}"
+                                               class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-red-500 radio-input issue-trigger"
+                                               required
+                                               @change="isError = true; checkGlobalIssue()"
+                                               data-grid="{{ $gridId }}" data-mode="error">
+                                    </td>
+
+                                    {{-- Radio: N/A --}}
+                                    <td class="px-5 py-4 align-middle text-center col-na">
+                                        <input type="radio" name="answers[{{ $item->id }}]" value="na"
+                                               class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-slate-400 radio-input"
+                                               required
+                                               @change="isError = false; checkGlobalIssue()"
+                                               data-grid="{{ $gridId }}" data-mode="clear">
+                                    </td>
+
+                                    {{-- Radio: Normal --}}
+                                    <td class="px-5 py-4 align-middle text-center col-normal">
+                                        <input type="radio" name="answers[{{ $item->id }}]" value="pass"
+                                               class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-emerald-500 radio-input"
+                                               required
+                                               @change="isError = false; checkGlobalIssue()"
+                                               data-grid="{{ $gridId }}" data-mode="clear">
+                                    </td>
+
+                                    {{-- Kolom Keterangan --}}
+                                    <td class="px-5 py-3.5 align-top col-notes">
+                                        <div class="space-y-2">
+                                            @if($item->type === 'number')
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" step="any" name="notes[{{ $item->id }}]"
+                                                           class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
+                                                           placeholder="Ketik Angka Hasil..." required>
+                                                    @if($item->unit)
+                                                        <span class="flex-shrink-0 text-xs font-medium text-gray-500 bg-gray-50 px-2.5 py-2 rounded-lg border border-gray-200">{{ $item->unit }}</span>
+                                                    @endif
+                                                </div>
+                                            @elseif($item->type === 'text')
+                                                <input type="text" name="notes[{{ $item->id }}]"
+                                                       class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
+                                                       placeholder="Ketik hasil pengecekan..." required>
+                                            @else
+                                                <input type="text" name="notes[{{ $item->id }}]"
+                                                       class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
+                                                       placeholder="Keterangan opsional...">
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                {{-- BARIS MASS TRIAGE GRID (muncul saat Error dipilih) --}}
+                                <tr id="{{ $gridId }}" class="hidden mass-triage-row border-b border-red-100">
+                                    <td colspan="6" class="px-5 py-4 bg-red-50/60">
+
+                                        <div class="flex items-center gap-2 mb-3">
+                                            <span class="flex-shrink-0 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                                                <i class="fa-solid fa-triangle-exclamation text-[9px] text-red-500"></i>
+                                            </span>
+                                            <span class="text-xs font-bold text-red-700 uppercase tracking-wide">Tandai Unit yang Bermasalah</span>
+                                            <span class="ml-auto text-[10px] text-red-400 font-medium" id="count-{{ $item->id }}"></span>
+                                        </div>
+
+                                        {{-- HIDDEN INPUTS container (diisi JS) --}}
+                                        <div id="hidden-inputs-{{ $item->id }}"></div>
+
+                                        @if($relevantAssets->count() > 0)
+                                            {{-- ASSET TILES GRID --}}
+                                            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 mb-3">
+                                                @foreach($relevantAssets as $assetTile)
+                                                    <button type="button"
+                                                            class="asset-tile group relative flex flex-col items-center justify-center gap-1 min-h-[64px] px-2 py-2 rounded-xl border-2 border-gray-200 bg-white text-center transition-all duration-150 active:scale-95 touch-manipulation"
+                                                            data-asset-id="{{ $assetTile->id }}"
+                                                            data-item-id="{{ $item->id }}"
+                                                            data-asset-name="{{ $assetTile->name }}"
+                                                            title="{{ $assetTile->name }} | SN: {{ $assetTile->serial_number ?? '-' }}">
+                                                        <i class="fa-solid fa-desktop text-gray-300 text-base group-[.selected]:text-white transition-colors"></i>
+                                                        <span class="text-[10px] font-bold text-gray-600 leading-tight group-[.selected]:text-white transition-colors text-center line-clamp-2">
+                                                            {{ Str::limit($assetTile->name, 18) }}
+                                                        </span>
+                                                        {{-- Checkmark overlay --}}
+                                                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full items-center justify-center hidden group-[.selected]:flex">
+                                                            <i class="fa-solid fa-check text-white" style="font-size:8px"></i>
+                                                        </span>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+
+                                            {{-- Tombol: Masalah Area (bukan aset spesifik) --}}
+                                            <button type="button"
+                                                    class="asset-tile-general w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl border-2 border-dashed border-red-200 bg-white text-red-500 hover:bg-red-50 text-xs font-semibold transition-all active:scale-95"
+                                                    data-item-id="{{ $item->id }}">
+                                                <i class="fa-solid fa-building-circle-exclamation"></i>
+                                                <span>Masalah Area Umum (Bukan Aset Spesifik)</span>
+                                            </button>
+
+                                            {{-- Counter & info --}}
+                                            <p class="text-[10px] text-red-400 mt-2 flex items-center gap-1">
+                                                <i class="fa-solid fa-circle-info"></i>
+                                                Ketuk unit yang bermasalah. Tiket perbaikan terpisah akan dibuat untuk setiap unit.
+                                            </p>
+                                        @else
+                                            {{-- Fallback jika tidak ada aset terdaftar --}}
+                                            <button type="button"
+                                                    class="asset-tile-general w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl border-2 border-dashed border-red-200 bg-white text-red-500 hover:bg-red-50 text-xs font-semibold transition-all active:scale-95"
+                                                    data-item-id="{{ $item->id }}">
+                                                <i class="fa-solid fa-building-circle-exclamation"></i>
+                                                <span>Laporkan Masalah Area Umum</span>
+                                            </button>
+                                        @endif
+                                    </td>
+                                </tr>
+
                                 @php $itemCount++; @endphp
                             @endif
                             @endforeach
+
                         @endforeach
 
                         {{-- WADAH GLOBAL LAPORAN KERUSAKAN --}}
@@ -184,10 +276,11 @@
         </div>
 
         {{-- Tombol Kirim --}}
-        <div class="sticky bottom-6 z-40 px-4 md:px-0 mt-8">
-            <button type="submit" id="submitBtn" class="w-full md:w-1/2 mx-auto bg-green-600 hover:bg-green-700 text-white font-black py-4 px-8 rounded-2xl shadow-2xl transition transform active:scale-[0.98] flex items-center justify-center gap-3 text-lg border-2 border-white disabled:opacity-70 disabled:cursor-not-allowed">
-                <i id="submitIcon" class="fa-solid fa-check-circle"></i> 
-                <span id="submitText">TANDAI AREA SELESAI DI-CEK</span>
+        <div class="sticky bottom-6 z-40 px-4 md:px-0">
+            <button type="submit" id="submitBtn"
+                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all flex justify-center items-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed">
+                <i id="submitIcon" class="fa-solid fa-check-circle text-base"></i>
+                <span id="submitText" class="tracking-wide">TANDAI AREA SELESAI DI-CEK</span>
             </button>
         </div>
     </form>
@@ -336,6 +429,161 @@ function inspectionAreaForm() {
         }
     }
 }
+
+// ============================================================
+// MASS TRIAGE GRID — Vanilla JS (tidak bergantung Alpine.js)
+// ============================================================
+document.addEventListener('DOMContentLoaded', function () {
+
+    // --- 1. Hubungkan Radio Button dengan Triage Grid ---
+    document.querySelectorAll('input[type="radio"][data-grid]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            const gridId  = this.dataset.grid;
+            const mode    = this.dataset.mode; // 'error' | 'clear'
+            const gridRow = document.getElementById(gridId);
+            if (!gridRow) return;
+
+            if (mode === 'error') {
+                // Tampilkan grid dengan animasi slide-down
+                gridRow.classList.remove('hidden');
+                gridRow.style.opacity = '0';
+                gridRow.style.transform = 'translateY(-8px)';
+                requestAnimationFrame(() => {
+                    gridRow.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                    gridRow.style.opacity    = '1';
+                    gridRow.style.transform  = 'translateY(0)';
+                });
+            } else {
+                // Sembunyikan grid & reset semua pilihan
+                gridRow.classList.add('hidden');
+                resetGrid(gridId);
+            }
+        });
+    });
+
+    // --- 2. Helper: Reset semua tile & hidden inputs dalam satu grid ---
+    function resetGrid(gridId) {
+        const gridRow = document.getElementById(gridId);
+        if (!gridRow) return;
+
+        // Reset tiles
+        gridRow.querySelectorAll('.asset-tile.selected').forEach(function (tile) {
+            deselectTile(tile);
+        });
+        gridRow.querySelectorAll('.asset-tile-general.selected').forEach(function (btn) {
+            btn.classList.remove('selected', 'bg-red-500', 'text-white', 'border-red-500');
+            btn.classList.add('text-red-500');
+        });
+
+        // Hapus semua hidden inputs
+        const itemId = getItemIdFromGrid(gridId);
+        if (itemId) {
+            const container = document.getElementById('hidden-inputs-' + itemId);
+            if (container) container.innerHTML = '';
+            updateCounter(itemId, 0);
+        }
+    }
+
+    function getItemIdFromGrid(gridId) {
+        return gridId.replace('triage-grid-', '');
+    }
+
+    // --- 3. Handle klik Asset Tile ---
+    document.querySelectorAll('.asset-tile').forEach(function (tile) {
+        tile.addEventListener('click', function () {
+            const assetId  = this.dataset.assetId;
+            const itemId   = this.dataset.itemId;
+            const isSelected = this.classList.contains('selected');
+
+            if (isSelected) {
+                deselectTile(this);
+                removeHiddenInput(itemId, assetId);
+            } else {
+                selectTile(this);
+                addHiddenInput(itemId, assetId);
+            }
+            updateCounter(itemId);
+        });
+    });
+
+    // --- 4. Handle klik "Masalah Area Umum" ---
+    document.querySelectorAll('.asset-tile-general').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const itemId    = this.dataset.itemId;
+            const isSelected = this.classList.contains('selected');
+
+            if (isSelected) {
+                // Deselect: hapus style & hidden input
+                this.classList.remove('selected', 'bg-red-500', 'text-white', 'border-solid', 'border-red-500');
+                this.classList.add('text-red-500', 'border-dashed');
+                removeHiddenInput(itemId, 'area_general');
+            } else {
+                // Select
+                this.classList.add('selected', 'bg-red-500', 'text-white', 'border-solid', 'border-red-500');
+                this.classList.remove('text-red-500', 'border-dashed');
+                addHiddenInput(itemId, 'area_general');
+            }
+            updateCounter(itemId);
+        });
+    });
+
+    // --- 5. Tile visual helpers ---
+    function selectTile(tile) {
+        tile.classList.add('selected', 'bg-red-500', 'border-red-600', 'shadow-md', 'shadow-red-500/40', 'scale-105', 'z-10');
+        tile.classList.remove('border-gray-200', 'bg-white');
+        // Ubah ikon warna
+        const icon = tile.querySelector('i');
+        if (icon) { icon.classList.remove('text-gray-300'); icon.classList.add('text-white'); }
+        const label = tile.querySelector('span.text-\\[10px\\]');
+        if (label) { label.classList.add('text-white'); label.classList.remove('text-gray-600'); }
+    }
+
+    function deselectTile(tile) {
+        tile.classList.remove('selected', 'bg-red-500', 'border-red-600', 'shadow-md', 'shadow-red-500/40', 'scale-105', 'z-10');
+        tile.classList.add('border-gray-200', 'bg-white');
+        const icon = tile.querySelector('i');
+        if (icon) { icon.classList.add('text-gray-300'); icon.classList.remove('text-white'); }
+        const label = tile.querySelector('span.text-\\[10px\\]');
+        if (label) { label.classList.remove('text-white'); label.classList.add('text-gray-600'); }
+    }
+
+    // --- 6. Hidden Input management ---
+    function addHiddenInput(itemId, assetId) {
+        const container = document.getElementById('hidden-inputs-' + itemId);
+        if (!container) return;
+        // Cegah duplikat
+        if (container.querySelector(`input[value="${assetId}"]`)) return;
+        const input = document.createElement('input');
+        input.type  = 'hidden';
+        input.name  = 'failed_assets[' + itemId + '][]';
+        input.value = assetId;
+        container.appendChild(input);
+    }
+
+    function removeHiddenInput(itemId, assetId) {
+        const container = document.getElementById('hidden-inputs-' + itemId);
+        if (!container) return;
+        const input = container.querySelector(`input[value="${assetId}"]`);
+        if (input) input.remove();
+    }
+
+    // --- 7. Counter badge ---
+    function updateCounter(itemId, forceCount) {
+        const counter = document.getElementById('count-' + itemId);
+        if (!counter) return;
+        let count = forceCount;
+        if (count === undefined) {
+            const container = document.getElementById('hidden-inputs-' + itemId);
+            count = container ? container.querySelectorAll('input').length : 0;
+        }
+        if (count === 0) {
+            counter.textContent = '';
+        } else {
+            counter.textContent = count + ' unit dipilih';
+        }
+    }
+
+});
 </script>
 
 <style>

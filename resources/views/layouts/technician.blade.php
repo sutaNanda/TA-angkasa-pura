@@ -112,7 +112,7 @@
                 </div>
                 <a href="{{ route('technician.profile.index') }}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <div class="text-right">
-                        <p class="text-[10px] text-blue-200 font-bold leading-none mb-1">Halo, Selamat {{ $greeting }}</p>
+                        <p class="text-[10px] text-blue-200 font-bold leading-none mb-1">Halo</p>
                         <p class="text-xs font-black truncate max-w-[100px]">{{ auth()->user()->name }}</p>
                     </div>
                     @if(auth()->user()->avatar)
@@ -134,7 +134,7 @@
                 <div class="flex items-center gap-6">
                     <a href="{{ route('technician.profile.index') }}" class="flex items-center gap-3 pl-6 border-l border-gray-200 hover:opacity-80 transition-opacity">
                         <div class="text-right">
-                            <p class="text-sm font-bold text-gray-900 leading-none mb-1">Selamat {{ $greeting }}, {{ auth()->user()->name }}</p>
+                            <p class="text-sm font-bold text-gray-900 leading-none mb-1">Hallo, {{ auth()->user()->name }}</p>
                             <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Teknisi Lapangan</p>
                         </div>
                         @if(auth()->user()->avatar)
@@ -236,8 +236,8 @@
                     icon: 'error',
                     title: 'Gagal!',
                     text: "{{ session('error') }}",
-                    toast: true,
-                    position: 'top-end'
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'OK'
                 });
             @endif
 

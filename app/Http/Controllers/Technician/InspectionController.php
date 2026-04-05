@@ -81,6 +81,7 @@ class InspectionController extends Controller
                     'status' => $request->has_issue ? 'issue_found' : 'normal',
                     'notes' => $request->notes,
                     'photos' => $photoPaths,
+                    'shift_id' => Auth::user()->shift_id,
                 ]);
                 
                 // Fix: If PatrolLog doesn't have 'photo' column, we might fail. 

@@ -44,27 +44,25 @@
             text-transform: uppercase;
             font-size: 10px;
         }
-        table.data-table tr:nth-child(even) {
-            background-color: #f2f2f2;
+        
+        .group-header {
+            background-color: #e2e8f0;
+            font-weight: bold;
+            font-size: 11px;
+            color: #111;
         }
 
         .text-center { text-align: center; }
 
         /* Status Colors Vanilla CSS */
-        .status-badge { font-weight: bold; }
-        .status-active { color: #166534; }
-        .status-broken { color: #991b1b; }
-        .status-maintenance { color: #854d0e; }
-        .status-retired { color: #475569; }
+        .status-active { color: #166534; font-weight: bold; }
+        .status-broken { color: #991b1b; font-weight: bold; }
+        .status-maintenance { color: #854d0e; font-weight: bold; }
+        .status-retired { color: #475569; font-weight: bold; }
 
         .footer {
             margin-top: 40px;
             width: 100%;
-        }
-        .ttd-box {
-            float: right;
-            width: 35%;
-            text-align: center;
         }
     </style>
 </head>
@@ -89,11 +87,10 @@
         <thead>
             <tr>
                 <th width="5%">No</th>
-                <th width="20%">Nama Aset</th>
-                <th width="15%">Serial Number / Kode Aset</th>
-                <th width="20%">Lokasi</th>
+                <th width="20%">Nama Aset & Seri</th>
                 <th width="15%">Kategori</th>
-                <th width="10%">Tanggal Pembelian</th>
+                <th width="20%">Lokasi Gedung / Ruang</th>
+                <th width="15%">Tanggal Masuk</th>
                 <th width="15%">Status</th>
             </tr>
         </thead>
@@ -101,10 +98,12 @@
             @forelse($assets as $index => $asset)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td><strong>{{ $asset->name }}</strong></td>
-                    <td class="text-center">{{ $asset->serial_number ?? substr($asset->uuid, 0, 8) }}</td>
-                    <td>{{ $asset->location ? $asset->location->name : '-' }}</td>
+                    <td>
+                        <strong>{{ $asset->name }}</strong><br>
+                        <span style="font-size:10px; color:#666;">SN: {{ $asset->serial_number ?? '-' }}</span>
+                    </td>
                     <td class="text-center">{{ $asset->category ? $asset->category->name : '-' }}</td>
+                    <td>{{ $asset->location ? $asset->location->name : '-' }}</td>
                     <td class="text-center">{{ $asset->purchase_date ? $asset->purchase_date->format('d/m/Y') : '-' }}</td>
                     <td class="text-center">
                         @php
@@ -113,14 +112,14 @@
                             if($asset->status == 'broken') $statusClass = 'status-broken';
                             if($asset->status == 'maintenance') $statusClass = 'status-maintenance';
                         @endphp
-                        <span class="status-badge {{ $statusClass }}">
+                        <span class="{{ $statusClass }}">
                             {{ strtoupper(str_replace('_', ' ', $asset->status)) }}
                         </span>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center" style="padding: 20px;">
+                    <td colspan="6" class="text-center" style="padding: 20px;">
                         Tidak ada data inventaris aset yang ditemukan.
                     </td>
                 </tr>
@@ -129,11 +128,14 @@
     </table>
 
     <!-- Area Tanda Tangan Footer -->
-    <div class="footer">
-        <div class="ttd-box">
-            <p>Disahkan Oleh,</p>
-            <p style="margin-top: 60px;"><strong>.......................................</strong><br>Manajer Inventaris Aset</p>
-        </div>
-    </div>
+    <table class="footer">
+        <tr>
+            <td width="65%"></td>
+            <td width="35%" class="text-center">
+                <p>Disahkan Oleh,</p>
+                <p style="margin-top: 60px;"><strong>.......................................</strong><br>Manajer Operasional M/E</p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

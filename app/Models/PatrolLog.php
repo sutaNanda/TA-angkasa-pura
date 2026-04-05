@@ -19,6 +19,7 @@ class PatrolLog extends Model
         'notes',
         'photos',
         'work_order_id',
+        'shift_id',
     ];
 
     protected $casts = [
@@ -50,5 +51,10 @@ class PatrolLog extends Model
     public function workOrder()
     {
         return $this->belongsTo(WorkOrder::class);
+    }
+
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class);
     }
 }

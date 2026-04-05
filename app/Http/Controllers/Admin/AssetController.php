@@ -23,14 +23,14 @@ class AssetController extends Controller
     }
 
     /**
-     * API: Ambil Daftar Aset (DENGAN PAGINATION + SUB-LOKASI)
+     * API: Ambil Daftar Aset (DENGAN PAGINATION + TOGGLE SUB-LOKASI)
      */
-    public function getByLocation($locationId)
+    public function getByLocation(Request $request, $locationId)
     {
         // Tangani kasus aset tanpa lokasi (Software/Virtual)
         if ($locationId === 'unassigned') {
             $assets = Asset::whereNull('location_id')
-                ->with('category')
+                ->with(['category', 'location'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
             return response()->json(['status' => 'success', 'data' => $assets]);
@@ -43,14 +43,22 @@ class AssetController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Location not found'], 404);
         }
 
-        // 2. Ambil ID lokasi ini + semua anak, cucu, cicitnya (rekursif)
-        $locationIds = $this->getAllLocationIds($location);
+        // 2. Cek parameter toggle: include_sub (default = true untuk backward compatibility)
+        $includeSub = filter_var($request->query('include_sub', true), FILTER_VALIDATE_BOOLEAN);
+
+        if ($includeSub) {
+            // Ambil ID lokasi ini + semua anak, cucu, cicitnya (rekursif)
+            $locationIds = $this->getAllLocationIds($location);
+        } else {
+            // Hanya ambil aset di lokasi ini saja (tanpa sub-lokasi)
+            $locationIds = [$location->id];
+        }
         
-        \Log::info("Fetching assets for Location {$locationId}. Effective IDs: " . implode(',', $locationIds));
+        \Log::info("Fetching assets for Location {$locationId}. include_sub={$includeSub}. Effective IDs: " . implode(',', $locationIds));
 
         // 3. Query Aset berdasarkan kumpulan ID lokasi tersebut
         $assets = Asset::whereIn('location_id', $locationIds)
-                    ->with('category')
+                    ->with(['category', 'location'])
                     ->orderBy('created_at', 'desc')
                     ->paginate(10); // Menampilkan 10 data per halaman
 
@@ -215,6 +223,11 @@ class AssetController extends Controller
     {
         $asset = Asset::findOrFail($id);
         $data = $request->validated();
+
+        // Handle parent_asset_id jika dikirim sebagai array (karena reuse komponen UI multi-select)
+        if (isset($data['parent_asset_id']) && is_array($data['parent_asset_id'])) {
+            $data['parent_asset_id'] = !empty($data['parent_asset_id']) ? $data['parent_asset_id'][0] : null;
+        }
 
         // Logika Parent-Child: Software mengikuti lokasi induknya
         if (!empty($data['parent_asset_id'])) {

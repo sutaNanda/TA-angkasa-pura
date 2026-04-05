@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
 @section('title', 'Dashboard Koordinator')
-@section('page-title', 'Monitoring Operasional Harian')
+@section('page-title', 'Dashboard Kinerja Operasional')
 
 @section('content')
     {{-- HEADER TANGGAL & SHIFT --}}
@@ -20,7 +20,7 @@
                 Shift Pagi
             </button>
             <button class="px-4 py-1.5 text-sm font-bold rounded shadow-sm {{ $hour >= 16 || $hour < 8 ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-50' }}">
-                Shift Sore
+                Shift Malam
             </button>
         </div>
     </div>

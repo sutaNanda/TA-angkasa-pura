@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Inventaris Aset</title>
+    <title>Laporan Riwayat Patroli</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,12 +23,12 @@
         }
         .title-area { text-align: center; }
         h2 { margin: 0; padding: 0; font-size: 16px; text-transform: uppercase; color: #003366; }
-        p.subtitle { margin: 2px 0; font-size: 11px; color: #555; }
+        p.subtitle { margin: 3px 0; font-size: 12px; color: #444; font-weight: bold; }
         
         table.data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 15px;
         }
         table.data-table th, table.data-table td {
             border: 1px solid #999;
@@ -50,12 +50,10 @@
 
         .text-center { text-align: center; }
 
-        /* Status Colors Vanilla CSS */
+        /* Murni Vanilla styling untuk status */
         .status-badge { font-weight: bold; }
-        .status-active { color: #166534; }
-        .status-broken { color: #991b1b; }
-        .status-maintenance { color: #854d0e; }
-        .status-retired { color: #475569; }
+        .status-normal { color: #166534; }
+        .status-issue { color: #991b1b; }
 
         .footer {
             margin-top: 40px;
@@ -77,9 +75,18 @@
                <div class="logo-ap">ANGKASA PURA</div>
             </td>
             <td width="75%" class="title-area">
-                <h2>Laporan Inventaris Aset</h2>
-                <p class="subtitle">Sistem Informasi Manajemen Aset M/E Airport</p>
-                <p class="subtitle">Dicetak pada: {{ now()->format('d F Y') }}</p>
+                <h2>Laporan Logbook Riwayat Patroli</h2>
+                <p class="subtitle">
+                    Periode: 
+                    @if($request->start_date && $request->end_date)
+                        {{ \Carbon\Carbon::parse($request->start_date)->format('d F Y') }} - {{ \Carbon\Carbon::parse($request->end_date)->format('d F Y') }}
+                    @else
+                        Keseluruhan Waktu (Sampai {{ now()->format('d F Y') }})
+                    @endif
+                </p>
+                <div style="font-size: 10px; margin-top:2px;">
+                    Filter Status: {{ strtoupper(str_replace('_', ' ', $request->status && $request->status != 'all' ? $request->status : 'SEMUA STATUS')) }}
+                </div>
             </td>
         </tr>
     </table>
@@ -88,43 +95,46 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th width="5%">No</th>
-                <th width="20%">Nama Aset</th>
-                <th width="15%">Serial Number / Kode Aset</th>
-                <th width="20%">Lokasi</th>
-                <th width="15%">Kategori</th>
-                <th width="10%">Tanggal Pembelian</th>
-                <th width="15%">Status</th>
+                <th width="4%">No</th>
+                <th width="12%">Tgl & Waktu</th>
+                <th width="14%">Teknisi</th>
+                <th width="20%">Lokasi / Aset</th>
+                <th width="16%">Jenis Inspeksi</th>
+                <th width="10%">Status</th>
+                <th width="24%">Catatan / Temuan</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($assets as $index => $asset)
+            @forelse($logs as $index => $log)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td><strong>{{ $asset->name }}</strong></td>
-                    <td class="text-center">{{ $asset->serial_number ?? substr($asset->uuid, 0, 8) }}</td>
-                    <td>{{ $asset->location ? $asset->location->name : '-' }}</td>
-                    <td class="text-center">{{ $asset->category ? $asset->category->name : '-' }}</td>
-                    <td class="text-center">{{ $asset->purchase_date ? $asset->purchase_date->format('d/m/Y') : '-' }}</td>
-                    <td class="text-center">
-                        @php
-                            $statusClass = 'status-retired';
-                            if($asset->status == 'active') $statusClass = 'status-active';
-                            if($asset->status == 'broken') $statusClass = 'status-broken';
-                            if($asset->status == 'maintenance') $statusClass = 'status-maintenance';
-                        @endphp
-                        <span class="status-badge {{ $statusClass }}">
-                            {{ strtoupper(str_replace('_', ' ', $asset->status)) }}
-                        </span>
+                    <td class="text-center">{{ $log->created_at->format('d-m-Y H:i') }}</td>
+                    <td>{{ $log->technician ? $log->technician->name : '-' }}</td>
+                    <td>
+                        @if($log->asset)
+                            <strong>{{ $log->asset->name }}</strong><br>
+                        @endif
+                        <span style="font-size:10px; color:#555;">{{ $log->location ? $log->location->name : '-' }}</span>
                     </td>
+                    <td>{{ $log->checklistTemplate ? $log->checklistTemplate->name : 'Inspeksi Reguler' }}</td>
+                    <td class="text-center">
+                        @if($log->status == 'normal')
+                            <span class="status-badge status-normal">NORMAL</span>
+                        @else
+                            <span class="status-badge status-issue">ISSUE</span>
+                        @endif
+                    </td>
+                    <td>{{ $log->notes ?: '-' }}</td>
                 </tr>
-            @empty
+            @endforeach
+
+            @if(count($logs) == 0)
                 <tr>
                     <td colspan="7" class="text-center" style="padding: 20px;">
-                        Tidak ada data inventaris aset yang ditemukan.
+                        Tidak ada catatan patroli pada periode pencarian ini.
                     </td>
                 </tr>
-            @endforelse
+            @endif
         </tbody>
     </table>
 

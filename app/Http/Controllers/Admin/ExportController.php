@@ -14,29 +14,74 @@ class ExportController extends Controller
      */
     public function exportMaintenance($id)
     {
-        // Ambil data maintenance berdasarkan ID
-        $maintenance = Maintenance::with([
-            'asset.location', 
-            'asset.category', 
-            'technician', 
-            'checklistTemplate.items', 
-            'results'
-        ])->findOrFail($id);
+        // 1. Coba cari di PatrolLog (Karena menu Riwayat Pengecekan / Logbook Pengecekan Rutin menggunakan model ini)
+        $log = \App\Models\PatrolLog::with(['asset.location', 'asset.category', 'technician', 'checklistTemplate'])->find($id);
+        
+        if ($log) {
+            // Transformasi data PatrolLog agar kompatibel dengan view PDF maintenance_report
+            $inspectionData = $log->inspection_data;
+            if (is_string($inspectionData)) {
+                $inspectionData = json_decode($inspectionData, true);
+            }
+            
+            $answers = isset($inspectionData['answers']) ? $inspectionData['answers'] : $inspectionData;
+            $itemIds = is_array($answers) ? array_keys($answers) : [];
+            
+            // Ambil item checklist agar bisa menampilkan pertanyaan/standar di PDF
+            $items = \App\Models\ChecklistItem::whereIn('id', $itemIds)->get()->keyBy('id');
+            
+            $results = collect();
+            foreach ($answers as $itemId => $value) {
+                if (isset($items[$itemId])) {
+                    $results->push((object)[
+                        'item' => $items[$itemId],
+                        'value' => $value
+                    ]);
+                }
+            }
+            
+            // Pasangkan ke relasi virtual agar PDF tidak error saat memanggil $maintenance->results
+            $log->setRelation('results', $results);
+            $maintenance = $log;
+            
+            // Properti pembantu agar view PDF tetap sinkron
+            $maintenance->ticket_number = 'PAT-' . str_pad($log->id, 6, '0', STR_PAD_LEFT);
+            $maintenance->started_at = $log->created_at;
+            $maintenance->completed_at = $log->created_at;
+            $reportTitle = 'Laporan Pengecekan Rutin & Patroli';
+        } else {
+            // 2. Jika tidak ada di PatrolLog, cari di model Maintenance asli (Daftar Tugas Maintenance)
+            $maintenance = Maintenance::with([
+                'asset.location', 
+                'asset.category', 
+                'technician', 
+                'checklistTemplate.items', 
+                'results.checklistItem' // Menggunakan relasi results yang baru kita buat
+            ])->findOrFail($id);
+
+            // Mapping agar PDF menggunakan properti yang sama
+            $maintenance->results->each(function($res) {
+                // Agar pdf bisa panggil $result->item->question
+                $res->item = $res->checklistItem;
+                $res->value = $res->answer;
+            });
+            $reportTitle = 'Laporan Perawatan Terjadwal (Maintenance)';
+        }
 
         // Siapkan data untuk view PDF
         $data = [
             'maintenance' => $maintenance,
-            'title' => 'Laporan Perawatan Aset',
+            'title' => $reportTitle,
             'date' => date('d F Y')
         ];
 
         // Load view dan pass data
-        // setPaper a4 portrait
         $pdf = Pdf::loadView('admin.pdf.maintenance_report', $data)
                   ->setPaper('a4', 'portrait');
 
-        // Render PDF ke browser untuk diunduh
-        $filename = 'Laporan_Perawatan_' . str_replace(' ', '_', $maintenance->asset->name) . '_' . date('Ymd_His') . '.pdf';
+        // Penamaan file yang rapi
+        $assetName = $maintenance->asset ? str_replace(' ', '_', $maintenance->asset->name) : 'Aset_Umum';
+        $filename = 'Laporan_' . ($log ? 'Patroli' : 'Maintenance') . '_' . $assetName . '_' . date('Ymd_His') . '.pdf';
         
         return $pdf->download($filename);
     }
@@ -46,7 +91,11 @@ class ExportController extends Controller
      */
     public function exportWorkOrders(Request $request)
     {
-        $query = \App\Models\WorkOrder::with(['asset.location', 'technician'])->latest();
+        $query = \App\Models\WorkOrder::with([
+            'asset' => function ($q) { $q->withTrashed(); },
+            'asset.location' => function ($q) { $q->withTrashed(); },
+            'technician'
+        ])->latest();
 
         // Optional filter pas export
         if ($request->filled('start_date') && $request->filled('end_date')) {
@@ -116,31 +165,27 @@ class ExportController extends Controller
     }
 
     /**
-     * Export Laporan Hirarki Lokasi & Aset (Gabungan) ke PDF
+     * Export Laporan Lokasi & Aset (Flat Format) ke PDF
      */
     public function exportAssetLocation()
     {
-        // Ambil data lokasi (hanya parent/root) beserta children dan aset-aset di dalamnya
-        $locations = \App\Models\Location::with([
-            'assets.category', 
-            'children.assets.category',
-            'children.children.assets.category' // Maksimal 3 level kedalaman untuk laporan
-        ])->whereNull('parent_id')->get();
-
-        // Ambil juga aset yang tidak punya lokasi (Unassigned)
-        $unassignedAssets = \App\Models\Asset::with('category')->whereNull('location_id')->get();
+        // 1. Ambil data secara flat, eager load relasi, dan sort seperti permintaan
+        $assets = \App\Models\Asset::with(['category', 'location'])
+            ->orderBy('location_id')
+            ->orderBy('name')
+            ->get();
 
         $data = [
-            'locations' => $locations,
-            'unassignedAssets' => $unassignedAssets,
+            'assets' => $assets,
             'title' => 'Laporan Rekapitulasi Lokasi & Inventaris Aset',
             'date' => date('d F Y')
         ];
 
+        // 2. Passing ke view PDF menggunakan orientasi Landscape agar tabel pas
         $pdf = Pdf::loadView('admin.pdf.asset_location_report', $data)
-                  ->setPaper('a4', 'portrait');
+                  ->setPaper('A4', 'landscape');
 
-        $filename = 'Laporan_Lokasi_dan_Aset_' . date('Ymd') . '.pdf';
+        $filename = 'Laporan_Inventaris_Aset_' . date('Ymd') . '.pdf';
         
         return $pdf->download($filename);
     }
@@ -148,8 +193,18 @@ class ExportController extends Controller
     public function exportMaintenances(Request $request)
     {
         // Menyalin base query dari MaintenanceController
-        $query = \App\Models\PatrolLog::with(['asset.location', 'technician', 'checklistTemplate', 'workOrder'])
-                    ->orderBy('created_at', 'desc');
+        $query = \App\Models\PatrolLog::with([
+            'asset' => function ($q) {
+                $q->withTrashed();
+            },
+            'location' => function ($q) {
+                $q->withTrashed();
+            },
+            'shift', 
+            'technician', 
+            'checklistTemplate', 
+            'workOrder'
+        ])->orderBy('created_at', 'desc');
 
         // Filter Waktu
         if ($request->filled('start_date') && $request->filled('end_date')) {

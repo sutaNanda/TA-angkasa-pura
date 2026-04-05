@@ -25,9 +25,11 @@
             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl relative z-10">
                 <h3 class="font-bold text-gray-800 text-sm">Struktur Lokasi</h3>
                 <div class="flex gap-2 text-xs">
+                    @if(auth()->user()->role === 'manajer')
                     <a href="{{ route('admin.locations.export') }}" target="_blank" class="text-green-600 hover:bg-green-100 px-3 py-1.5 rounded transition font-bold border border-green-200 bg-white flex items-center gap-1" title="Cetak Hirarki">
                         <i class="fa-solid fa-file-pdf"></i>
                     </a>
+                    @endif
                     @if(!auth()->user()->isManajer())
                     <button onclick="openLocationModal()" class="text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition font-bold border border-blue-200 bg-white flex items-center gap-1">
                         <i class="fa-solid fa-plus"></i> Utama
@@ -95,6 +97,20 @@
                 </div>
             </div>
 
+            {{-- Toggle Sub-Lokasi --}}
+            <div id="toggleSubLocationBar" class="px-6 py-3 border-b border-gray-100 bg-slate-50 flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hidden transition-all">
+                <div class="flex items-center gap-3 shrink-0">
+                    <label for="toggleIncludeSub" class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggleIncludeSub" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 transition-colors shadow-inner"></div>
+                    </label>
+                    <span class="text-sm font-bold text-gray-700">Tampilkan Aset turunan</span>
+                </div>
+                <span id="toggleSubLabel" class="text-xs px-3 py-1 rounded-full font-bold shadow-sm whitespace-normal sm:whitespace-nowrap flex-1 sm:flex-initial" style="transition: all 0.3s">
+                    <!-- Text injected by JS -->
+                </span>
+            </div>
+
             {{-- Table Area --}}
             <div class="flex-1 overflow-y-auto relative flex flex-col">
                 <div class="flex-1 overflow-y-auto custom-scrollbar">
@@ -104,6 +120,7 @@
                                 <th class="px-6 py-4 w-12 text-center bg-gray-50">No</th>
                                 <th class="px-6 py-4 w-16 bg-gray-50">Foto</th>
                                 <th class="px-6 py-4 bg-gray-50">Nama Aset</th>
+                                <th class="px-6 py-4 bg-gray-50 sub-loc-col" style="display:none">Lokasi Detail</th>
                                 <th class="px-6 py-4 bg-gray-50">Kategori</th>
                                 <th class="px-6 py-4 bg-gray-50">Status</th>
                                 @if(!auth()->user()->isManajer())
@@ -406,6 +423,7 @@
         let currentLocName = '';
         let currentLocCode = ''; // Store location code for QR
         let currentPage = 1;
+        let currentLocHasChildren = false; // Track if selected location has children
 
         let lastPage = 1;
         const storageUrl = "{{ asset('storage') }}";
@@ -430,6 +448,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchLocations();
             initCategoryListener();
+
+            // Event listener: Toggle sub-lokasi
+            const toggleSub = document.getElementById('toggleIncludeSub');
+            if (toggleSub) {
+                toggleSub.addEventListener('change', () => {
+                    updateSubLocColumns();
+                    if (currentLocId) {
+                        currentPage = 1;
+                        loadAssetsByLocation(currentLocId, 1);
+                    }
+                });
+            }
         });
 
         // --- PARENT-CHILD ASSET LOGIC ---
@@ -730,28 +760,79 @@
                 }
             }
 
+            // Detect if this node has children (for showing toggle)
+            currentLocHasChildren = false;
+            if (id !== 'unassigned') {
+                const nodeEl = document.getElementById(`node-header-${id}`);
+                if (nodeEl) {
+                    const parentMb1 = nodeEl.closest('.mb-1');
+                    if (parentMb1 && parentMb1.querySelector('.children-container')) {
+                        currentLocHasChildren = true;
+                    }
+                }
+            }
+
+            // Show/hide toggle bar
+            const toggleBar = document.getElementById('toggleSubLocationBar');
+            if (currentLocHasChildren) {
+                toggleBar.style.display = 'flex';
+            } else {
+                toggleBar.style.display = 'none';
+            }
+            updateSubLocColumns();
+
             // DO NOT FETCH TREE AGAIN implies Sidebar stays open on mobile
 
             loadAssetsByLocation(id, 1);
+        }
+
+        /**
+         * Show/hide the 'Lokasi Detail' column based on toggle state.
+         */
+        function updateSubLocColumns() {
+            const toggle = document.getElementById('toggleIncludeSub');
+            const isOn = toggle && toggle.checked;
+            const label = document.getElementById('toggleSubLabel');
+
+            // Show/hide the extra column
+            document.querySelectorAll('.sub-loc-col').forEach(el => {
+                el.style.display = (currentLocHasChildren && isOn) ? '' : 'none';
+            });
+
+            // Update label text
+            if (label) {
+                if (isOn) {
+                    label.innerHTML = '<i class="fa-solid fa-sitemap mr-1.5 opacity-80"></i> Menampilkan aset lokasi ini & turunannya';
+                    label.className = 'text-xs px-3 py-1 rounded-full font-bold shadow-sm whitespace-normal sm:whitespace-nowrap bg-blue-100 text-blue-700 border border-blue-200 flex-1 sm:flex-initial text-center sm:text-left transition-colors';
+                } else {
+                    label.innerHTML = '<i class="fa-solid fa-location-crosshairs mr-1.5 opacity-80"></i> Hanya aset di lokasi utama';
+                    label.className = 'text-xs px-3 py-1 rounded-full font-bold shadow-sm whitespace-normal sm:whitespace-nowrap bg-slate-200 text-slate-700 border border-slate-300 flex-1 sm:flex-initial text-center sm:text-left transition-colors';
+                }
+            }
         }
 
         async function loadAssetsByLocation(id, page) {
             const tbody = document.getElementById('assetTableBody');
             const empty = document.getElementById('emptyState');
             const pagination = document.getElementById('paginationContainer');
+            const totalCols = 7; // NO, Foto, Nama, Lokasi, Kategori, Status, Aksi
 
             // Skeleton Loading
             tbody.innerHTML = `
-                <tr><td colspan="6" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>
-                <tr><td colspan="6" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>
-                <tr><td colspan="6" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>`;
+                <tr><td colspan="${totalCols}" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>
+                <tr><td colspan="${totalCols}" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>
+                <tr><td colspan="${totalCols}" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>`;
 
             empty.classList.add('hidden');
             pagination.classList.add('hidden');
 
+            // Build query params with toggle state
+            const toggle = document.getElementById('toggleIncludeSub');
+            const includeSub = toggle ? toggle.checked : true;
+
             try {
-                console.log(`Fetching: /admin/assets/by-location/${id}?page=${page}`);
-                const res = await fetch(`/admin/assets/by-location/${id}?page=${page}`);
+                console.log(`Fetching: /admin/assets/by-location/${id}?page=${page}&include_sub=${includeSub}`);
+                const res = await fetch(`/admin/assets/by-location/${id}?page=${page}&include_sub=${includeSub}`);
                 const json = await res.json();
                 console.log('Response JSON:', json);
                 
@@ -782,6 +863,11 @@
                         const catName = (asset.category && asset.category.name) ? asset.category.name : '<span class="text-gray-400 italic">Tanpa Kategori</span>';
 
                         const isManajer = {{ auth()->user()->isManajer() ? 'true' : 'false' }};
+
+                        // Location path for "Lokasi Detail" column
+                        const locPath = asset.location_path || (asset.location ? asset.location.name : '-');
+                        const showLocCol = currentLocHasChildren && (toggle ? toggle.checked : true);
+
                         const row = `
                             <tr class="hover:bg-blue-50/50 border-b border-gray-50 transition group">
                                 <td class="px-6 py-4 text-center text-xs font-bold text-gray-400">${rowNumber}</td>
@@ -793,6 +879,12 @@
                                 <td class="px-6 py-3">
                                     <div class="font-bold text-gray-800 text-sm">${asset.name}</div>
                                     <div class="text-[10px] text-gray-400 font-mono">${asset.serial_number || 'No SN'}</div>
+                                </td>
+                                <td class="px-6 py-3 sub-loc-col" style="${showLocCol ? '' : 'display:none'}">
+                                    <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                        <i class="fa-solid fa-location-dot text-blue-400 shrink-0"></i>
+                                        <span class="truncate max-w-[200px]" title="${locPath}">${locPath}</span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-3 text-xs text-gray-600">${catName}</td>
                                 <td class="px-6 py-3"><span class="${statusClass} px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wide shadow-sm">${asset.status}</span></td>
@@ -811,7 +903,7 @@
                 }
             } catch (e) {
                 console.error("Fetch Data Error:", e);
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-medium">Terjadi kesalahan Javascript saat memuat data: ${e.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${totalCols}" class="p-4 text-center text-red-500 font-medium">Terjadi kesalahan Javascript saat memuat data: ${e.message}</td></tr>`;
             }
         }
 

@@ -58,29 +58,18 @@ class TicketController extends Controller
      */
     public function getAssets($locationId)
     {
-        // 1. Cari semua ID lokasi turunan (Gedung -> Lantai -> Ruangan)
-        // Note: Model Location menggunakan custom 'path', bukan NestedSet trait.
-        // Jadi kita manual cari berdasarkan path prefix.
-        
         $location = Location::find($locationId);
         
         if (!$location) {
             return response()->json(['status' => 'error', 'message' => 'Location not found'], 404);
         }
 
-        // Ambil semua lokasi yang path-nya diawali oleh path lokasi ini (Descendants) + Diri sendiri
-        // Contoh: Path Gedung = "1". Path Lantai = "1/2".
-        // Query: where path LIKE "1/%" OR id = 1
-        $locationIds = Location::where('path', 'like', $location->path . '/%')
-                               ->orWhere('id', $location->id)
-                               ->pluck('id');
-
-        // 2. Ambil aset di lokasi-lokasi tersebut DITAMBAH aset Software (Virtual)
-        $assets = Asset::whereIn('location_id', $locationIds)
-                       ->orWhereNull('location_id')
+        // Ambil aset HANYA yang berada tepat di lokasi tersebut (Exact match location_id)
+        // Hilangkan sub-query recursive atau software agnostik agar ketika 
+        // User memilih Gedung/Lantai, aset yang muncul spesifik di titik tersebut saja.
+        $assets = Asset::where('location_id', $locationId)
                        ->with('category') // Eager load category
-                       ->select('id', 'name', 'serial_number', 'status', 'category_id') // Pastikan field yang butuh di-select tersedia
-                       ->orderByRaw('location_id IS NULL DESC') // Prioritaskan software di bawah atau atas (opsional)
+                       ->select('id', 'name', 'serial_number', 'status', 'category_id')
                        ->orderBy('name')
                        ->get();
 

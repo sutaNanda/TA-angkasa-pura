@@ -15,7 +15,7 @@ class MaintenanceController extends Controller
     public function index(Request $request)
     {
         // Query Dasar ke PatrolLog
-        $query = PatrolLog::with(['asset.location', 'technician', 'checklistTemplate', 'workOrder.histories.user'])
+        $query = PatrolLog::with(['asset.location', 'technician', 'checklistTemplate', 'workOrder.histories.user', 'shift'])
                     ->orderBy('created_at', 'desc');
 
         // 1. Filter Tanggal (Berdasarkan Waktu Patroli)
@@ -123,7 +123,7 @@ class MaintenanceController extends Controller
                     ->orderBy('order')
                     ->get();
 
-        // 4. Transformasi agar Frontend Bisa Mengenali Struktur "Unified"
+        // Transformasi agar Frontend Bisa Mengenali Struktur "Unified"
         $groupedItems = [];
         $templates = $items->groupBy('checklist_template_id');
 
@@ -135,8 +135,25 @@ class MaintenanceController extends Controller
             ];
         }
 
+        // Ambil pemetaan nama aset (asset_names_map) dari array failed_assets
+        $assetNamesMap = [];
+        if (isset($inspectionData['failed_assets']) && is_array($inspectionData['failed_assets'])) {
+            $failedAssetIds = [];
+            foreach ($inspectionData['failed_assets'] as $assetIds) {
+                if (is_array($assetIds)) {
+                    foreach ($assetIds as $aid) { if ($aid && $aid !== 'area_general') $failedAssetIds[] = $aid; }
+                } else if ($assetIds && $assetIds !== 'area_general') {
+                    $failedAssetIds[] = $assetIds;
+                }
+            }
+            if (!empty($failedAssetIds)) {
+                $assetNamesMap = \App\Models\Asset::whereIn('id', $failedAssetIds)->pluck('name', 'id')->toArray();
+            }
+        }
+
         // Tambahkan ke objek log agar JS bisa membaca
         $log->grouped_items = $groupedItems;
+        $log->asset_names_map = $assetNamesMap;
         
         return response()->json([
             'status' => 'success',

@@ -79,8 +79,8 @@
 
             <div class="p-4 border-t border-slate-700 bg-slate-800/50">
                 <div class="flex items-center gap-3 px-2 py-2 mb-2">
-                    <i class="fa-solid fa-circle-question text-slate-500 text-xs"></i>
-                    <span class="text-xs text-slate-400">Butuh bantuan? Hubungi IT Center</span>
+                    <!-- <i class="fa-solid fa-circle-question text-slate-500 text-xs"></i> -->
+                    <span class="text-xs text-slate-400"></span>
                 </div>
             </div>
         </aside>

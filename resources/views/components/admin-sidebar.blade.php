@@ -84,6 +84,31 @@
                 </a>
             </li>
 
+            @if(auth()->user()->role === 'manajer')
+            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase tracking-widest">Laporan & Statistik</li>
+
+            <li>
+                <a href="{{ route('admin.reports.work-orders.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.reports.work-orders.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-file-invoice w-5 text-center"></i>
+                    <span class="text-sm font-medium">Laporan Perbaikan</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="{{ route('admin.reports.assets.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.reports.assets.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-file-circle-check w-5 text-center"></i>
+                    <span class="text-sm font-medium">Laporan Aset</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="{{ route('admin.reports.patrol-logs.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.reports.patrol-logs.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-file-medical w-5 text-center"></i>
+                    <span class="text-sm font-medium">Laporan Patroli</span>
+                </a>
+            </li>
+            @endif
+
         </ul>
     </nav>
 

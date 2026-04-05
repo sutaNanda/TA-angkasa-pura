@@ -342,7 +342,7 @@
 
                         // Handle Gambar & Lokasi
                         let locName = asset.location ? asset.location.name : '-';
-                        const imgUrl = asset.image ? `/storage/${asset.image}` : 'https://via.placeholder.com/150?text=No+Img';
+                        const imgUrl = asset.image_url ? asset.image_url : 'https://via.placeholder.com/150?text=No+Img';
 
                         const isManajer = {{ auth()->user()->isManajer() ? 'true' : 'false' }};
                         let row = `

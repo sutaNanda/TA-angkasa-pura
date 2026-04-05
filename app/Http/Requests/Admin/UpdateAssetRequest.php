@@ -59,6 +59,9 @@ class UpdateAssetRequest extends FormRequest
             // --- Induk Aset (untuk Software/Lisensi) ---
             'parent_asset_id' => [
                 'nullable',
+            ],
+            'parent_asset_id.*' => [
+                'nullable',
                 Rule::exists('assets', 'id'),
             ],
 

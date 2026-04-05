@@ -144,6 +144,14 @@
                                             <p class="text-[10px] text-orange-600 font-black uppercase tracking-widest mt-0.5">{{ $pendingCount }} Aset</p>
                                         </div>
                                     </div>
+                                    @php
+                                        $shiftInfo = $firstItem->maintenancePlan->shift ?? null;
+                                    @endphp
+                                    @if($shiftInfo)
+                                        <span class="{{ $shiftInfo->badge_class }} px-2 py-0.5 rounded-full text-[9px] font-bold border inline-flex items-center gap-1">
+                                            <i class="{{ $shiftInfo->icon_class }}"></i> {{ $shiftInfo->name }}
+                                        </span>
+                                    @endif
                                 </div>
 
                                 {{-- Asset Preview (Avatars) --}}

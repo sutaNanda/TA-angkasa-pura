@@ -1,86 +1,32 @@
 @extends('layouts.admin')
 
 @section('title', 'Template Checklist')
-@section('page-title', 'Standar Operasional Prosedur (SOP)')
+@section('page-title', 'Manajemen Template SOP')
 
 @section('content')
     {{-- Header & Search --}}
-    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <div class="relative w-full md:w-auto">
-            <input type="text" id="searchInput" placeholder="Cari SOP (misal: Genset)..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 w-full md:w-80 text-sm shadow-sm transition hover:border-blue-400" onkeyup="filterTable()">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400"></i>
-        </div>
-        @if(!auth()->user()->isManajer())
-        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg hover:shadow-blue-500/30 transition transform active:scale-95 w-full md:w-auto justify-center">
-            <i class="fa-solid fa-plus"></i> Buat SOP Baru
-        </button>
-        @endif
-    </div>
-
-    {{-- Filter Section - Modern Design --}}
-    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-100 p-6 mb-6">
-        <div class="flex flex-col lg:flex-row gap-6">
-            
-            {{-- Filter Header --}}
-            <div class="flex items-center gap-3 lg:border-r lg:border-blue-200 lg:pr-6">
-                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                    <i class="fa-solid fa-filter text-white"></i>
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-gray-800">Filter Data</h3>
-                    <p class="text-xs text-gray-500">Saring hasil pencarian</p>
-                </div>
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto items-center">
+            <div class="relative w-full md:w-80">
+                <input type="text" id="searchInput" placeholder="Cari SOP (misal: Genset)..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm transition w-full" onkeyup="filterTable()">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400"></i>
             </div>
             
-            {{-- Filter Controls --}}
-            <div class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                
-                {{-- Filter Kategori --}}
-                <div class="relative">
-                    <label class="block text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5">
-                        <i class="fa-solid fa-tag text-blue-600"></i>
-                        Kategori Aset
-                    </label>
-                    <div class="relative">
-                        <select id="filterCategory" onchange="filterTable()" class="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all hover:border-blue-300 appearance-none cursor-pointer">
-                            <option value="">Semua Kategori</option>
-                            @foreach($categories as $cat)
-                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                            @endforeach
-                            <option value="umum">Berlaku Umum</option>
-                        </select>
-                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <i class="fa-solid fa-boxes-stacked text-sm"></i>
-                        </div>
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                            <i class="fa-solid fa-chevron-down text-xs"></i>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                {{-- Action Buttons --}}
-                <div class="flex flex-col justify-end gap-2">
-                    <button onclick="resetFilters()" class="w-full px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-bold transition-all border-2 border-gray-200 hover:border-gray-300 flex items-center justify-center gap-2 shadow-sm hover:shadow">
-                        <i class="fa-solid fa-rotate-right"></i>
-                        <span>Reset Filter</span>
-                    </button>
-                    <div id="filterCounter" class="text-center text-xs text-gray-500 font-medium hidden">
-                        <i class="fa-solid fa-check-circle text-green-600"></i>
-                        <span id="filterCountText">Filter aktif</span>
-                    </div>
-                </div>
-                
-            </div>
+            <select id="filterCategory" onchange="filterTable()" class="py-2 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition w-full md:w-48">
+                <option value="">Semua Kategori</option>
+                @foreach($categories as $cat)
+                    <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                @endforeach
+                <option value="umum">Berlaku Umum</option>
+            </select>
         </div>
 
-        {{-- Active Filters Display --}}
-        <div id="activeFilters" class="mt-4 pt-4 border-t border-blue-200 hidden">
-            <div class="flex flex-wrap gap-2 items-center">
-                <span class="text-xs font-bold text-gray-600">Filter Aktif:</span>
-                <div id="filterBadges" class="flex flex-wrap gap-2"></div>
-            </div>
+        <div class="flex gap-2 w-full md:w-auto">
+            @if(!auth()->user()->isManajer())
+            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition shadow-sm w-full md:w-auto">
+                <i class="fa-solid fa-plus"></i> Buat SOP Baru
+            </button>
+            @endif
         </div>
     </div>
 
@@ -518,7 +464,7 @@
                             <p class="text-gray-600 font-bold text-lg mb-1">Tidak ada data yang sesuai</p>
                             <p class="text-gray-400 text-sm mb-4">Coba ubah filter atau kata kunci pencarian</p>
                             <button onclick="resetFilters()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition shadow-sm">
-                                <i class="fa-solid fa-rotate-right mr-2"></i> Reset Semua Filter
+                                <i class="fa-solid fa-rotate-right mr-2"></i> Reset
                             </button>
                         </div>
                     </td>
@@ -526,49 +472,6 @@
                 tbody.appendChild(tr);
             } else if (visibleCount > 0 && emptyRow) {
                 emptyRow.remove();
-            }
-
-            // Update filter display
-            updateFilterDisplay(searchValue, categoryValue, visibleCount);
-        }
-
-        // FUNGSI UPDATE FILTER DISPLAY
-        function updateFilterDisplay(search, category, count) {
-            const activeFiltersDiv = document.getElementById('activeFilters');
-            const filterBadges = document.getElementById('filterBadges');
-            const filterCounter = document.getElementById('filterCounter');
-            const filterCountText = document.getElementById('filterCountText');
-            
-            let badges = [];
-            
-            // Add search badge
-            if (search) {
-                badges.push(`<span class="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-200">
-                    <i class="fa-solid fa-search"></i>
-                    Pencarian: "${search}"
-                </span>`);
-            }
-            
-            // Add category badge
-            if (category) {
-                const categorySelect = document.getElementById('filterCategory');
-                const categoryText = categorySelect.options[categorySelect.selectedIndex].text;
-                badges.push(`<span class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-medium border border-purple-200">
-                    <i class="fa-solid fa-tag"></i>
-                    ${categoryText}
-                </span>`);
-            }
-            
-
-            // Show/hide active filters section
-            if (badges.length > 0) {
-                filterBadges.innerHTML = badges.join('');
-                activeFiltersDiv.classList.remove('hidden');
-                filterCounter.classList.remove('hidden');
-                filterCountText.textContent = `${count} hasil ditemukan`;
-            } else {
-                activeFiltersDiv.classList.add('hidden');
-                filterCounter.classList.add('hidden');
             }
         }
 

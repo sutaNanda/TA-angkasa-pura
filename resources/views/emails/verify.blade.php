@@ -1,18 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Verifikasi Email - Asset Monitoring</title>
+    <title>Verifikasi Alamat Email - Asset Monitoring System</title>
     <style>
-        /* -------------------------------------
-            GLOBAL RESETS & TYPOGRAPHY
-        ------------------------------------- */
+        /* Base Reset */
         body {
-            background-color: #F8FAFC;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
-            font-size: 15px;
+            font-size: 14px;
             line-height: 1.6;
             margin: 0;
             padding: 0;
@@ -21,22 +19,20 @@
             color: #334155;
         }
         table {
-            border-collapse: separate;
+            border-collapse: collapse;
             mso-table-lspace: 0pt;
             mso-table-rspace: 0pt;
             width: 100%;
         }
         table td {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            font-size: 15px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 14px;
             vertical-align: top;
         }
 
-        /* -------------------------------------
-            BODY & CONTAINER
-        ------------------------------------- */
+        /* Container Structure */
         .body {
-            background-color: #F8FAFC;
+            background-color: #f3f4f6;
             width: 100%;
         }
         .container {
@@ -51,128 +47,155 @@
             display: block;
             margin: 0 auto;
             max-width: 600px;
-            padding: 0;
+            padding: 10px;
         }
 
-        /* -------------------------------------
-            MAIN CARD & WRAPPER
-        ------------------------------------- */
+        /* Main Box */
         .main {
             background: #ffffff;
             border-radius: 8px;
             width: 100%;
-            border: 1px solid #E2E8F0;
-            border-top: 4px solid #0284C7; /* Aksen warna korporat (Biru Angkasa Pura) */
+            border: 1px solid #e2e8f0;
             overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
-        .wrapper {
-            box-sizing: border-box;
-            padding: 40px;
+        
+        /* Header Section */
+        .header-top {
+            background-color: #1e3a8a; /* Corporate Blue */
+            padding: 24px;
+            text-align: center;
+        }
+        .header-top h1 {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .header-top p {
+            color: #93c5fd;
+            font-size: 12px;
+            margin: 5px 0 0 0;
+            font-weight: 400;
         }
 
-        /* -------------------------------------
-            TYPOGRAPHY & CONTENT
-        ------------------------------------- */
-        .header {
-            margin-bottom: 30px;
-            text-align: left;
-            border-bottom: 1px solid #F1F5F9;
-            padding-bottom: 20px;
+        /* Content Wrapper */
+        .wrapper {
+            box-sizing: border-box;
+            padding: 35px 30px;
         }
-        .header h1 {
-            color: #0F172A;
-            font-size: 20px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.5px;
-        }
-        .header p {
-            color: #64748B;
-            font-size: 13px;
-            margin: 5px 0 0 0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        h2 {
-            color: #0F172A;
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0 0 20px 0;
-        }
-        p {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        .wrapper p {
             font-size: 15px;
             font-weight: normal;
-            margin: 0 0 20px 0;
+            margin: 0 0 16px;
             color: #475569;
         }
 
-        /* -------------------------------------
-            BUTTON
-        ------------------------------------- */
+        /* Titles */
+        .greeting {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 20px !important;
+        }
+        
+        .sub-heading {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+
+        /* Call to Action Button */
         .btn-container {
+            width: 100%;
+            text-align: center;
             margin: 30px 0;
         }
         .btn {
-            box-sizing: border-box;
-            width: 100%;
-        }
-        .btn table {
-            width: auto;
-        }
-        .btn table td {
-            background-color: #0284C7;
+            background-color: #2563eb;
             border-radius: 6px;
-            text-align: center;
-        }
-        .btn a {
-            background-color: #0284C7;
-            border: solid 1px #0284C7;
-            border-radius: 6px;
-            box-sizing: border-box;
-            color: #ffffff;
-            cursor: pointer;
+            color: #ffffff !important;
             display: inline-block;
-            font-size: 15px;
-            font-weight: 600;
-            margin: 0;
-            padding: 12px 28px;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 14px 35px;
             text-decoration: none;
         }
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
 
-        /* -------------------------------------
-            FALLBACK LINK
-        ------------------------------------- */
-        .fallback-link {
-            font-size: 12px;
-            color: #64748B;
-            word-break: break-all;
-            background-color: #F8FAFC;
+        /* Fallback Link Box */
+        .fallback-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
             padding: 15px;
+            margin-top: 25px;
             border-radius: 6px;
+            font-size: 12px !important;
+            color: #64748b !important;
+            word-break: break-all;
+        }
+        .fallback-box a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .fallback-box a:hover {
+            text-decoration: underline;
+        }
+
+        /* Security Info */
+        .security-info {
+            font-size: 13px !important;
+            color: #64748b !important;
+            margin-top: 25px !important;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        /* Signature */
+        .signature {
             margin-top: 30px;
         }
-        .fallback-link a {
-            color: #0284C7;
+        .signature p {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .signature strong {
+            color: #1e293b;
         }
 
-        /* -------------------------------------
-            FOOTER
-        ------------------------------------- */
+        /* Footer */
         .footer {
             clear: both;
             margin-top: 20px;
             text-align: center;
             width: 100%;
         }
-        .footer td,
-        .footer p,
-        .footer span,
-        .footer a {
-            color: #94A3B8;
-            font-size: 12px;
+        .footer td, .footer p {
+            color: #94a3b8;
+            font-size: 11px;
             text-align: center;
-            line-height: 1.5;
+            margin-bottom: 5px;
+        }
+        .footer a {
+            color: #64748b;
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 620px) {
+            table.body h1 { font-size: 20px !important; }
+            .sub-heading { font-size: 18px !important; }
+            table.body .wrapper { padding: 25px 20px !important; }
+            table.body .content { padding: 0 !important; }
+            table.body .container { padding: 15px !important; width: 100% !important; }
+            table.body .main { border-left-width: 0 !important; border-radius: 0 !important; border-right-width: 0 !important; }
+            .btn { width: 100% !important; box-sizing: border-box !important; padding: 15px 20px !important; }
         }
     </style>
 </head>
@@ -185,57 +208,55 @@
 
                     <table role="presentation" class="main">
                         <tr>
+                            <td class="header-top">
+                                <h1>ANGKASA PURA</h1>
+                                <p>Sistem Informasi Manajemen Aset & Operasional M/E</p>
+                            </td>
+                        </tr>
+
+                        <tr>
                             <td class="wrapper">
-                                
-                                <div class="header">
-                                    <h1>PT. Angkasa Pura Indonesia</h1>
-                                    <p>Asset Monitoring System</p>
-                                </div>
-
-                                <h2>Verifikasi Alamat Email</h2>
-                                <p>Yth. <strong>{{ $user->name }}</strong>,</p>
-                                <p>Terima kasih telah bergabung dengan Sistem Monitoring Aset. Untuk alasan keamanan dan guna mengaktifkan akun Anda sepenuhnya, kami perlu memverifikasi alamat email Anda.</p>
-                                
-                                <p>Silakan klik tombol di bawah ini untuk menyelesaikan proses verifikasi:</p>
-
-                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn-container btn">
-                                    <tbody>
-                                        <tr>
-                                            <td align="left">
-                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                                                    <tbody>
-                                                        <tr>
-                                                            <td> <a href="{{ $url }}" target="_blank">Verifikasi Email Saya</a> </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </tbody>
+                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td>
+                                            <h2 class="sub-heading">Verifikasi Email Anda</h2>
+                                            
+                                            <p class="greeting">Yth. {{ $user->name }},</p>
+                                            
+                                            <p>Terima kasih telah mendaftar di <strong>Aplikasi Asset Monitoring System</strong>. Untuk alasan keamanan dan memastikan bahwa alamat email ini milik Anda, kami perlu memverifikasi email Anda.</p>
+                                            
+                                            <p>Silakan klik tombol di bawah ini untuk menyelesaikan proses verifikasi dan mengaktifkan akun Anda:</p>
+                                            
+                                            <div class="btn-container">
+                                                <a href="{{ $url }}" target="_blank" class="btn">Verifikasi Alamat Email</a>
+                                            </div>
+                                            
+                                            <p class="security-info">
+                                                Jika Anda tidak pernah mendaftar atau tidak merasa membuat permintaan ini, Anda dapat mengabaikan email ini dengan aman. Tautan verifikasi ini akan kedaluwarsa secara otomatis dan akun yang tidak diverifikasi akan dihapus oleh sistem.
+                                            </p>
+                                            
+                                            <div class="fallback-box">
+                                                Jika tombol di atas tidak berfungsi, salin dan tempel tautan berikut ke browser web Anda:<br>
+                                                <br>
+                                                <a href="{{ $url }}" target="_blank">{{ $url }}</a>
+                                            </div>
+                                            
+                                            <div class="signature">
+                                                <p>Salam Hormat,</p>
+                                                <p><strong>Tim IT Administrator</strong><br>PT. Angkasa Pura Indonesia</p>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 </table>
-
-                                <p>Jika Anda tidak pernah mendaftar untuk akun ini, Anda dapat mengabaikan email ini dengan aman. Akun yang tidak diverifikasi akan dihapus secara otomatis oleh sistem.</p>
-                                
-                                <p>Hormat kami,<br><strong>Tim IT Asset Management</strong></p>
-
-                                <div class="fallback-link">
-                                    Jika tombol di atas tidak berfungsi, salin dan tempel URL berikut ke peramban (browser) Anda:<br>
-                                    <a href="{{ $url }}" target="_blank">{{ $url }}</a>
-                                </div>
-
                             </td>
                         </tr>
                     </table>
                     <div class="footer">
                         <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td class="content-block">
-                                    <span class="apple-link">Email ini dihasilkan secara otomatis oleh sistem. Harap tidak membalas email ini.</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="content-block">
-                                    &copy; {{ date('Y') }} PT. Angkasa Pura Indonesia - Asset Monitoring Division.
+                                <td>
+                                    <p>Pesan ini dihasilkan secara otomatis oleh sistem. Mohon untuk tidak membalas ke alamat email ini.</p>
+                                    <p>&copy; {{ date('Y') }} PT. Angkasa Pura - Asset Monitoring System. Seluruh Hak Cipta Dilindungi.</p>
                                 </td>
                             </tr>
                         </table>

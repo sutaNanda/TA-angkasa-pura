@@ -96,6 +96,7 @@ class LocationInspectionController extends Controller
                     'status' => $hasIssue ? 'issue_found' : 'normal',
                     'notes' => $notes,
                     'photos' => $photoPaths,
+                    'shift_id' => Auth::user()->shift_id,
                 ]);
 
                 if ($hasIssue) {
@@ -108,7 +109,7 @@ class LocationInspectionController extends Controller
                         'status' => 'open', // Terbuka
                         'source' => 'patrol',
                         'issue_description' => $notes ?? 'Masalah ditemukan saat inspeksi area.',
-                        'photos_before' => $photoPaths,
+                        'initial_photo' => $photoPaths[0] ?? null,
                     ]);
 
                     if(\Schema::hasColumn('patrol_logs', 'work_order_id')) {
@@ -148,13 +149,14 @@ public function inspectMaintenance(Maintenance $maintenance)
     {
         $maintenance->load(['location.assets']);
         
-        $items = collect(); // Wadah kosong untuk menampung SEMUA pertanyaan
+        $items = collect();
+        $groupedTemplates = null; // Will be set if multi-template
         $templateName = 'Inspeksi Area Kesatuan';
         $primaryTemplateId = null;
 
         // 1. Cek apakah ada Template langsung di tabel Maintenance
         if ($maintenance->checklist_template_id) {
-            $template = \App\Models\ChecklistTemplate::with('items')->find($maintenance->checklist_template_id);
+            $template = \App\Models\ChecklistTemplate::with(['items', 'category'])->find($maintenance->checklist_template_id);
             if ($template) {
                 $items = $template->items;
                 $templateName = $template->name;
@@ -166,9 +168,10 @@ public function inspectMaintenance(Maintenance $maintenance)
             $templateName = $maintenance->maintenancePlan->name;
             
             if (isset($maintenance->maintenancePlan->checklist_template_id) && $maintenance->maintenancePlan->checklist_template_id) {
-                $template = \App\Models\ChecklistTemplate::with('items')->find($maintenance->maintenancePlan->checklist_template_id);
+                $template = \App\Models\ChecklistTemplate::with(['items', 'category'])->find($maintenance->maintenancePlan->checklist_template_id);
                 if ($template) {
                     $items = $template->items;
+                    $templateName = $template->name;
                     $primaryTemplateId = $template->id;
                 }
             } elseif (isset($maintenance->maintenancePlan->template_configs)) {
@@ -177,31 +180,45 @@ public function inspectMaintenance(Maintenance $maintenance)
                             : $maintenance->maintenancePlan->template_configs;
                 
                 if (is_array($configs)) {
-                    // SULAPNYA DI SINI: Looping semua template, dan GABUNGKAN SEMUA PERTANYAANNYA!
+                    // Setiap template menjadi grup terpisah (bukan digabung menjadi satu list)
+                    $groupedTemplates = [];
                     foreach ($configs as $config) {
                         if (isset($config['template_id'])) {
-                            $template = \App\Models\ChecklistTemplate::with('items')->find($config['template_id']);
-                            if ($template && $template->items) {
-                                $items = $items->merge($template->items);
+                            $template = \App\Models\ChecklistTemplate::with(['items', 'category'])->find($config['template_id']);
+                            if ($template && $template->items && $template->items->isNotEmpty()) {
                                 if (!$primaryTemplateId) {
-                                    $primaryTemplateId = $template->id; // Simpan ID template pertama untuk di log database
+                                    $primaryTemplateId = $template->id;
                                 }
+                                $groupedTemplates[] = [
+                                    'maintenance_id' => $maintenance->id,
+                                    'template_name'  => $template->name,
+                                    'category_name'  => $template->category->name ?? 'Umum',
+                                    'items'          => $template->items,
+                                ];
                             }
                         }
+                    }
+                    // Jika hanya 1 template, fallback ke mode single
+                    if (count($groupedTemplates) == 1) {
+                        $items = $groupedTemplates[0]['items'];
+                        $templateName = $groupedTemplates[0]['template_name'];
+                        $groupedTemplates = null;
+                    } elseif (empty($groupedTemplates)) {
+                        $groupedTemplates = null;
                     }
                 }
             }
         }
 
         // Jika setelah digabung ternyata kosong, tolak.
-        if ($items->isEmpty()) {
+        if ($items->isEmpty() && empty($groupedTemplates)) {
             return redirect()->back()->with('error', 'Tugas ini tidak memiliki satupun item SOP. Silakan atur Template di Jadwal Maintenance.');
         }
 
         // 3. Ambil daftar aset HANYA untuk Dropdown pelaporan masalah
         $assets = $maintenance->location ? $maintenance->location->assets : \App\Models\Asset::all();
 
-        return view('technician.maintenance.inspect_unified', compact('maintenance', 'items', 'templateName', 'primaryTemplateId', 'assets'));
+        return view('technician.maintenance.inspect_unified', compact('maintenance', 'items', 'templateName', 'primaryTemplateId', 'assets', 'groupedTemplates'));
     }
 
 public function storeMaintenance(Request $request, Maintenance $maintenance)
@@ -220,6 +237,14 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             $hasIssue = false;
             $workOrdersCreated = [];
             
+            // Simpan Foto Bukti Global (Ditarik ke atas agar bisa dipakai oleh WorkOrder)
+            $photoPaths = [];
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $file) {
+                    $photoPaths[] = $file->store('maintenance-evidence', 'public');
+                }
+            }
+
             // Loop mengecek jawaban
             foreach ($request->answers as $itemId => $answer) {
                 if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
@@ -229,6 +254,11 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                     if ($selectedAssetId === 'area_general') {
                         $selectedAssetId = null; 
                     }
+                    
+                    // Logic Teks Deskripsi
+                    $issueDesc = !empty($request->notes[$itemId]) 
+                                    ? $request->notes[$itemId] 
+                                    : ($request->global_notes ?? 'Masalah ditemukan saat inspeksi area.');
 
                     $workOrder = \App\Models\WorkOrder::create([
                         'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
@@ -239,19 +269,12 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                         'priority' => 'medium',
                         'status' => 'open',
                         'source' => 'patrol',
-                        'issue_description' => $request->notes[$itemId] ?? ($request->global_notes ?? 'Masalah ditemukan saat inspeksi area.'),
+                        'issue_description' => $issueDesc,
                         'maintenance_id' => $maintenance->id,
+                        'initial_photo' => $photoPaths[0] ?? null,
                     ]);
                     
                     $workOrdersCreated[] = $workOrder->id;
-                }
-            }
-
-            // Simpan Foto Bukti Global
-            $photoPaths = [];
-            if ($request->hasFile('photos')) {
-                foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = $file->store('maintenance-evidence', 'public');
                 }
             }
 
@@ -270,6 +293,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                 'status' => $hasIssue ? 'issue_found' : 'normal',
                 'notes' => $request->global_notes,
                 'photos' => $photoPaths,
+                'shift_id' => Auth::user()->shift_id,
             ]);
 
             // Tandai Maintenance Selesai
@@ -315,12 +339,22 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
              return redirect()->route('technician.dashboard')->with('error', 'Tugas tidak ditemukan.');
         }
 
-        // Get first valid location
+        // Get first valid location — mulai dari lokasi paling langsung
         $primaryLocation = null;
         foreach($maintenances as $m) {
+            // 1. location_id langsung di tabel maintenances (digunakan GenerateDailyMaintenanceTasks)
             if ($m->location) { $primaryLocation = $m->location; break; }
+            // 2. Dari relasi asset
             if ($m->asset && $m->asset->location) { $primaryLocation = $m->asset->location; break; }
             if ($m->asset && $m->asset->parentAsset && $m->asset->parentAsset->location) { $primaryLocation = $m->asset->parentAsset->location; break; }
+            // 3. Dari target_asset_ids (fallback untuk data yang dibuat otomatis)
+            if (!empty($m->target_asset_ids)) {
+                $firstAsset = \App\Models\Asset::with('location', 'parentAsset.location')->find($m->target_asset_ids[0]);
+                if ($firstAsset) {
+                    $loc = $firstAsset->location ?? $firstAsset->parentAsset?->location ?? null;
+                    if ($loc) { $primaryLocation = $loc; break; }
+                }
+            }
         }
 
         $groupedTemplates = [];
@@ -328,84 +362,193 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
         $processedTemplateIds = [];
 
         foreach ($maintenances as $maintenance) {
-            $items = collect();
-            $categoryName = 'Unknown Category';
+            $templateFound = false;
 
-            if ($maintenance->maintenancePlan) {
-                 $categoryName = $maintenance->maintenancePlan->name;
-                 if (isset($maintenance->maintenancePlan->template_configs)) {
-                     $configs = is_string($maintenance->maintenancePlan->template_configs) 
-                         ? json_decode($maintenance->maintenancePlan->template_configs, true) 
-                         : $maintenance->maintenancePlan->template_configs;
-                     
-                     if (is_array($configs)) {
-                         foreach ($configs as $config) {
-                             if (isset($config['template_id'])) {
-                                 if (in_array($config['template_id'], $processedTemplateIds)) {
-                                     continue;
-                                 }
-                                 $processedTemplateIds[] = $config['template_id'];
-                                 
-                                 $template = \App\Models\ChecklistTemplate::with('items')->find($config['template_id']);
-                                 if ($template && $template->items) {
-                                     $items = $items->merge($template->items);
-                                     if (!$primaryTemplateId) {
-                                         $primaryTemplateId = $template->id;
-                                     }
-                                 }
-                             }
-                         }
-                     }
-                 }
-            } elseif ($maintenance->checklist_template_id) {
-                 if (!in_array($maintenance->checklist_template_id, $processedTemplateIds)) {
-                     $processedTemplateIds[] = $maintenance->checklist_template_id;
-                     $template = \App\Models\ChecklistTemplate::with('items')->find($maintenance->checklist_template_id);
-                     if ($template) {
-                         $items = $template->items;
-                         $categoryName = $template->name;
-                         if (!$primaryTemplateId) $primaryTemplateId = $template->id;
-                     }
-                 }
+            // --- Sumber 1: Template dari MaintenancePlan (multi-template via template_configs) ---
+            if ($maintenance->maintenancePlan && !empty($maintenance->maintenancePlan->template_configs)) {
+                $configs = is_array($maintenance->maintenancePlan->template_configs)
+                    ? $maintenance->maintenancePlan->template_configs
+                    : json_decode($maintenance->maintenancePlan->template_configs, true);
+
+                if (is_array($configs) && count($configs) > 0) {
+                    foreach ($configs as $config) {
+                        if (isset($config['template_id'])) {
+                            if (in_array($config['template_id'], $processedTemplateIds)) {
+                                continue; // Skip duplikat
+                            }
+                            $processedTemplateIds[] = $config['template_id'];
+
+                            $template = \App\Models\ChecklistTemplate::with(['items', 'category'])->find($config['template_id']);
+                            if ($template && $template->items && $template->items->isNotEmpty()) {
+                                if (!$primaryTemplateId) $primaryTemplateId = $template->id;
+                                $groupedTemplates[] = [
+                                    'maintenance_id' => $maintenance->id,
+                                    'template_name'  => $template->name,
+                                    'category_name'  => $template->category->name ?? 'Umum',
+                                    'items'          => $template->items,
+                                ];
+                                $templateFound = true;
+                            }
+                        }
+                    }
+                }
             }
 
-            if ($items->isNotEmpty()) {
-                 $groupedTemplates[] = [
-                     'maintenance_id' => $maintenance->id,
-                     'category_name' => $categoryName,
-                     'items' => $items
-                 ];
+            // --- Sumber 2: Template langsung di tabel Maintenance (dicek selalu, bukan hanya jika tidak ada plan) ---
+            if (!$templateFound && $maintenance->checklist_template_id) {
+                if (!in_array($maintenance->checklist_template_id, $processedTemplateIds)) {
+                    $processedTemplateIds[] = $maintenance->checklist_template_id;
+                    $template = \App\Models\ChecklistTemplate::with(['items', 'category'])->find($maintenance->checklist_template_id);
+                    if ($template && $template->items && $template->items->isNotEmpty()) {
+                        if (!$primaryTemplateId) $primaryTemplateId = $template->id;
+                        $groupedTemplates[] = [
+                            'maintenance_id' => $maintenance->id,
+                            'template_name'  => $template->name,
+                            'category_name'  => $template->category->name ?? 'Umum',
+                            'items'          => $template->items,
+                        ];
+                        $templateFound = true;
+                    }
+                }
+            }
+
+            // --- Sumber 3: Fallback dari asset_id langsung ---
+            if (!$templateFound && $maintenance->asset && $maintenance->asset->category) {
+                $maintenance->asset->load('category.checklistTemplates.items');
+                $assetTemplates = $maintenance->asset->category->checklistTemplates ?? collect();
+                foreach ($assetTemplates as $template) {
+                    if (in_array($template->id, $processedTemplateIds)) continue;
+                    if ($template->items && $template->items->isNotEmpty()) {
+                        $processedTemplateIds[] = $template->id;
+                        if (!$primaryTemplateId) $primaryTemplateId = $template->id;
+                        $groupedTemplates[] = [
+                            'maintenance_id' => $maintenance->id,
+                            'template_name'  => $template->name,
+                            'category_name'  => $maintenance->asset->category->name ?? 'Umum',
+                            'items'          => $template->items,
+                        ];
+                        $templateFound = true;
+                    }
+                }
+            }
+
+            // --- Sumber 4: Fallback dari target_asset_ids (digunakan oleh GenerateDailyMaintenanceTasks) ---
+            // Maintenance records yang dibuat otomatis menyimpan aset di target_asset_ids, bukan asset_id
+            if (!$templateFound && !empty($maintenance->target_asset_ids)) {
+                $targetAssets = \App\Models\Asset::with(['category.checklistTemplates.items'])
+                    ->whereIn('id', $maintenance->target_asset_ids)
+                    ->get();
+
+                // Tentukan template dari plan->template_configs berdasarkan kategori aset
+                $planConfigs = [];
+                if ($maintenance->maintenancePlan && !empty($maintenance->maintenancePlan->template_configs)) {
+                    $planConfigs = is_array($maintenance->maintenancePlan->template_configs)
+                        ? $maintenance->maintenancePlan->template_configs
+                        : json_decode($maintenance->maintenancePlan->template_configs, true);
+                }
+                $planTemplateIdsByCategoryId = collect($planConfigs)->keyBy('category_id')->map(fn($c) => $c['template_id'] ?? null);
+
+                $processedCategoryIds = [];
+                foreach ($targetAssets as $asset) {
+                    if (!$asset->category) continue;
+                    $categoryId = $asset->category_id;
+                    if (in_array($categoryId, $processedCategoryIds)) continue;
+                    $processedCategoryIds[] = $categoryId;
+
+                    // Cari template spesifik dari plan config, fallback ke template pertama di kategori
+                    $specificTemplateId = $planTemplateIdsByCategoryId[$categoryId] ?? null;
+                    $templates = $asset->category->checklistTemplates;
+
+                    if ($specificTemplateId) {
+                        $templates = $templates->sortByDesc(fn($t) => $t->id === $specificTemplateId);
+                    }
+
+                    foreach ($templates as $template) {
+                        if (in_array($template->id, $processedTemplateIds)) continue;
+                        if ($template->items && $template->items->isNotEmpty()) {
+                            $processedTemplateIds[] = $template->id;
+                            if (!$primaryTemplateId) $primaryTemplateId = $template->id;
+                            $groupedTemplates[] = [
+                                'maintenance_id' => $maintenance->id,
+                                'template_name'  => $template->name,
+                                'category_name'  => $asset->category->name ?? 'Umum',
+                                'items'          => $template->items,
+                            ];
+                            $templateFound = true;
+                            break; // Satu template per kategori
+                        }
+                    }
+                }
             }
         }
 
         if (empty($groupedTemplates)) {
-            return redirect()->route('technician.dashboard')->with('error', 'Tugas ini tidak memiliki satupun item SOP.');
+            $planName = $maintenances->first()->maintenancePlan->name ?? '';
+            $errorMsg = $planName
+                ? 'Rencana maintenance ' . $planName . ' belum memiliki SOP/Checklist. Hubungi Admin untuk mengatur template checklist.'
+                : 'Jadwal ini belum memiliki SOP/Checklist. Hubungi Admin untuk mengatur template checklist.';
+            return redirect()->route('technician.dashboard')->with('error', $errorMsg);
         }
 
-        // Assets for dropdown
+        // ---- Build Assets By Category (untuk Mass Triage Grid di view) ----
+        // Kumpulkan SEMUA aset yang relevan: dari location + dari target_asset_ids
+        $allAssetIds = collect();
+
+        // A. Dari location
         if ($primaryLocation) {
-             $primaryLocation->load(['assets' => function($q) {
-                  $q->with('childAssets');
-             }]);
-             // Combine physical assets + installed software
-             $assets = collect();
-             foreach ($primaryLocation->assets as $physAsset) {
-                 $assets->push($physAsset);
-                 if ($physAsset->childAssets) {
-                     foreach ($physAsset->childAssets as $softAsset) {
-                         $assets->push($softAsset);
-                     }
-                 }
-             }
-        } else {
-             $assets = \App\Models\Asset::all();
+            $primaryLocation->load(['assets.category', 'assets.childAssets.category']);
+            foreach ($primaryLocation->assets as $physAsset) {
+                $allAssetIds->push($physAsset->id);
+                if ($physAsset->childAssets) {
+                    foreach ($physAsset->childAssets as $child) {
+                        $allAssetIds->push($child->id);
+                    }
+                }
+            }
         }
+
+        // B. Dari target_asset_ids di semua maintenance record
+        foreach ($maintenances as $m) {
+            if (!empty($m->target_asset_ids)) {
+                foreach ($m->target_asset_ids as $aid) {
+                    $allAssetIds->push($aid);
+                }
+            }
+        }
+
+        $allAssetIds = $allAssetIds->unique()->values();
+
+        $allAssets = \App\Models\Asset::with('category')
+            ->whereIn('id', $allAssetIds)
+            ->orderBy('name')
+            ->get();
+
+        // Group by category_id untuk dipakai di Mass Triage Grid
+        $assetsByCategory = $allAssets->groupBy('category_id')->map(fn($group) => $group->values());
+
+        // Juga simpan flat list untuk dropdown lama
+        $assets = $allAssets;
+
+        // Tambahkan category_id ke setiap group template agar view bisa korelasikan
+        foreach ($groupedTemplates as &$grp) {
+            if (!isset($grp['category_id'])) {
+                // Cari category_id dari template
+                $tpl = \App\Models\ChecklistTemplate::find($grp['items']->first()->checklist_template_id ?? null);
+                // Fallback: cari dari nama kategori
+                $cat = \App\Models\Category::where('name', $grp['category_name'])->first();
+                $grp['category_id'] = $cat?->id ?? null;
+            }
+        }
+        unset($grp);
 
         $maintenanceIdsStr = implode(',', $ids);
         $templateName = 'Inspeksi Area Terpadu';
         $maintenance = $maintenances->first();
 
-        return view('technician.maintenance.inspect_unified', compact('groupedTemplates', 'primaryTemplateId', 'assets', 'primaryLocation', 'maintenanceIdsStr', 'templateName', 'maintenance'));
+        return view('technician.maintenance.inspect_unified', compact(
+            'groupedTemplates', 'primaryTemplateId', 'assets', 'assetsByCategory',
+            'primaryLocation', 'maintenanceIdsStr', 'templateName', 'maintenance'
+        ));
     }
 
     public function storeMaintenanceGroup(Request $request)
@@ -427,35 +570,8 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
         try {
             $hasIssue = false;
             $workOrdersCreated = [];
-            
-            // Loop mengecek jawaban
-            foreach ($request->answers as $itemId => $answer) {
-                if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
-                    $hasIssue = true;
-                    
-                    $selectedAssetId = $request->failed_asset_ids[$itemId] ?? null;
-                    if ($selectedAssetId === 'area_general') {
-                        $selectedAssetId = null; 
-                    }
 
-                    $workOrder = \App\Models\WorkOrder::create([
-                        'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
-                        'asset_id' => $selectedAssetId, 
-                        'location_id' => $request->location_id,
-                        'technician_id' => null,
-                        'reporter_id' => Auth::id(),
-                        'priority' => 'medium',
-                        'status' => 'open',
-                        'source' => 'patrol',
-                        'issue_description' => $request->notes[$itemId] ?? ($request->global_notes ?? 'Masalah ditemukan saat inspeksi area.'),
-                        'maintenance_id' => $ids[0] ?? null, 
-                    ]);
-                    
-                    $workOrdersCreated[] = $workOrder->id;
-                }
-            }
-
-            // Simpan Foto Bukti Global
+            // Simpan Foto Bukti Global (Ditarik ke atas agar ID dan URL foto bisa dimasukkan ke semua Work Order)
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
@@ -463,21 +579,81 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                 }
             }
 
+            // Loop mengecek jawaban
+            foreach ($request->answers as $itemId => $answer) {
+                if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
+                    $hasIssue = true;
+
+                    // --- FORMAT BARU: failed_assets[item_id][] = multiple asset_ids (Mass Triage) ---
+                    $failedAssetIds = $request->input("failed_assets.{$itemId}", []);
+                    // Juga cek format lama: failed_asset_ids[item_id] = single value
+                    $legacySingleAsset = $request->input("failed_asset_ids.{$itemId}");
+
+                    // Logic Teks Deskripsi
+                    $baseDesc = !empty($request->notes[$itemId]) 
+                                    ? $request->notes[$itemId] 
+                                    : ($request->global_notes ?? 'Masalah ditemukan saat inspeksi area.');
+
+                    if (!empty($failedAssetIds) && is_array($failedAssetIds)) {
+                        // FORMAT BARU: buat 1 WO per aset yang ditandai
+                        foreach ($failedAssetIds as $selectedAssetId) {
+                            $selectedAssetId = ($selectedAssetId === 'area_general') ? null : $selectedAssetId;
+                            
+                            $workOrder = \App\Models\WorkOrder::create([
+                                'ticket_number'     => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
+                                'asset_id'          => $selectedAssetId,
+                                'location_id'       => $request->location_id,
+                                'technician_id'     => null,
+                                'reporter_id'       => Auth::id(),
+                                'priority'          => 'medium',
+                                'status'            => 'open',
+                                'source'            => 'patrol',
+                                'issue_description' => $baseDesc,
+                                'maintenance_id'    => $ids[0] ?? null,
+                                'initial_photo'     => $photoPaths[0] ?? null,
+                            ]);
+                            $workOrdersCreated[] = $workOrder->id;
+                        }
+                    } else {
+                        // FORMAT LAMA: single asset dropdown
+                        $selectedAssetId = $legacySingleAsset;
+                        if ($selectedAssetId === 'area_general') $selectedAssetId = null;
+
+                        $workOrder = \App\Models\WorkOrder::create([
+                            'ticket_number'     => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
+                            'asset_id'          => $selectedAssetId,
+                            'location_id'       => $request->location_id,
+                            'technician_id'     => null,
+                            'reporter_id'       => Auth::id(),
+                            'priority'          => 'medium',
+                            'status'            => 'open',
+                            'source'            => 'patrol',
+                            'issue_description' => $baseDesc,
+                            'maintenance_id'    => $ids[0] ?? null,
+                            'initial_photo'     => $photoPaths[0] ?? null,
+                        ]);
+                        $workOrdersCreated[] = $workOrder->id;
+                    }
+                }
+            }
+
             // Buat 1 Log Patroli
             $patrolLog = \App\Models\PatrolLog::create([
-                'technician_id' => Auth::id(),
-                'asset_id' => null,
-                'location_id' => $request->location_id,
-                'checklist_template_id' => $request->primary_template_id, // Gunakan ID template utama
-                'work_order_id' => $workOrdersCreated[0] ?? null, // LINK KE TIKET PERTAMA
-                'inspection_data' => json_encode([
-                    'answers' => $request->answers,
-                    'notes' => $request->notes,
-                    'failed_assets' => $request->failed_asset_ids ?? []
+                'technician_id'       => Auth::id(),
+                'asset_id'            => null,
+                'location_id'         => $request->location_id,
+                'checklist_template_id' => $request->primary_template_id,
+                'work_order_id'       => $workOrdersCreated[0] ?? null,
+                'inspection_data'     => json_encode([
+                    'answers'       => $request->answers,
+                    'notes'         => $request->notes,
+                    'failed_assets' => $request->failed_assets ?? [],   // format baru (multi)
+                    'failed_asset_ids' => $request->failed_asset_ids ?? [], // format lama
                 ]),
-                'status' => $hasIssue ? 'issue_found' : 'normal',
-                'notes' => $request->global_notes,
-                'photos' => $photoPaths,
+                'status'   => $hasIssue ? 'issue_found' : 'normal',
+                'notes'    => $request->global_notes,
+                'photos'   => $photoPaths,
+                'shift_id' => Auth::user()->shift_id,
             ]);
 
             // Tandai Semua Maintenance Selesai

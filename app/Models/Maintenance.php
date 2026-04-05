@@ -72,6 +72,11 @@ class Maintenance extends Model
         return $this->belongsTo(MaintenanceSchedule::class);
     }
 
+    public function results()
+    {
+        return $this->hasMany(MaintenanceDetail::class, 'maintenance_id');
+    }
+
     /**
      * Scopes
      */

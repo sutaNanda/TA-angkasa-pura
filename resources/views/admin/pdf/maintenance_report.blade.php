@@ -169,7 +169,7 @@
 
     <!-- HEADER -->
     <div class="report-header">
-        <h1>LAPORAN PERAWATAN ASET RUTIN (PREVENTIVE)</h1>
+        <h1>{{ strtoupper($title ?? 'Laporan Perawatan Aset') }}</h1>
         <p>No. Dokumen: {{ $maintenance->ticket_number ?? 'MNT-' . str_pad($maintenance->id, 5, '0', STR_PAD_LEFT) }} | Diekspor pada: {{ $date }}</p>
     </div>
 
@@ -179,40 +179,48 @@
             <tr>
                 <td class="info-label">Nama Aset</td>
                 <td class="separator">:</td>
-                <td class="info-value"><strong>{{ $maintenance->asset->name }}</strong></td>
+                <td class="info-value"><strong>{{ $maintenance->asset->name ?? 'Aset Tidak Spesifik / Area' }}</strong></td>
                 
-                <td class="info-label">Status Pekerjaan</td>
+                <td class="info-label">Status Hasil</td>
                 <td class="separator">:</td>
                 <td class="info-value">
                     @php
-                        $statusClass = match($maintenance->status) {
-                            'completed' => 'bg-green',
+                        $status = strtolower($maintenance->status);
+                        $statusClass = match($status) {
+                            'completed', 'normal', 'pass' => 'bg-green',
+                            'issue_found', 'fail', 'rusak' => 'bg-yellow',
                             'in_progress' => 'bg-blue',
                             default => 'bg-gray'
                         };
+                        $statusLabel = match($status) {
+                            'normal', 'pass' => 'NORMAL / AMAN',
+                            'issue_found', 'fail' => 'ADA TEMUAN',
+                            'completed' => 'SELESAI',
+                            default => strtoupper($status)
+                        };
                     @endphp
                     <span class="status-badge {{ $statusClass }}">
-                        {{ $maintenance->status == 'completed' ? 'SELESAI' : strtoupper($maintenance->status) }}
+                        {{ $statusLabel }}
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="info-label">Kode / Barcode</td>
                 <td class="separator">:</td>
-                <td class="info-value">{{ $maintenance->asset->asset_code ?? '-' }}</td>
+                <td class="info-value">{{ $maintenance->asset->asset_code ?? ($maintenance->asset->serial_number ?? '-') }}</td>
                 
                 <td class="info-label">Kategori Laporan</td>
                 <td class="separator">:</td>
-                <td class="info-value">Preventive Maintenance</td>
+                <td class="info-value">{{ $maintenance->maintenancePlan ? 'Preventive Maintenance' : 'Pengecekan Rutin/Patroli' }}</td>
             </tr>
             <tr>
-                <td class="info-label">Lokasi Aset</td>
+                <td class="info-label">Lokasi / Area</td>
                 <td class="separator">:</td>
-                <td class="info-value">{{ $maintenance->asset->location->name ?? '-' }}</td>
+                <td class="info-value">{{ $maintenance->asset->location->name ?? ($maintenance->location->name ?? '-') }}</td>
                 
-                <td class="info-label">Waktu Mulai (Scan)</td>
+                <td class="info-label">Waktu Pemeriksaan</td>
                 <td class="separator">:</td>
-                <td class="info-value">{{ $maintenance->started_at ? \Carbon\Carbon::parse($maintenance->started_at)->format('d M Y, H:i') : '-' }} WIB</td>
+                <td class="info-value">{{ ($maintenance->started_at ?? $maintenance->created_at)->format('d M Y, H:i') }} WITA</td>
             </tr>
             <tr>
                 <td class="info-label">Kategori Aset</td>
@@ -221,7 +229,7 @@
                 
                 <td class="info-label">Waktu Selesai</td>
                 <td class="separator">:</td>
-                <td class="info-value">{{ $maintenance->completed_at ? \Carbon\Carbon::parse($maintenance->completed_at)->format('d M Y, H:i') : '-' }} WIB</td>
+                <td class="info-value">{{ ($maintenance->completed_at ?? $maintenance->created_at)->format('d M Y, H:i') }} WITA</td>
             </tr>
             <tr>
                 <td class="info-label">Template / SOP</td>
@@ -292,19 +300,36 @@
 
     <!-- FOTO BUKTI (BASE64) -->
     <div class="section-title">C. DOKUMENTASI & FOTO KONDISI ASET</div>
-    @if($maintenance->photo_proof && file_exists(public_path('storage/' . $maintenance->photo_proof)))
+    @php
+        $photos = [];
+        // Cek foto dari tugas maintenance (single path)
+        if (!empty($maintenance->photo_proof) && file_exists(public_path('storage/' . $maintenance->photo_proof))) {
+            $photos[] = $maintenance->photo_proof;
+        } 
+        // Cek foto dari patrol log (array of paths)
+        elseif (!empty($maintenance->photos) && is_array($maintenance->photos)) {
+            foreach ($maintenance->photos as $p) {
+                if ($p && file_exists(public_path('storage/' . $p))) $photos[] = $p;
+            }
+        }
+    @endphp
+
+    @if(!empty($photos))
         <div class="photo-container">
-            <div class="photo-box">
-                @php
-                    // Konversi ke base64 agar DOMPDF bisa merender gambar local dgn baik
-                    $path = public_path('storage/' . $maintenance->photo_proof);
-                    $type = pathinfo($path, PATHINFO_EXTENSION);
-                    $data = file_get_contents($path);
-                    $base64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
-                @endphp
-                <img src="{{ $base64 }}" alt="Foto Bukti Perawatan">
-                <div class="photo-caption">Dilampirkan oleh Teknisi pada saat penyelesaian tugas.</div>
-            </div>
+            @foreach($photos as $photo)
+                <div class="photo-box">
+                    @php
+                        $path = public_path('storage/' . $photo);
+                        $type = pathinfo($path, PATHINFO_EXTENSION);
+                        $imgData = @file_get_contents($path);
+                        $base64 = $imgData ? 'data:image/' . $type . ';base64,' . base64_encode($imgData) : null;
+                    @endphp
+                    @if($base64)
+                        <img src="{{ $base64 }}" alt="Foto Bukti">
+                        <div class="photo-caption">Lampiran Dokumentasi Lapangan</div>
+                    @endif
+                </div>
+            @endforeach
         </div>
     @else
         <div style="padding: 10px; border: 1px dashed #cbd5e1; text-align: center; color: #94a3b8;">

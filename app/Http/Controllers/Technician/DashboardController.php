@@ -72,11 +72,23 @@ class DashboardController extends Controller
 
         // 4. JADWAL PATROLI HARI INI (Using Maintenance Model as requested)
         // Ambil data maintenance (preventive) yang dijadwalkan hari ini dan belum selesai
-        $patrols = \App\Models\Maintenance::with(['asset.location', 'asset.parentAsset.location', 'location', 'maintenancePlan'])
+        $patrolQuery = \App\Models\Maintenance::with(['asset.location', 'asset.parentAsset.location', 'location', 'maintenancePlan.shift'])
             ->whereDate('scheduled_date', $now->toDateString())
             ->where('type', 'preventive')
-            ->whereIn('status', ['pending', 'in_progress'])
-            ->get();
+            ->whereIn('status', ['pending', 'in_progress']);
+
+        // Filter by user's shift: show matching shift OR tasks without shift (backward-compatible)
+        if ($user->shift_id) {
+            $patrolQuery->where(function($q) use ($user) {
+                $q->whereHas('maintenancePlan', function($sub) use ($user) {
+                    $sub->where('shift_id', $user->shift_id);
+                })->orWhereHas('maintenancePlan', function($sub) {
+                    $sub->whereNull('shift_id');
+                })->orWhereNull('maintenance_plan_id');
+            });
+        }
+
+        $patrols = $patrolQuery->get();
 
         // 5. STATS
         $completedToday = WorkOrderHistory::where('user_id', $user->id)

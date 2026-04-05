@@ -11,7 +11,7 @@ class WorkOrder extends Model
     use HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];
-    protected $appends = ['photo_before', 'photo_after', 'photos_before_urls', 'photos_after_urls'];
+    protected $appends = ['photo_before', 'photo_after', 'photos_before_urls', 'photos_after_urls', 'initial_photo_url'];
     
     protected $casts = [
         'photos_before' => 'array',
@@ -121,7 +121,7 @@ class WorkOrder extends Model
         $path = $value ?? (array_key_exists('last_progress_photo', $this->attributes) ? $this->attributes['last_progress_photo'] : null);
         
         if (!$path) {
-            $history = $this->histories()->where('action', 'completed')->latest()->first();
+            $history = $this->histories->where('action', 'completed')->sortByDesc('created_at')->first();
             $path = $history ? $history->photo : null;
         }
 
@@ -132,11 +132,16 @@ class WorkOrder extends Model
     {
         $photos = $this->photos_before;
         if (!is_array($photos) || empty($photos)) {
-            // Fallback ke singular fields
-            $path = array_key_exists('initial_photo', $this->attributes) ? $this->attributes['initial_photo'] : null;
-            return $path ? [asset('storage/' . $path)] : [];
+            // No fallback since we now distinguish between reported (initial) and before
+            return [];
         }
         return array_map(fn($p) => asset('storage/' . $p), $photos);
+    }
+    
+    public function getInitialPhotoUrlAttribute()
+    {
+        $path = array_key_exists('initial_photo', $this->attributes) ? $this->attributes['initial_photo'] : null;
+        return $path ? asset('storage/' . $path) : null;
     }
 
     public function getPhotosAfterUrlsAttribute()
@@ -144,7 +149,7 @@ class WorkOrder extends Model
         $photos = $this->photos_after;
         if (!is_array($photos) || empty($photos)) {
             // Fallback: check history photos
-            $history = $this->histories()->where('action', 'completed')->latest()->first();
+            $history = $this->histories->where('action', 'completed')->sortByDesc('created_at')->first();
             if ($history) {
                 $histPhotos = $history->photos ?? null;
                 if (is_array($histPhotos) && count($histPhotos) > 0) {

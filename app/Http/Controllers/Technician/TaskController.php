@@ -81,15 +81,7 @@ class TaskController extends Controller
              return back()->with('error', 'Tugas ini tidak bisa diambil (Status tidak valid).');
         }
 
-        // CONSTRAINT: Single Active Task
-        // Cek apakah user sedang mengerjakan tugas lain (in_progress)
-        $hasActiveTask = WorkOrder::where('technician_id', $user->id)
-                                  ->where('status', 'in_progress')
-                                  ->exists();
-
-        if ($hasActiveTask) {
-            return back()->with('error', 'Selesaikan atau Tunda tugas yang sedang berjalan sebelum mengambil tugas baru!');
-        }
+        // Logika: Ambil tugas dari Pool
 
         DB::transaction(function() use ($task, $user) {
             // Update Work Order
@@ -120,14 +112,7 @@ class TaskController extends Controller
             return back()->with('error', 'Anda tidak memiliki akses untuk memulai tugas ini.');
         }
 
-        // Cek Single Active Task
-        $hasActiveTask = WorkOrder::where('technician_id', $user->id)
-                                  ->where('status', 'in_progress')
-                                  ->exists();
-
-        if ($hasActiveTask) {
-            return back()->with('error', 'Selesaikan tugas lain sebelum memulai tugas ini!');
-        }
+        // Logika: Mulai mengerjakan
 
         DB::transaction(function() use ($task, $user) {
             $task->status = 'in_progress';

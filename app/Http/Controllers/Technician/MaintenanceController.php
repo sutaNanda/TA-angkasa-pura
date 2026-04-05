@@ -104,6 +104,7 @@ class MaintenanceController extends Controller
                     'status' => $request->has_issue ? 'issue_found' : 'normal',
                     'notes' => $request->notes ?? $request->input('notes'),
                     'photos' => $photoPaths,
+                    'shift_id' => auth()->user()->shift_id,
                 ]);
                 
                 // 2. Update Maintenance Status

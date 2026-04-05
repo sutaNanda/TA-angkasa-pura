@@ -11,12 +11,15 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
+
     <!-- Icons -->
-    <script src="https://kit.fontawesome.com/f02cf258a9.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.4.0/css/all.css">
 
     <!-- Scripts -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="//unpkg.com/alpinejs" defer></script>
+    <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 <body class="font-sans antialiased text-gray-900 bg-gray-100">
     <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0">

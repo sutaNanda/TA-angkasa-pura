@@ -31,7 +31,17 @@ class Asset extends Model
         'images' => 'array',
     ];
     
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'location_path'];
+
+    /**
+     * Accessor: Mendapatkan path lokasi lengkap (breadcrumb).
+     * Contoh output: "Terminal Keberangkatan > Lantai 2 > PC PIONA"
+     */
+    public function getLocationPathAttribute()
+    {
+        if (!$this->location) return null;
+        return $this->location->full_address;
+    }
 
     public function getImageUrlAttribute()
     {
