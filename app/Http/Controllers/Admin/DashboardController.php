@@ -51,9 +51,11 @@ class DashboardController extends Controller
         ];
 
         // 4. TOP 5 ASET BERMASALAH (Bulan Ini)
-        // Mengambil aset dengan jumlah tiket terbanyak bulan ini
+        // Mengambil aset dengan jumlah tiket terbanyak bulan ini. Hanya hitung tiket yang sudah selesai (aset teridentifikasi).
         $problematicAssets = WorkOrder::select('asset_id', DB::raw('count(*) as total'))
             ->whereMonth('created_at', Carbon::now()->month)
+            ->whereNotNull('asset_id')
+            ->whereIn('status', ['completed', 'verified'])
             ->groupBy('asset_id')
             ->orderByDesc('total')
             ->with(['asset.location']) // Load relasi aset & lokasi

@@ -4,168 +4,293 @@
 @section('page-title', 'Daftar Pengguna Sistem')
 
 @section('content')
-    {{-- ALERT MESSAGE --}}
-
-
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        {{-- SEARCH FORM --}}
-        <form method="GET" action="{{ route('admin.users.index') }}" class="relative w-full md:w-auto">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama / email..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64 text-sm shadow-sm">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-400"></i>
-        </form>
-
-        <button onclick="openModal('addUserModal')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition shadow-sm w-full md:w-auto justify-center">
-            <i class="fa-solid fa-user-plus"></i>
-            Tambah User Baru
-        </button>
+<div class="container-fluid px-4 py-6 w-full mx-auto max-w-full">
+    
+    {{-- Header Title --}}
+    <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Pengguna Sistem</h1>
+            <p class="text-sm text-gray-500 mt-1">Kelola data teknisi, admin, dan manajer yang memiliki akses ke sistem.</p>
+        </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-600">
-                <thead class="bg-gray-50 text-gray-700 uppercase font-bold text-xs border-b border-gray-200">
+    {{-- TOOLBAR (Search & Actions) --}}
+    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
+        {{-- SEARCH FORM --}}
+        <form method="GET" action="{{ route('admin.users.index') }}" class="relative w-full xl:w-auto flex-1 max-w-md">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau email..." class="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full text-sm shadow-sm transition-all text-gray-700">
+        </form>
+
+        {{-- ACTION BUTTONS --}}
+        <div class="flex flex-wrap sm:flex-nowrap gap-3 w-full xl:w-auto shrink-0">
+            @if(auth()->user()->role === 'manajer')
+            <button onclick="openModal('exportProductivityModal')" class="w-full sm:w-auto bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-gray-200">
+                <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                <span class="whitespace-nowrap">Laporan Produktivitas</span>
+            </button>
+            @endif
+
+            @if(!auth()->user()->isManajer())
+            <button onclick="openModal('addUserModal')" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+                <i class="fa-solid fa-user-plus"></i>
+                <span class="whitespace-nowrap">Tambah User Baru</span>
+            </button>
+            @endif
+        </div>
+    </div>
+
+    {{-- TABLE SECTION --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full max-w-full">
+        <div class="w-full overflow-x-auto relative custom-scrollbar">
+            <table class="min-w-max w-full text-sm text-left text-gray-600 border-collapse">
+                <thead class="bg-gray-50/80 text-gray-500 uppercase tracking-wider text-[11px] font-bold border-b border-gray-200">
                     <tr>
-                        <th class="px-6 py-4 w-12 text-center">No</th> {{-- KOLOM BARU --}}
-                        <th class="px-6 py-4">User Profile</th>
-                        <th class="px-6 py-4">Role / Jabatan</th>
-                        <th class="px-6 py-4">Status</th>
-                        <th class="px-6 py-4">Terdaftar Sejak</th>
-                        <th class="px-6 py-4 text-center">Aksi</th>
+                        <th scope="col" class="px-6 py-4 w-12 text-center whitespace-nowrap">No</th>
+                        <th scope="col" class="px-6 py-4 whitespace-nowrap min-w-[250px]">User Profile</th>
+                        <th scope="col" class="px-6 py-4 whitespace-nowrap">Role / Jabatan</th>
+                        <th scope="col" class="px-6 py-4 whitespace-nowrap">Shift</th>
+                        <th scope="col" class="px-6 py-4 whitespace-nowrap">Status</th>
+                        <th scope="col" class="px-6 py-4 whitespace-nowrap">Terdaftar Sejak</th>
+                        @if(!auth()->user()->isManajer())
+                        <th scope="col" class="px-6 py-4 text-center whitespace-nowrap">Aksi</th>
+                        @endif
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
-                    
+                <tbody class="divide-y divide-gray-100 bg-white">
                     @forelse($users as $user)
                         @php
                             // Logika Warna Role
-                            $roleColor = match($user->role) {
-                                'admin' => 'bg-purple-100 text-purple-700 border-purple-200',
-                                'teknisi' => 'bg-blue-100 text-blue-700 border-blue-200',
-                                'manajer' => 'bg-green-100 text-green-700 border-green-200',
-                                'user' => 'bg-gray-100 text-gray-700 border-gray-200',
-                                default => 'bg-gray-100 text-gray-700'
+                            $roleColor = match(strtolower($user->role)) {
+                                'admin'   => 'bg-purple-50 text-purple-700 ring-purple-600/20',
+                                'teknisi' => 'bg-blue-50 text-blue-700 ring-blue-600/20',
+                                'manajer' => 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+                                default   => 'bg-gray-50 text-gray-700 ring-gray-600/20'
                             };
                             
-                            // Logika Inisial Nama (Budi Santoso -> BS)
+                            // Logika Inisial Nama
                             $initials = collect(explode(' ', $user->name))->map(function($segment) {
                                 return strtoupper(substr($segment, 0, 1));
                             })->take(2)->join('');
                         @endphp
 
-                        <tr class="hover:bg-gray-50 transition group">
-                            {{-- INDEX NUMBER DINAMIS --}}
-                            <td class="px-6 py-4 text-center font-bold text-gray-400 text-xs">
+                        <tr class="hover:bg-gray-50/80 transition-colors duration-150 group">
+                            <td class="px-6 py-4 text-center font-medium text-gray-400 text-xs whitespace-nowrap">
                                 {{ ($users->currentPage() - 1) * $users->perPage() + $loop->iteration }}
                             </td>
 
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full {{ $user->role == 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' }} flex items-center justify-center font-bold text-xs shadow-sm">
-                                        {{ $initials }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3.5">
+                                    <div class="w-10 h-10 rounded-full shrink-0 {{ $user->role == 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600' }} flex items-center justify-center font-bold text-xs shadow-sm overflow-hidden ring-2 ring-white">
+                                        @if($user->avatar)
+                                            <img src="{{ asset('storage/' . $user->avatar) }}" class="w-full h-full object-cover">
+                                        @else
+                                            {{ $initials }}
+                                        @endif
                                     </div>
-                                    <div>
-                                        <p class="font-bold text-gray-800">{{ $user->name }}</p>
-                                        <p class="text-xs text-gray-500">{{ $user->email }}</p>
+                                    <div class="flex flex-col ml-3">
+                                        <p class="font-bold text-gray-900 text-sm group-hover:text-blue-600 transition-colors">{{ $user->name }}</p>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">{{ $user->email }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <span class="{{ $roleColor }} px-3 py-1 rounded-full text-xs font-bold border capitalize">
+
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset {{ $roleColor }}">
                                     {{ $user->role }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
-                                <span class="text-green-600 font-medium text-xs flex items-center gap-1">
-                                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Aktif
+
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($user->shift)
+                                    <span class="{{ $user->shift->badge_class }} px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5">
+                                        <i class="{{ $user->shift->icon_class }}"></i> {{ $user->shift->name }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-400 text-xs italic">—</span>
+                                @endif
+                            </td>
+
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> Aktif
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-xs">{{ $user->created_at->format('d M Y') }}</td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="flex justify-center gap-2">
+
+                            <td class="px-6 py-4 text-xs text-gray-500 whitespace-nowrap font-medium">
+                                {{ $user->created_at->format('d M Y') }}
+                            </td>
+
+                            @if(!auth()->user()->isManajer())
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <div class="flex items-center justify-center gap-2">
                                     {{-- Edit Button --}}
-                                    <button onclick="openEditModal({{ $user->id }}, '{{ $user->name }}', '{{ $user->email }}', '{{ $user->role }}')" class="w-8 h-8 rounded-lg flex items-center justify-center bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition shadow-sm" title="Edit">
+                                    <button onclick="openEditModal({{ $user->id }}, '{{ $user->name }}', '{{ $user->email }}', '{{ $user->role }}', '{{ $user->shift_id }}')" class="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all shadow-sm focus:outline-none" title="Edit">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                     
                                     {{-- Delete Button --}}
                                     @if(auth()->id() !== $user->id)
-                                        <button onclick="confirmDelete('{{ $user->id }}')" class="w-8 h-8 rounded-lg flex items-center justify-center bg-red-100 text-red-600 hover:bg-red-200 transition shadow-sm" title="Hapus">
-                                            <i class="fa-solid fa-trash"></i>
+                                        <button onclick="confirmDelete('{{ $user->id }}')" class="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm focus:outline-none" title="Hapus/Nonaktifkan">
+                                            <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                         <form id="delete-form-{{ $user->id }}" action="{{ route('admin.users.destroy', $user->id) }}" method="POST" class="hidden">
                                             @csrf
                                             @method('DELETE')
                                         </form>
                                     @else
-                                        <button class="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed" title="Akun Sendiri">
+                                        <button class="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed" title="Ini adalah akun Anda">
                                             <i class="fa-solid fa-lock"></i>
                                         </button>
                                     @endif
                                 </div>
                             </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-12 text-gray-400">
-                                <div class="flex flex-col items-center">
-                                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                                        <i class="fa-solid fa-users-slash text-3xl text-gray-300"></i>
+                            <td colspan="{{ !auth()->user()->isManajer() ? '7' : '6' }}" class="text-center py-16">
+                                <div class="flex flex-col items-center justify-center text-gray-400">
+                                    <div class="w-16 h-16 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mb-4">
+                                        <i class="fa-solid fa-users-slash text-2xl text-gray-300"></i>
                                     </div>
-                                    <p class="font-medium text-gray-500">Tidak ada data user ditemukan.</p>
-                                    <p class="text-xs text-gray-400 mt-1">Coba kata kunci lain atau tambahkan user baru.</p>
+                                    <p class="font-bold text-gray-900 mb-1">Tidak ada data user ditemukan</p>
+                                    <p class="text-sm text-gray-500">Coba kata kunci lain atau tambahkan user baru.</p>
                                 </div>
                             </td>
                         </tr>
                     @endforelse
-
                 </tbody>
             </table>
         </div>
         
         {{-- PAGINATION --}}
         @if($users->hasPages())
-            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div class="px-6 py-4 bg-gray-50/80 border-t border-gray-200 rounded-b-2xl">
                 {{ $users->withQueryString()->links() }}
             </div>
         @endif
     </div>
 
+    {{-- ======================== MODALS ======================== --}}
+
+    {{-- MODAL 0: EXPORT PRODUKTIVITAS --}}
+    <div id="exportProductivityModal" class="fixed inset-0 z-[60] hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onclick="closeModal('exportProductivityModal')"></div>
+            
+            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
+                <form action="{{ route('admin.export.technician-productivity') }}" method="GET" target="_blank" onsubmit="setTimeout(() => closeModal('exportProductivityModal'), 500)">
+                    <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm"><i class="fa-solid fa-chart-line"></i></span>
+                            Ekspor Produktivitas
+                        </h3>
+                        <button type="button" onclick="closeModal('exportProductivityModal')" class="text-gray-400 hover:text-gray-600 transition focus:outline-none">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="bg-white px-6 py-6 space-y-5">
+                        <p class="text-sm text-gray-500 leading-relaxed">Pilih periode laporan untuk menampilkan rekapan hasil kerja (inspeksi & perbaikan) tiap teknisi.</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Dari Tanggal</label>
+                                <input type="date" name="start_date" class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 px-3 py-2.5 outline-none shadow-sm transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Sampai Tanggal</label>
+                                <input type="date" name="end_date" class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 px-3 py-2.5 outline-none shadow-sm transition">
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 text-xs"></i>
+                            <p class="text-[11px] text-gray-600 leading-relaxed font-medium">Biarkan tanggal kosong jika ingin mencetak rekapitulasi data dari seluruh waktu (All Time).</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-gray-100">
+                        <button type="button" onclick="closeModal('exportProductivityModal')" class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition focus:outline-none">Batal</button>
+                        <button type="submit" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 shadow-sm transition flex items-center justify-center gap-2 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-1 focus:outline-none">
+                            <i class="fa-solid fa-download"></i> Cetak PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {{-- MODAL 1: ADD USER --}}
-    <div id="addUserModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal('addUserModal')"></div>
-            <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200">
+    <div id="addUserModal" class="fixed inset-0 z-[60] hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeModal('addUserModal')"></div>
+            
+            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
                 <form action="{{ route('admin.users.store') }}" method="POST">
                     @csrf
-                    <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-user-plus text-blue-600 mr-2"></i> Tambah User Baru</h3>
-                        <!-- <button type="button" onclick="closeModal('addUserModal')" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button> -->
+                    <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm"><i class="fa-solid fa-user-plus"></i></span>
+                            Tambah User Baru
+                        </h3>
                     </div>
                     
                     <div class="bg-white px-6 py-6 space-y-4">
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap</label>
-                            <input type="text" name="name" required class="w-full border-gray-300 border-2 rounded-lg text-sm focus:ring-blue-500 p-2" placeholder="Contoh: Okayana">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" required class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition" placeholder="Contoh: Budi Santoso">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Email (Untuk Login)</label>
-                            <input type="email" name="email" required class="w-full border-gray-300 border-2 rounded-lg text-sm focus:ring-blue-500 p-2" placeholder="nama@email.com">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Alamat Email <span class="text-red-500">*</span></label>
+                            <input type="email" name="email" required class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition" placeholder="budi@angkasapura.co.id">
                         </div>
-                        {{-- Password dihapus, auto-generate by system --}}
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Role / Hak Akses</label>
-                            <select name="role" required class="w-full border-gray-300 border-2 rounded-lg text-sm bg-white focus:ring-blue-500 p-2">
-                                <option value="teknisi">Teknisi</option>
-                                <option value="admin">Admin</option>
-                                <option value="manajer">Manajer</option>
-                            </select>
-                            <p class="text-[10px] text-gray-500 mt-1"><i class="fa-solid fa-circle-info"></i> Teknisi akan memiliki akses ke fitur scan QR di HP.</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Role / Hak Akses <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <select name="role" required class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                        <option value="teknisi">Teknisi</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="manajer">Manajer</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Shift Kerja <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
+                                <div class="relative">
+                                    <select name="shift_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                        <option value="">— Tidak Ada —</option>
+                                        @foreach($shifts as $shift)
+                                            <option value="{{ $shift->id }}">{{ $shift->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-start gap-2.5 text-[11px] text-gray-600 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                            <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                            <div>
+                                <strong>Catatan Sistem:</strong><br>
+                                Password default akan dibuat otomatis oleh sistem dan dikirimkan ke email yang bersangkutan (atau menggunakan password default jika SMTP mati). Teknisi butuh akun untuk scan QR Code di aplikasi mobile.
+                            </div>
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse border-t border-gray-100">
-                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-bold text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm transition">Simpan User</button>
-                        <button type="button" onclick="closeModal('addUserModal')" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition">Batal</button>
+                    <div class="bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-gray-100">
+                        <button type="button" onclick="closeModal('addUserModal')" class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition focus:outline-none">Batal</button>
+                        <button type="submit" class="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-sm transition flex items-center justify-center gap-2 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none">
+                            <i class="fa-solid fa-check"></i> Simpan User
+                        </button>
                     </div>
                 </form>
             </div>
@@ -173,50 +298,77 @@
     </div>
 
     {{-- MODAL 2: EDIT USER --}}
-    <div id="editUserModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal('editUserModal')"></div>
-            <div class="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200">
-                {{-- Form Action akan diisi via JS --}}
+    <div id="editUserModal" class="fixed inset-0 z-[60] hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeModal('editUserModal')"></div>
+            
+            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
                 <form action="#" method="POST" id="editUserForm">
                     @csrf
                     @method('PUT')
                     
-                    <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-pen-to-square text-yellow-600 mr-2"></i> Edit Data User</h3>
+                    <div class="bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center text-sm"><i class="fa-solid fa-pen-to-square"></i></span>
+                            Edit Data User
+                        </h3>
                     </div>
                     
                     <div class="bg-white px-6 py-6 space-y-4">
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lengkap</label>
-                            <input type="text" name="name" id="edit_name" required class="w-full border-2 border-gray-300 rounded-lg text-sm focus:ring-yellow-500 pl-2 py-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" id="edit_name" required class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition">
                         </div>
+                        
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Email</label>
-                            <input type="email" name="email" id="edit_email" required class="w-full border-2 border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-500 cursor-not-allowed pl-2 py-2" readonly title="Email tidak dapat diubah">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Alamat Email</label>
+                            <div class="relative">
+                                <input type="email" name="email" id="edit_email" required class="w-full border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-500 cursor-not-allowed pl-10 pr-3 py-2.5 outline-none" readonly title="Email tidak dapat diubah sebagai primary identifier">
+                                <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Password Baru</label>
-                            <input type="password" name="password" class="w-full border-2 border-gray-300 rounded-lg text-sm focus:ring-yellow-500 pl-2 py-2" placeholder="Kosongkan jika tidak diganti">
-                            <p class="text-[10px] text-orange-500 mt-1 font-medium">Isi hanya jika ingin mereset password user ini.</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Role / Hak Akses <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <select name="role" id="edit_role" required class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                        <option value="teknisi">Teknisi</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="manajer">Manajer</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Shift Kerja</label>
+                                <div class="relative">
+                                    <select name="shift_id" id="edit_shift_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                        <option value="">— Tidak Ada —</option>
+                                        @foreach($shifts as $shift)
+                                            <option value="{{ $shift->id }}">{{ $shift->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Role</label>
-                            <select name="role" id="edit_role" required class="w-full border-2 border-gray-300 rounded-lg text-sm bg-white focus:ring-yellow-500 pl-2 py-2">
-                                <option value="teknisi">Teknisi</option>
-                                <option value="admin">Admin</option>
-                                <option value="manajer">Manajer</option>
-                            </select>
+
+                        <div class="pt-4 border-t border-gray-100">
+                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Reset Password <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
+                            <input type="password" name="password" class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition" placeholder="Ketik password baru jika ingin mengubahnya...">
+                            <p class="text-[10px] text-orange-500 mt-1.5 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Biarkan kosong jika tidak ingin mengubah password akun ini.</p>
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 px-6 py-4 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100 mt-10">
-                        <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-yellow-500 text-base font-bold text-white hover:bg-yellow-600 sm:ml-3 sm:w-auto sm:text-sm transition">
-                            Update Data
-                        </button>
-
-                        <button type="button" onclick="closeModal('editUserModal')" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition">
-                            Batal
+                    <div class="bg-gray-50 px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-3 border-t border-gray-100">
+                        <button type="button" onclick="closeModal('editUserModal')" class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition focus:outline-none">Batal</button>
+                        <button type="submit" class="w-full sm:w-auto px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 shadow-sm transition flex items-center justify-center gap-2 focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 focus:outline-none">
+                            <i class="fa-solid fa-save"></i> Update Data
                         </button>
                     </div>
                 </form>
@@ -228,30 +380,32 @@
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         
-        function openEditModal(id, name, email, role) {
-            // 1. Isi Form
+        function openEditModal(id, name, email, role, shiftId) {
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_email').value = email;
             document.getElementById('edit_role').value = role;
+            document.getElementById('edit_shift_id').value = shiftId || '';
             
-            // 2. Update Action URL Form secara dinamis
             const form = document.getElementById('editUserForm');
-            form.action = `/admin/users/${id}`; // Ini kuncinya
+            form.action = `/admin/users/${id}`;
 
-            // 3. Buka Modal
             openModal('editUserModal');
         }
 
         function confirmDelete(userId) {
             Swal.fire({
-                title: 'Nonaktifkan User?',
-                text: "User tidak akan bisa login lagi.",
+                title: 'Nonaktifkan Akun User?',
+                text: "User yang bersangkutan tidak akan bisa login ke dalam sistem lagi. Data riwayat kerjanya tetap akan disimpan.",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
+                confirmButtonColor: '#ef4444', // red-500
+                cancelButtonColor: '#9ca3af', // gray-400
                 confirmButtonText: 'Ya, Nonaktifkan!',
-                cancelButtonText: 'Batal'
+                cancelButtonText: 'Batal',
+                customClass: {
+                    confirmButton: 'rounded-xl',
+                    cancelButton: 'rounded-xl'
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     document.getElementById('delete-form-' + userId).submit();
@@ -259,4 +413,11 @@
             });
         }
     </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</div>
 @endsection

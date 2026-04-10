@@ -27,7 +27,7 @@ class GenerateDailyMaintenanceTasks extends Command
         
         // Get all active maintenance plans
         $plans = MaintenancePlan::where('is_active', true)
-            ->with(['category', 'checklistTemplate', 'assets'])
+            ->with(['assets', 'locations'])
             ->get();
         
         if ($plans->isEmpty()) {
@@ -43,64 +43,108 @@ class GenerateDailyMaintenanceTasks extends Command
             if (!$plan->shouldRunToday($today)) {
                 continue;
             }
-            
-            $category = $plan->category;
-            $template = $plan->checklistTemplate;
-            
-            if ($plan->assets->isNotEmpty()) {
-                // Get ONLY specific assets that DON'T have this task today
-                $assetIds = $plan->assets->pluck('id')->toArray();
-                $assets = Asset::whereIn('id', $assetIds)
-                    ->whereDoesntHave('maintenances', function($q) use ($today, $plan) {
-                        $q->where('checklist_template_id', $plan->checklist_template_id)
-                          ->whereDate('scheduled_date', $today);
-                    })
-                    ->get();
-            } else {
-                // Get ALL assets in this category that DON'T have this task today
-                $assets = Asset::where('category_id', $plan->category_id)
-                    ->whereDoesntHave('maintenances', function($q) use ($today, $plan) {
-                        $q->where('checklist_template_id', $plan->checklist_template_id)
-                          ->whereDate('scheduled_date', $today);
-                    })
-                    ->get();
-            }
-            
-            if ($assets->isEmpty()) {
-                $totalSkipped++;
+
+            if (empty($plan->template_configs)) {
+                $this->warn("  ⚠️  Plan '{$plan->name}' has no template configurations.");
                 continue;
             }
             
-            $this->line("  ✓ {$category->name} - {$template->name} ({$plan->frequency})");
-            $this->line("    → {$assets->count()} assets to process");
+            $configCategoryIds = collect($plan->template_configs)->pluck('category_id')->toArray();
+            
+            // 1. Get all assets that SHOULD be covered by this plan
+            $targetAssetIds = [];
+            
+            if ($plan->target_type === 'location' && $plan->locations->isNotEmpty()) {
+                $locationIds = $plan->locations->pluck('id')->toArray();
+                
+                $physicalAssets = Asset::whereIn('location_id', $locationIds)
+                    ->whereIn('category_id', $configCategoryIds)
+                    ->pluck('id')->toArray();
+                    
+                $softwareAssets = Asset::whereHas('parentAsset', function($q) use ($locationIds) {
+                        $q->whereIn('location_id', $locationIds);
+                    })
+                    ->whereIn('category_id', $configCategoryIds)
+                    ->pluck('id')->toArray();
+                    
+                $targetAssetIds = array_unique(array_merge($physicalAssets, $softwareAssets));
+                
+            } elseif ($plan->target_type === 'asset' && $plan->assets->isNotEmpty()) {
+                $targetAssetIds = $plan->assets
+                    ->whereIn('category_id', $configCategoryIds)
+                    ->pluck('id')
+                    ->toArray();
+            } else {
+                if ($plan->assets->isNotEmpty()) {
+                    $targetAssetIds = $plan->assets->whereIn('category_id', $configCategoryIds)->pluck('id')->toArray();
+                } else {
+                    $targetAssetIds = Asset::whereIn('category_id', $configCategoryIds)->pluck('id')->toArray();
+                }
+            }
+
+            if (empty($targetAssetIds)) {
+                $totalSkipped++;
+                continue;
+            }
+
+            // 2. Identify assets that are ALREADY covered today for this PLAN
+            // Since a plan now has multiple templates, we check if ANY maintenance 
+            // from this plan already covers the asset today.
+            $coveredAssetIds = Maintenance::whereDate('scheduled_date', $today)
+                ->where('maintenance_plan_id', $plan->id)
+                ->get()
+                ->flatMap(function ($m) {
+                    return is_array($m->target_asset_ids) ? $m->target_asset_ids : [$m->asset_id];
+                })
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            // 3. Filter out covered assets
+            $remainingAssetIds = array_diff($targetAssetIds, $coveredAssetIds);
+
+            if (empty($remainingAssetIds)) {
+                $totalSkipped++;
+                continue;
+            }
+
+            $assets = Asset::with(['parentAsset', 'category'])->whereIn('id', $remainingAssetIds)->get();
+            
+            $categoryNames = collect($plan->template_configs)
+                ->map(fn($c) => \App\Models\Category::find($c['category_id'])->name ?? '?')
+                ->implode(', ');
+
+            $this->line("  ✓ {$plan->name} [{$categoryNames}]");
+            $this->line("    → {$assets->count()} new assets to process");
             
             if (!$isDryRun) {
-                // Prepare bulk insert data
-                $tasks = [];
-                foreach ($assets as $asset) {
-                    $tasks[] = [
-                        'asset_id' => $asset->id,
-                        'maintenance_plan_id' => $plan->id,
-                        'checklist_template_id' => $plan->checklist_template_id,
-                        'scheduled_date' => $today,
-                        'type' => 'preventive',
-                        'status' => 'pending', // Fixed: use 'pending' not 'OPEN'
-                        'technician_id' => null, // Goes to pool
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-                
-                // Bulk insert for performance
-                try {
-                    Maintenance::insert($tasks);
-                    $totalCreated += count($tasks);
-                } catch (\Exception $e) {
-                    $this->error("    ✗ Error creating tasks: " . $e->getMessage());
-                    continue;
+                // 4. GROUP BY Location ID (Resolving physical location for software)
+                $groupedAssets = $assets->groupBy(function ($asset) {
+                    if ($asset->location_id) return $asset->location_id;
+                    if ($asset->parentAsset && $asset->parentAsset->location_id) return $asset->parentAsset->location_id;
+                    return 'virtual';
+                });
+
+                foreach ($groupedAssets as $locationId => $assetsInLocation) {
+                    try {
+                        $dbLocationId = $locationId === 'virtual' ? null : $locationId;
+                        Maintenance::create([
+                            'maintenance_plan_id' => $plan->id,
+                            'checklist_template_id' => null, // Multiple templates handled by plan
+                            'location_id' => $dbLocationId,
+                            'target_asset_ids' => $assetsInLocation->pluck('id')->toArray(),
+                            'scheduled_date' => $today,
+                            'type' => 'preventive',
+                            'status' => 'pending',
+                            'technician_id' => null,
+                        ]);
+                        $totalCreated++;
+                    } catch (\Exception $e) {
+                        $this->error("    ✗ Error creating task for location " . ($locationId ?: 'null') . ": " . $e->getMessage());
+                    }
                 }
             } else {
-                $totalCreated += $assets->count();
+                $totalCreated += $assets->groupBy('location_id')->count();
             }
         }
         

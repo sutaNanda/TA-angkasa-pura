@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\MaintenancePlan;
 use App\Models\Category;
 use App\Models\ChecklistTemplate;
+use App\Models\Location;
+use App\Models\Shift;
 use Illuminate\Support\Facades\Artisan;
 
 class MaintenancePlanController extends Controller
@@ -16,9 +18,9 @@ class MaintenancePlanController extends Controller
      */
     public function index()
     {
-        $plans = MaintenancePlan::with(['category', 'checklistTemplate'])
+        $plans = MaintenancePlan::with('shift')
             ->orderBy('is_active', 'desc')
-            ->orderBy('category_id')
+            ->orderBy('name')
             ->paginate(20);
         
         $stats = [
@@ -40,8 +42,10 @@ class MaintenancePlanController extends Controller
     {
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
+        $locations = Location::orderBy('name')->get();
+        $shifts = Shift::orderBy('id')->get();
         
-        return view('admin.plans.create', compact('categories', 'templates'));
+        return view('admin.plans.create', compact('categories', 'templates', 'locations', 'shifts'));
     }
 
     /**
@@ -51,22 +55,36 @@ class MaintenancePlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'checklist_template_id' => 'required|exists:checklist_templates,id',
+            'target_type' => 'required|in:asset,location',
+            'configs' => 'required|array|min:1',
+            'configs.*.category_id' => 'required|exists:categories,id',
+            'configs.*.template_id' => 'required|exists:checklist_templates,id',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
             'start_date' => 'required|date',
             'is_active' => 'boolean',
             'notes' => 'nullable|string',
+            'shift_id' => 'nullable|exists:shifts,id',
             'asset_ids' => 'nullable|array',
             'asset_ids.*' => 'exists:assets,id',
+            'location_ids' => 'nullable|array',
+            'location_ids.*' => 'exists:locations,id',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['template_configs'] = $request->input('configs');
 
         $plan = MaintenancePlan::create($validated);
 
-        if ($request->has('asset_ids')) {
-            $plan->assets()->sync($request->asset_ids);
+        if ($validated['target_type'] === 'asset') {
+            if ($request->has('asset_ids')) {
+                $plan->assets()->sync($request->asset_ids);
+            }
+            $plan->locations()->detach();
+        } else if ($validated['target_type'] === 'location') {
+            if ($request->has('location_ids')) {
+                $plan->locations()->sync($request->location_ids);
+            }
+            $plan->assets()->detach();
         }
 
         return redirect()->route('admin.plans.index')
@@ -78,11 +96,20 @@ class MaintenancePlanController extends Controller
      */
     public function edit($id)
     {
-        $plan = MaintenancePlan::with(['category', 'checklistTemplate', 'assets'])->findOrFail($id);
+        $plan = MaintenancePlan::with(['assets.category', 'assets.location', 'locations'])->findOrFail($id);
         $categories = Category::orderBy('name')->get();
         $templates = ChecklistTemplate::orderBy('name')->get();
+        $locations = Location::orderBy('name')->get();
+        $shifts = Shift::orderBy('id')->get();
+
+        // Fetch all current assets in category for selection list
+        $categoryIds = collect($plan->template_configs)->pluck('category_id')->unique()->toArray();
+        $allCategoryAssets = \App\Models\Asset::whereIn('category_id', $categoryIds)
+            ->with(['location', 'category'])
+            ->orderBy('name')
+            ->get();
         
-        return view('admin.plans.edit', compact('plan', 'categories', 'templates'));
+        return view('admin.plans.edit', compact('plan', 'categories', 'templates', 'allCategoryAssets', 'locations', 'shifts'));
     }
 
     /**
@@ -94,23 +121,39 @@ class MaintenancePlanController extends Controller
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'checklist_template_id' => 'required|exists:checklist_templates,id',
+            'target_type' => 'required|in:asset,location',
+            'configs' => 'required|array|min:1',
+            'configs.*.category_id' => 'required|exists:categories,id',
+            'configs.*.template_id' => 'required|exists:checklist_templates,id',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
             'start_date' => 'required|date',
             'is_active' => 'boolean',
             'notes' => 'nullable|string',
+            'shift_id' => 'nullable|exists:shifts,id',
             'asset_ids' => 'nullable|array',
             'asset_ids.*' => 'exists:assets,id',
+            'location_ids' => 'nullable|array',
+            'location_ids.*' => 'exists:locations,id',
         ]);
 
         $validated['is_active'] = $request->has('is_active');
+        $validated['template_configs'] = $request->input('configs');
 
         $plan->update($validated);
 
-        if ($request->has('asset_ids')) {
-            $plan->assets()->sync($request->asset_ids);
-        } else {
+        if ($validated['target_type'] === 'asset') {
+            if ($request->has('asset_ids')) {
+                $plan->assets()->sync($request->asset_ids);
+            } else {
+                $plan->assets()->detach();
+            }
+            $plan->locations()->detach();
+        } else if ($validated['target_type'] === 'location') {
+            if ($request->has('location_ids')) {
+                $plan->locations()->sync($request->location_ids);
+            } else {
+                $plan->locations()->detach();
+            }
             $plan->assets()->detach();
         }
 
@@ -121,10 +164,17 @@ class MaintenancePlanController extends Controller
     /**
      * Delete plan
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $plan = MaintenancePlan::findOrFail($id);
         $plan->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Aturan maintenance berhasil dihapus!'
+            ]);
+        }
 
         return redirect()->route('admin.plans.index')
             ->with('success', 'Aturan maintenance berhasil dihapus!');

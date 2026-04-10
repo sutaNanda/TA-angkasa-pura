@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Admin Panel') - Asset Monitoring</title>
+    <title>@yield('title', 'Admin Panel') - AviaTrack</title>
     
     {{-- Font Awesome (Boleh pakai CDN jika belum install via NPM) --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    {{-- Favicon --}}
+    <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
 
     {{-- VITE: Ini sudah memuat Tailwind CSS & SweetAlert dari 'app.js' --}}
     {{-- Posisi harus DI DALAM <head>, bukan sebagai atribut --}}
@@ -27,7 +30,7 @@
             </main>
 
             <footer class="bg-white p-4 text-center text-xs text-gray-500">
-                &copy; {{ date('Y') }} PT Angkasa Pura Indonesia - Asset Management System
+                &copy; {{ date('Y') }} AviaTrack
             </footer>
         </div>
 

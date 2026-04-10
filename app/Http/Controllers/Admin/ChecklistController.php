@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\ChecklistTemplate;
 use App\Models\ChecklistItem;
 use App\Models\Category;
+use App\Http\Requests\Admin\StoreChecklistItemRequest;
+use App\Http\Requests\Admin\UpdateChecklistItemRequest;
 use Illuminate\Support\Facades\DB;
 
 class ChecklistController extends Controller
@@ -41,21 +43,14 @@ class ChecklistController extends Controller
     /**
      * Simpan Template Baru
      */
-    public function store(Request $request)
+    public function store(StoreChecklistItemRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'frequency' => 'required|in:daily,weekly,monthly,yearly',
-            'questions' => 'required|array|min:1',
-            'questions.*' => 'required|string',
-        ]);
-
         DB::beginTransaction();
         try {
             // 1. Simpan Header
             $template = ChecklistTemplate::create([
                 'name' => $request->name,
-                'frequency' => $request->frequency,
+                'frequency' => 'daily', // Hardcoded as frequency is now handled by maintenance plans
                 'category_id' => $request->category_id, // Bisa null
                 'description' => $request->description,
             ]);
@@ -88,7 +83,7 @@ class ChecklistController extends Controller
     /**
      * Update Template
      */
-    public function update(Request $request, $id)
+    public function update(UpdateChecklistItemRequest $request, $id)
     {
         $template = ChecklistTemplate::findOrFail($id);
 
@@ -97,7 +92,7 @@ class ChecklistController extends Controller
             // 1. Update Header
             $template->update([
                 'name' => $request->name,
-                'frequency' => $request->frequency,
+                'frequency' => 'daily', // Hardcoded as frequency is now handled by maintenance plans
                 'category_id' => $request->category_id,
                 'description' => $request->description,
             ]);

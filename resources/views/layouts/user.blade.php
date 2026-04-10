@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Favicon --}}
+    <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
+
     <title>@yield('title') - Portal User</title>
 
     {{-- Fonts --}}
@@ -43,12 +46,12 @@
         {{-- DESKTOP SIDEBAR (Static, Hidden on Mobile) --}}
         <aside class="hidden md:flex flex-col w-64 bg-slate-800 text-white flex-shrink-0 h-screen sticky top-0 overflow-hidden">
             <div class="p-6 border-b border-slate-700 flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fa-solid fa-cube text-white text-sm"></i>
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
+                    <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none tracking-tight">User Hub</h1>
-                    <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Enterprise</span>
+                    <h1 class="font-bold text-lg leading-none tracking-tight">AVIATRACK</h1>
+                    <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">User Panel</span>
                 </div>
             </div>
 
@@ -76,8 +79,8 @@
 
             <div class="p-4 border-t border-slate-700 bg-slate-800/50">
                 <div class="flex items-center gap-3 px-2 py-2 mb-2">
-                    <i class="fa-solid fa-circle-question text-slate-500 text-xs"></i>
-                    <span class="text-xs text-slate-400">Butuh bantuan? Hubungi IT Center</span>
+                    <!-- <i class="fa-solid fa-circle-question text-slate-500 text-xs"></i> -->
+                    <span class="text-xs text-slate-400"></span>
                 </div>
             </div>
         </aside>
@@ -88,12 +91,12 @@
             
             <div class="p-4 border-b border-slate-700 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <i class="fa-solid fa-user-shield text-white text-sm"></i>
+                    <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
+                        <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
                     </div>
                     <div>
-                        <h1 class="font-bold text-lg leading-none">Portal User</h1>
-                        <span class="text-xs text-slate-400">Asset Monitoring</span>
+                        <h1 class="font-bold text-lg leading-none tracking-tight">Portal User</h1>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest leading-none mt-1">AviaTrack</span>
                     </div>
                 </div>
                 <button @click="sidebarOpen = false" class="text-slate-400 hover:text-white">

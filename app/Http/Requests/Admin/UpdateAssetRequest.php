@@ -52,14 +52,23 @@ class UpdateAssetRequest extends FormRequest
             ],
 
             'location_id' => [
-                'required',
+                'nullable',
                 Rule::exists('locations', 'id'),
             ],
 
-            // --- Status ---
+            // --- Induk Aset (untuk Software/Lisensi) ---
+            'parent_asset_id' => [
+                'nullable',
+            ],
+            'parent_asset_id.*' => [
+                'nullable',
+                Rule::exists('assets', 'id'),
+            ],
+
+            // --- Status (termasuk status software) ---
             'status' => [
                 'required',
-                Rule::in(['normal', 'rusak', 'maintenance', 'hilang']),
+                Rule::in(['normal', 'rusak', 'maintenance', 'hilang', 'aktif', 'kedaluwarsa', 'ditangguhkan']),
             ],
 
             // --- Tanggal ---
@@ -70,12 +79,20 @@ class UpdateAssetRequest extends FormRequest
             ],
 
             // --- Upload Gambar (opsional saat update) ---
-            'image' => [
+            'images' => [
                 'nullable',
+                'array',
+                'max:5',
+            ],
+            'images.*' => [
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:2048',
             ],
+
+            // --- Gambar yang dipertahankan saat edit ---
+            'kept_images' => ['nullable', 'array'],
+            'kept_images.*' => ['string'],
 
             // --- Spesifikasi ---
             'specs_key'   => ['nullable', 'array'],
@@ -117,9 +134,10 @@ class UpdateAssetRequest extends FormRequest
             'purchase_date.before_or_equal' => 'Tanggal pembelian tidak boleh melebihi hari ini.',
 
             // Gambar
-            'image.image' => 'File yang diunggah harus berupa gambar.',
-            'image.mimes' => 'Format gambar yang diizinkan: JPG, JPEG, PNG, atau WebP.',
-            'image.max'   => 'Ukuran gambar tidak boleh melebihi 2 MB.',
+            'images.max'  => 'Maksimal Anda hanya bisa mengunggah 5 gambar sekaligus.',
+            'images.*.image' => 'File yang diunggah harus berupa gambar.',
+            'images.*.mimes' => 'Format gambar yang diizinkan: JPG, JPEG, PNG, atau WebP.',
+            'images.*.max'   => 'Ukuran gambar tidak boleh melebihi 2 MB.',
 
             // Spesifikasi
             'specs_key.*.max'   => 'Nama spesifikasi (#:position) terlalu panjang, maksimal 100 karakter.',

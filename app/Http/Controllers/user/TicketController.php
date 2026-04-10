@@ -20,7 +20,7 @@ class TicketController extends Controller
     {
         // Ambil tiket yang dilaporkan oleh user yang sedang login
         $tickets = WorkOrder::where('reported_by', Auth::id())
-                            ->with(['asset', 'asset.location'])
+                            ->with(['asset', 'asset.location', 'location', 'technician'])
                             ->latest()
                             ->paginate(10);
 
@@ -58,26 +58,18 @@ class TicketController extends Controller
      */
     public function getAssets($locationId)
     {
-        // 1. Cari semua ID lokasi turunan (Gedung -> Lantai -> Ruangan)
-        // Note: Model Location menggunakan custom 'path', bukan NestedSet trait.
-        // Jadi kita manual cari berdasarkan path prefix.
-        
         $location = Location::find($locationId);
         
         if (!$location) {
             return response()->json(['status' => 'error', 'message' => 'Location not found'], 404);
         }
 
-        // Ambil semua lokasi yang path-nya diawali oleh path lokasi ini (Descendants) + Diri sendiri
-        // Contoh: Path Gedung = "1". Path Lantai = "1/2".
-        // Query: where path LIKE "1/%" OR id = 1
-        $locationIds = Location::where('path', 'like', $location->path . '/%')
-                               ->orWhere('id', $location->id)
-                               ->pluck('id');
-
-        // 2. Ambil aset di lokasi-lokasi tersebut
-        $assets = Asset::whereIn('location_id', $locationIds)
-                       ->select('id', 'name', 'serial_number', 'status')
+        // Ambil aset HANYA yang berada tepat di lokasi tersebut (Exact match location_id)
+        // Hilangkan sub-query recursive atau software agnostik agar ketika 
+        // User memilih Gedung/Lantai, aset yang muncul spesifik di titik tersebut saja.
+        $assets = Asset::where('location_id', $locationId)
+                       ->with('category') // Eager load category
+                       ->select('id', 'name', 'serial_number', 'status', 'category_id')
                        ->orderBy('name')
                        ->get();
 
@@ -93,34 +85,37 @@ class TicketController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'asset_id' => 'required|exists:assets,id',
+            'location_id' => 'required|exists:locations,id',
+            'asset_id' => 'nullable|exists:assets,id',
             'issue_description' => 'required|string|min:10',
             'priority' => 'required|in:low,medium,high',
-            'photo' => 'nullable|image|max:2048', // Max 2MB
+            'photos' => 'nullable|array|max:5',
+            'photos.*' => 'image|max:2048',
         ]);
 
         try {
-            // 1. Handle File Upload
-            $photoPath = null;
-            if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('tickets', 'public');
+            // 1. Handle Multi-File Upload
+            $photoPaths = [];
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $photo) {
+                    $photoPaths[] = $photo->store('tickets', 'public');
+                }
             }
 
-            // 2. Create Ticket
-            // Note: ticket_number handled by Boot method in Model if empty
-            // But we can also set it here if we want specific logic, 
-            // relying on Model boot is safer for consistency.
+            // 2. Determine location_id and asset_id
+            $locationId = $request->location_id;
+            $assetId = $request->asset_id ?: null;
 
             $ticket = WorkOrder::create([
-                // 'ticket_number' => auto-generated,
-                'asset_id' => $request->asset_id,
+                'asset_id' => $assetId,
+                'location_id' => $locationId,
                 'reported_by' => Auth::id(),
                 'issue_description' => $request->issue_description,
                 'priority' => $request->priority,
-                'status' => 'open',           // Default status
-                'source' => 'manual_ticket',  // Penanda manual
-                'initial_photo' => $photoPath, // Tetap simpan di legacy
-                'photo_before' => $photoPath,  // Simpan di kolom utama
+                'status' => 'open',
+                'source' => 'manual_ticket',
+                'initial_photo' => $photoPaths[0] ?? null,
+                'photos_before' => !empty($photoPaths) ? $photoPaths : null,
             ]);
 
             return redirect()->route('user.tickets.index')

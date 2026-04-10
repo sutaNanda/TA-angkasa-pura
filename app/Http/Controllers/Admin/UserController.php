@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Shift;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -12,18 +13,21 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Query Dasar & Search
-        $query = User::query();
+        // 1. Query Dasar (Kecuali user yang sedang login)
+        $query = User::with('shift')->where('id', '!=', auth()->id());
 
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%')
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
                   ->orWhere('email', 'like', '%' . $request->search . '%');
+            });
         }
 
         // 2. Ambil data dengan Pagination (10 per halaman)
         $users = $query->orderBy('created_at', 'desc')->paginate(10);
+        $shifts = Shift::orderBy('id')->get();
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', compact('users', 'shifts'));
     }
 
     public function store(Request $request)
@@ -32,8 +36,8 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'role' => 'required|in:admin,teknisi,manajer', // User removed as per request
-            // Password tidak perlu divalidasi karena auto-generate
+            'role' => 'required|in:admin,teknisi,manajer',
+            'shift_id' => 'nullable|exists:shifts,id',
         ]);
 
         // Generate Password Otomatis untuk SEMUA Role
@@ -45,7 +49,8 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($password),
             'role' => $request->role,
-            'requires_password_reset' => true, // Paksa reset password
+            'shift_id' => $request->shift_id,
+            'requires_password_reset' => true,
         ]);
 
         // Kirim Email Notifikasi ke Password
@@ -53,7 +58,6 @@ class UserController extends Controller
             $user->notify(new \App\Notifications\UserCredentialsNotification($password));
             return back()->with('success', 'User berhasil ditambahkan. Password dikirim ke email ' . $request->email);
         } catch (\Exception $e) {
-            // Fallback jika email gagal
             return back()->with('success', 'User dibuat tapi email gagal. Password sementara: ' . $password);
         }
     }
@@ -64,9 +68,10 @@ class UserController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)], // Email boleh sama kalau punya sendiri
+            'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)],
             'role' => 'required|in:admin,teknisi,manajer,user',
-            'password' => 'nullable|string|min:6', // Password boleh kosong
+            'password' => 'nullable|string|min:6',
+            'shift_id' => 'nullable|exists:shifts,id',
         ]);
 
         // Update Data Dasar
@@ -74,6 +79,7 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
+            'shift_id' => $request->shift_id,
         ];
 
         // Jika password diisi, update password baru. Jika kosong, biarkan password lama.
@@ -98,5 +104,35 @@ class UserController extends Controller
         $user->delete(); // Soft Delete
 
         return back()->with('success', 'User berhasil dinonaktifkan.');
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'password' => 'nullable|string|min:6',
+            'avatar' => 'nullable|image|max:2048',
+        ]);
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+            }
+            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        $user->save();
+
+        return back()->with('success', 'Profil Anda berhasil diperbarui.');
     }
 }

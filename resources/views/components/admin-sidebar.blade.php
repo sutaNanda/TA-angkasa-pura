@@ -1,8 +1,17 @@
 <aside class="w-64 bg-slate-800 text-white flex flex-col transition-all duration-300">
-    <div class="h-16 flex items-center justify-center border-b border-slate-700 bg-slate-900">
-        <div class="flex items-center gap-2 font-bold text-xl tracking-wider">
-            <i class="fa-solid fa-plane-departure text-blue-400"></i>
-            <span>ANGKASA PURA</span>
+    <div class="h-20 flex items-center border-b border-slate-700 bg-slate-900 px-4">
+        <div class="flex items-center gap-3 font-bold text-lg tracking-tight">
+            <div class="w-12 h-12 bg-white rounded-lg p-1.5 flex-shrink-0">
+                <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
+            </div>
+            <div class="flex flex-col">
+                <span class="text-white text-2xl leading-none mb-1">AVIATRACK</span>
+                @if(auth()->user()->role === 'admin')
+                    <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Admin Panel</span>
+                @elseif(auth()->user()->role === 'manajer')
+                    <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Manajer Panel</span>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -43,9 +52,9 @@
             <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase tracking-widest">Operasional</li>
 
             <li>
-                <a href="{{ route('admin.maintenances.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.maintenances.*') ? 'bg-blue-600' : '' }}">
-                    <i class="fa-solid fa-map-location-dot w-5 text-center"></i>
-                    <span class="text-sm font-medium">Inspeksi & Monitoring</span>
+                <a href="{{ route('admin.maintenances.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.maintenances.index') ? 'bg-blue-600' : ''}}">
+                    <i class="fa-solid fa-clipboard-check w-5 text-center"></i>
+                    <span class="text-sm font-medium">Riwayat Patroli</span>
                 </a>
             </li>
 
@@ -78,6 +87,31 @@
                     <span class="text-sm font-medium">Log Aktivitas</span>
                 </a>
             </li>
+
+            @if(auth()->user()->role === 'manajer')
+            <li class="px-4 pt-4 pb-2 text-xs text-gray-400 font-bold uppercase tracking-widest">Laporan & Statistik</li>
+
+            <li>
+                <a href="{{ route('admin.reports.work-orders.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.reports.work-orders.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-file-invoice w-5 text-center"></i>
+                    <span class="text-sm font-medium">Laporan Perbaikan</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="{{ route('admin.reports.assets.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.reports.assets.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-file-circle-check w-5 text-center"></i>
+                    <span class="text-sm font-medium">Laporan Aset</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="{{ route('admin.reports.patrol-logs.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.reports.patrol-logs.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-file-medical w-5 text-center"></i>
+                    <span class="text-sm font-medium">Laporan Patroli</span>
+                </a>
+            </li>
+            @endif
 
         </ul>
     </nav>

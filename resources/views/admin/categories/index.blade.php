@@ -10,9 +10,11 @@
             <div class="p-4 border-b border-gray-100 bg-gray-50">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold text-gray-800 text-sm">Daftar Kategori</h3>
+                    @if(!auth()->user()->isManajer())
                     <button onclick="openModal('addCategoryModal')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition shadow-sm font-bold flex items-center gap-1">
                         <i class="fa-solid fa-plus"></i> Baru
                     </button>
+                    @endif
                 </div>
 
                 {{-- Sidebar Search --}}
@@ -42,6 +44,7 @@
                                     <p class="text-[10px] text-gray-500">Total: {{ $cat->assets_count ?? 0 }} Unit</p>
                                 </div>
                             </button>
+                            @if(!auth()->user()->isManajer())
                             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
                                 <button onclick="openEditCategoryModal({{ $cat->id }}, '{{ $cat->name }}', '{{ $cat->description }}', '{{ $cat->icon }}')" 
                                         class="w-7 h-7 rounded flex items-center justify-center bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition"
@@ -54,6 +57,7 @@
                                     <i class="fa-solid fa-trash text-xs"></i>
                                 </button>
                             </div>
+                            @endif
                         </div>
                     @endforeach
                 @else
@@ -92,7 +96,9 @@
                                 <th class="px-6 py-4">Nama Aset</th>
                                 <th class="px-6 py-4">Lokasi</th>
                                 <th class="px-6 py-4">Status</th>
+                                @if(!auth()->user()->isManajer())
                                 <th class="px-6 py-4 text-center">Aksi</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100" id="assetTableBody"></tbody>
@@ -336,8 +342,9 @@
 
                         // Handle Gambar & Lokasi
                         let locName = asset.location ? asset.location.name : '-';
-                        const imgUrl = asset.image ? `/storage/${asset.image}` : 'https://via.placeholder.com/150?text=No+Img';
+                        const imgUrl = asset.image_url ? asset.image_url : 'https://via.placeholder.com/150?text=No+Img';
 
+                        const isManajer = {{ auth()->user()->isManajer() ? 'true' : 'false' }};
                         let row = `
                             <tr class="hover:bg-gray-50 transition border-b border-gray-50">
                                 <td class="px-6 py-4 text-center text-xs font-bold text-gray-500">${rowNumber}</td>
@@ -352,9 +359,10 @@
                                     <i class="fa-solid fa-location-dot text-gray-400 mr-1"></i> ${locName}
                                 </td>
                                 <td class="px-6 py-4">${statusBadge}</td>
+                                ` + (!isManajer ? `
                                 <td class="px-6 py-4 text-center">
                                     <button onclick="showAssetDetail(${asset.id})" class="text-gray-500 hover:text-blue-600" title="Lihat Detail"><i class="fa-solid fa-circle-info"></i></button>
-                                </td>
+                                </td>` : '') + `
                             </tr>
                         `;
                         tableBody.innerHTML += row;

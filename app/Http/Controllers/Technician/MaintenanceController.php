@@ -21,11 +21,16 @@ class MaintenanceController extends Controller
         ])->findOrFail($maintenanceId);
         
         // Update status to IN_PROGRESS if still OPEN
-        if ($maintenance->status === 'OPEN') {
+        if ($maintenance->status === 'OPEN' || $maintenance->status === 'pending') {
             $maintenance->update([
                 'status' => 'IN_PROGRESS',
                 'technician_id' => auth()->id(),
             ]);
+        }
+
+        // REDIRECT to Unified Form if this is a Grouped/Location-based Task
+        if ($maintenance->target_asset_ids && count($maintenance->target_asset_ids) > 0) {
+            return redirect()->route('technician.locations.maintenance.inspect', $maintenance->id);
         }
         
         return view('technician.maintenance.inspect', [
@@ -47,7 +52,8 @@ class MaintenanceController extends Controller
             'answers' => 'required|array',
             'has_issue' => 'required|boolean',
             'notes' => 'required_if:has_issue,true|nullable|string',
-            'photo' => 'required_if:has_issue,true|nullable|image|max:5120', // 5MB Max
+            'photos' => 'required_if:has_issue,true|nullable|array|max:5',
+            'photos.*' => 'image|max:5120', // 5MB Max per photo
             'is_critical' => 'sometimes|boolean'
         ]);
 
@@ -67,10 +73,25 @@ class MaintenanceController extends Controller
                     throw new \Exception("Template Checklist tidak ditemukan untuk aset ini (ID: {$maintenance->asset_id}). Hubungi Admin.");
                 }
 
-                // Upload Photo if exists
-                $photoPath = null;
-                if ($request->hasFile('photo')) {
-                    $photoPath = $request->file('photo')->store('maintenance-evidence', 'public');
+                // Fetch template items to identify headers
+                $templateItems = \App\Models\ChecklistItem::where('checklist_template_id', $templateId)->get();
+                $headerItemIds = $templateItems->where('type', 'header')->pluck('id')->toArray();
+
+                // 0. Filter Header Items from Answers
+                $filteredAnswers = collect($request->answers)->reject(function ($value, $key) use ($headerItemIds) {
+                    return in_array($key, $headerItemIds);
+                })->toArray();
+
+                // Upload Photos if exists
+                $photoPaths = [];
+                if ($request->hasFile('photos')) {
+                    $files = $request->file('photos');
+                    if (!is_array($files)) $files = [$files];
+                    foreach ($files as $file) {
+                        if ($file && $file->isValid()) {
+                            $photoPaths[] = $file->store('maintenance-evidence', 'public');
+                        }
+                    }
                 }
                 
                 // 1. Save Patrol Log
@@ -79,17 +100,17 @@ class MaintenanceController extends Controller
                     'asset_id' => $maintenance->asset_id,
                     'location_id' => $maintenance->asset->location_id,
                     'checklist_template_id' => $templateId,
-                    'inspection_data' => json_encode($request->answers),
+                    'inspection_data' => json_encode($filteredAnswers),
                     'status' => $request->has_issue ? 'issue_found' : 'normal',
-                    'notes' => $request->notes ?? $request->input('notes'), // Handle potential null
-                    'photo' => $photoPath,
-                    // 'work_order_id' will be updated if ticket created
+                    'notes' => $request->notes ?? $request->input('notes'),
+                    'photos' => $photoPaths,
+                    'shift_id' => auth()->user()->shift_id,
                 ]);
                 
                 // 2. Update Maintenance Status
                 $maintenance->update([
                     'status' => 'COMPLETED',
-                    'result_data' => $request->answers,
+                    'result_data' => $filteredAnswers,
                     'notes' => $request->notes ?? null,
                     // Ideally link patrol log here too if column existed, but Maintenance is legacy/PM specific
                 ]);
@@ -113,8 +134,7 @@ class MaintenanceController extends Controller
                         'status' => 'open',
                         'source' => 'patrol', // Or 'maintenance'
                         'issue_description' => $request->notes ?? 'Masalah ditemukan saat maintenance rutin',
-                        'initial_photo' => $photoPath,
-                        'photo_before' => $photoPath,
+                        'photos_before' => $photoPaths,
                         'maintenance_id' => $maintenance->id, // Link to this maintenance schedule
                     ]);
                     

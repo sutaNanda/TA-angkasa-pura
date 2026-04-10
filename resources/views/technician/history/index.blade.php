@@ -118,43 +118,60 @@
                         @php
                             $isIssue = $item->status == 'issue_found';
                             
-                            // Parse Inspection Data (handle double encoding if necessary)
-                            $answers = $item->inspection_data;
-                            if (is_string($answers)) {
-                                $answers = json_decode($answers, true);
-                            }
-
                             // Prepare data for Alpine (Checklist)
+                            $inspectionData = $item->inspection_data;
+                            if (is_string($inspectionData)) {
+                                $inspectionData = json_decode($inspectionData, true);
+                            }
+                            $answers = isset($inspectionData['answers']) ? $inspectionData['answers'] : (is_array($inspectionData) ? $inspectionData : []);
+                            $failedAssets = isset($inspectionData['failed_assets']) ? $inspectionData['failed_assets'] : [];
+
+                            // Filter checklist items that actually have answers in this log
+                            $relevantItems = collect($item->all_checklist_items)->only(array_keys($answers));
+
                             $patrolData = [
-                                'asset_name' => $item->asset->name,
-                                'location_name' => $item->asset->location->name,
+                                'asset_name' => $item->asset ? $item->asset->name : ($item->location ? $item->location->name : 'Area Umum'),
+                                'location_name' => $item->asset ? ($item->asset->location->name ?? '-') : ($item->location ? $item->location->name : '-'),
                                 'time' => $item->created_at->format('H:i'),
                                 'status' => $item->status,
-                                'notes' => $item->notes ?? '-', // Handle notes if available
-                                'checklist' => $item->checklistTemplate->items->map(function($q) use ($answers) {
-                                    $ans = $answers[$q->id] ?? '-';
-                                    
-                                    // Determine display text for Pass/Fail
-                                    $displayText = $ans;
-                                    $isIssueItem = false;
-
-                                    if ($q->type == 'pass_fail') {
-                                        if ($ans == 'pass') {
-                                            $displayText = 'Normal / OK';
-                                        } elseif ($ans == 'fail') {
-                                            $displayText = 'Ada Masalah';
-                                            $isIssueItem = true;
-                                        }
-                                    } elseif ($q->type == 'numeric' && $q->unit) {
-                                        $displayText .= ' ' . $q->unit;
-                                    }
-
+                                'ticket_number' => $item->workOrder ? $item->workOrder->ticket_number : null,
+                                'notes' => $item->notes ?? '-',
+                                'failed_assets' => $failedAssets,
+                                'grouped_checklist' => $relevantItems->groupBy('checklist_template_id')->map(function($items, $templateId) use ($answers, $failedAssets) {
+                                    $templateName = $items->first()->template ? $items->first()->template->name : 'Umum';
                                     return [
-                                        'question' => $q->question,
-                                        'answer' => $displayText,
-                                        'is_issue' => $isIssueItem
+                                        'template_name' => $templateName,
+                                        'items' => $items->map(function($q) use ($answers, $failedAssets) {
+                                            $ans = $answers[$q->id] ?? '-';
+                                            $displayText = $ans;
+                                            $isIssueItem = false;
+
+                                            // Extended Issue Detection
+                                            $failValues = ['fail', 'broken', 'no', 'rusak', 'tidak_oke'];
+                                            if (in_array(strtolower($ans), $failValues)) {
+                                                $isIssueItem = true;
+                                            }
+
+                                            if ($q->type == 'pass_fail') {
+                                                if ($ans == 'pass') $displayText = 'Normal / OK';
+                                                elseif ($ans == 'fail') $displayText = 'Ada Masalah';
+                                            } elseif ($q->type == 'checkbox') {
+                                                if ($ans == 'yes') $displayText = 'Ya';
+                                                elseif ($ans == 'no') $displayText = 'Tidak';
+                                            } elseif ($q->type == 'numeric' && $q->unit) {
+                                                $displayText .= ' ' . $q->unit;
+                                            }
+
+                                            return [
+                                                'id' => $q->id,
+                                                'question' => $q->question,
+                                                'answer' => $displayText,
+                                                'is_issue' => $isIssueItem,
+                                                'failed_asset_name' => $failedAssets[$q->id] ?? null
+                                            ];
+                                        })->values()->toArray()
                                     ];
-                                })->values()->toArray() // Reset keys for JSON
+                                })->values()->toArray(),
                             ];
                         @endphp
                         @php
@@ -180,9 +197,9 @@
                                 </button>
                             </div>
 
-                            <h4 class="font-bold text-gray-800 text-sm line-clamp-1">{{ $item->asset->name }}</h4>
+                            <h4 class="font-bold text-gray-800 text-sm line-clamp-1">{{ $item->asset ? $item->asset->name : ($item->location ? $item->location->name : 'Area Umum') }}</h4>
                             <p class="text-xs text-gray-500 mb-1">
-                                <i class="fa-solid fa-location-dot mr-1"></i> {{ $item->asset->location->name }}
+                                <i class="fa-solid fa-location-dot mr-1"></i> {{ $item->asset ? ($item->asset->location->name ?? '-') : ($item->location ? $item->location->name : '-') }}
                             </p>
                         </div>
                     @endforeach
@@ -240,17 +257,19 @@
                             $completedHistory = $item->histories->where('action', 'completed')->last();
                             $woData = [
                                 'ticket_number' => $item->ticket_number,
-                                'asset_name' => $item->asset->name,
-                                'location_name' => $item->asset->location->name,
+                                'asset_name' => $item->asset ? $item->asset->name : ($item->location ? $item->location->name : 'Tidak diketahui'),
+                                'location_name' => $item->asset ? ($item->asset->location->name ?? '-') : ($item->location ? $item->location->name : '-'),
                                 'status' => $item->status,
                                 'issue_description' => $item->issue_description,
                                 'completed_date' => $item->updated_at->format('d M Y, H:i'),
                                 // Data Completed
                                 'photo' => $item->last_progress_photo ? asset('storage/' . $item->last_progress_photo) : null,
                                 'completed_note' => $completedHistory ? $completedHistory->description : 'Perbaikan telah diselesaikan oleh teknisi.',
+                                'completed_photos_urls' => ($completedHistory && is_array($completedHistory->photos)) ? array_map(fn($p) => asset('storage/' . $p), $completedHistory->photos) : [],
                                 // Data Handover
                                 'handover_note' => $handoverHistory ? $handoverHistory->description : 'Tidak ada catatan handover.',
                                 'handover_photo' => ($handoverHistory && $handoverHistory->photo) ? asset('storage/' . $handoverHistory->photo) : null,
+                                'handover_photos_urls' => ($handoverHistory && is_array($handoverHistory->photos)) ? array_map(fn($p) => asset('storage/' . $p), $handoverHistory->photos) : [],
                             ];
 
                             // Status Logic for UI
@@ -301,14 +320,25 @@
                                 <h4 class="font-bold text-gray-800 text-sm mb-2 leading-snug">{{ \Illuminate\Support\Str::limit($item->issue_description, 70) }}</h4>
                                 
                                 <div class="flex flex-col gap-1.5 text-xs text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-4 flex justify-center"><i class="fa-solid fa-cube text-blue-500"></i></div>
-                                        <span class="font-semibold text-gray-700">{{ $item->asset->name }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-4 flex justify-center"><i class="fa-solid fa-location-dot text-red-500"></i></div>
-                                        <span>{{ $item->asset->location->name }}</span>
-                                    </div>
+                                    @if($item->asset)
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-cube text-blue-500"></i></div>
+                                            <span class="font-semibold text-gray-700">{{ $item->asset->name }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-location-dot text-red-500"></i></div>
+                                            <span>{{ $item->asset->location->name ?? '-' }}</span>
+                                        </div>
+                                    @else
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-location-dot text-red-500"></i></div>
+                                            <span class="font-semibold text-gray-700">{{ $item->location->name ?? 'Lokasi tidak diketahui' }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-4 flex justify-center"><i class="fa-solid fa-cube text-orange-500"></i></div>
+                                            <span class="text-orange-500 italic">Aset belum pasti</span>
+                                        </div>
+                                    @endif
                                     <div class="flex items-center gap-2 mt-1 pt-1.5 border-t border-gray-200">
                                         <div class="w-4 flex justify-center"><i class="fa-regular fa-clock text-gray-400"></i></div>
                                         <span>Update: <span class="text-gray-700 font-medium">{{ $item->updated_at->format('d M Y, H:i') }}</span></span>
@@ -351,23 +381,57 @@
                 </button>
             </div>
             <div class="p-4 overflow-y-auto" x-if="selectedPatrol">
-                <div class="mb-4">
-                    <h4 class="font-bold text-gray-800 text-lg" x-text="selectedPatrol?.asset_name"></h4>
-                    <p class="text-xs text-gray-500"><i class="fa-solid fa-location-dot"></i> <span x-text="selectedPatrol?.location_name"></span> &bull; <span x-text="selectedPatrol?.time"></span></p>
+                <div class="mb-4 pb-4 border-b border-gray-100">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-lg" x-text="selectedPatrol?.asset_name"></h4>
+                            <p class="text-xs text-gray-500"><i class="fa-solid fa-location-dot"></i> <span x-text="selectedPatrol?.location_name"></span> &bull; <span x-text="selectedPatrol?.time"></span></p>
+                        </div>
+                        <template x-if="selectedPatrol?.ticket_number">
+                            <span class="bg-red-50 text-red-600 px-2 py-1 rounded font-mono text-[10px] font-bold border border-red-100 shadow-sm" x-text="'#' + selectedPatrol?.ticket_number"></span>
+                        </template>
+                    </div>
                 </div>
 
-                {{-- Checklist Table --}}
-                <div class="border rounded-lg overflow-hidden">
-                    <template x-for="(item, index) in selectedPatrol?.checklist" :key="index">
-                        <div class="flex justify-between items-center p-3 border-b last:border-0 hover:bg-gray-50">
-                            <div class="flex-1 pr-2">
-                                <p class="text-xs font-semibold text-gray-700" x-text="item.question"></p>
+                {{-- Grouped Checklist Table --}}
+                <div class="space-y-4">
+                    <template x-for="(group, gIndex) in selectedPatrol?.grouped_checklist" :key="gIndex">
+                        <div class="border rounded-xl overflow-hidden shadow-sm bg-white">
+                            {{-- Template Header --}}
+                            <div class="bg-gray-50 px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest" x-text="group.template_name"></span>
+                                <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded" x-text="group.items.length + ' Poin'"></span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold" 
-                                      :class="item.is_issue ? 'text-red-600' : 'text-green-600'" 
-                                      x-text="item.answer"></span>
-                                <i class="fa-solid" :class="item.is_issue ? 'fa-triangle-exclamation text-red-500' : 'fa-check text-green-500'"></i>
+                            
+                            {{-- Items --}}
+                            <div class="divide-y divide-gray-50">
+                                <template x-for="(item, iIndex) in group.items" :key="iIndex">
+                                    <div class="p-3.5 hover:bg-gray-50/50 transition-colors">
+                                        <div class="flex justify-between items-start gap-3">
+                                            <div class="flex-1">
+                                                <p class="text-xs font-semibold text-gray-700 leading-normal" x-text="item.question"></p>
+                                                
+                                                {{-- Failed Asset Info --}}
+                                                <template x-if="item.is_issue && item.failed_asset_name">
+                                                    <div class="mt-2 inline-flex items-center gap-1.5 text-[10px] text-red-600 bg-red-50 px-2 py-1 rounded border border-red-100">
+                                                        <i class="fa-solid fa-cube text-[9px]"></i>
+                                                        Aset: <span class="font-bold" x-text="item.failed_asset_name"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <span class="text-[11px] font-bold" 
+                                                      :class="item.is_issue ? 'text-red-600' : 'text-green-600'" 
+                                                      x-text="item.answer"></span>
+                                                <i class="fa-solid" 
+                                                   :class="item.is_issue 
+                                                                ? 'fa-circle-exclamation text-red-500 animate-pulse' 
+                                                                : 'fa-circle-check text-green-500'" 
+                                                   style="font-size: 14px;"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </template>
@@ -447,6 +511,20 @@
                                 <span class="bg-white text-green-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">Updated: <span x-text="selectedWorkOrder?.completed_date"></span></span>
                             </div>
                             <p class="text-sm text-green-800 font-medium leading-relaxed drop-shadow-sm relative z-10" x-html="selectedWorkOrder?.completed_note"></p>
+                            
+                            {{-- Foto Bukti Perbaikan --}}
+                            <template x-if="selectedWorkOrder?.completed_photos_urls?.length > 0">
+                                <div class="mt-3 relative z-10">
+                                    <div class="bg-green-100 text-[10px] text-center py-1 font-bold text-green-700 mb-2 rounded">Foto Bukti Perbaikan dari Teknisi</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(url, index) in selectedWorkOrder?.completed_photos_urls" :key="index">
+                                            <div class="rounded-lg overflow-hidden border border-green-200 shadow-sm">
+                                                <img :src="url" class="h-24 w-24 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(url, '_blank')">
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </template>
@@ -462,10 +540,16 @@
                             <p class="text-sm text-yellow-800 font-medium leading-relaxed drop-shadow-sm relative z-10" x-html="selectedWorkOrder?.handover_note"></p>
                             
                             {{-- Foto Bukti Handover --}}
-                            <template x-if="selectedWorkOrder?.handover_photo">
-                                <div class="mt-3 rounded-lg overflow-hidden border border-yellow-200 shadow-sm relative z-10">
-                                    <img :src="selectedWorkOrder?.handover_photo" class="w-full h-40 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(selectedWorkOrder?.handover_photo, '_blank')">
-                                    <div class="bg-yellow-100 text-[10px] text-center py-1 font-bold text-yellow-700">Foto Lampiran Handover</div>
+                            <template x-if="selectedWorkOrder?.handover_photos_urls?.length > 0">
+                                <div class="mt-3 relative z-10">
+                                    <div class="bg-yellow-100 text-[10px] text-center py-1 font-bold text-yellow-700 mb-2 rounded">Foto Lampiran Handover</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(url, index) in selectedWorkOrder?.handover_photos_urls" :key="index">
+                                            <div class="rounded-lg overflow-hidden border border-yellow-200 shadow-sm">
+                                                <img :src="url" class="h-24 w-24 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(url, '_blank')">
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
                             </template>
                         </div>

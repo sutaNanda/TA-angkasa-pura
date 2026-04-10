@@ -11,30 +11,27 @@ class MaintenancePlan extends Model
 {
     protected $fillable = [
         'name',
-        'category_id',
-        'checklist_template_id',
+        'target_type',
+        'template_configs',
         'frequency',
         'start_date',
         'is_active',
         'notes',
+        'shift_id',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'is_active' => 'boolean',
+        'template_configs' => 'array',
     ];
 
     /**
      * Relationships
      */
-    public function category(): BelongsTo
+    public function shift(): BelongsTo
     {
-        return $this->belongsTo(Category::class);
-    }
-
-    public function checklistTemplate(): BelongsTo
-    {
-        return $this->belongsTo(ChecklistTemplate::class);
+        return $this->belongsTo(Shift::class);
     }
 
     public function maintenances(): HasMany
@@ -42,9 +39,34 @@ class MaintenancePlan extends Model
         return $this->hasMany(Maintenance::class);
     }
 
+    /**
+     * Get unique categories from template_configs
+     */
+    public function getCategoriesAttribute()
+    {
+        if (empty($this->template_configs)) return collect();
+        $ids = collect($this->template_configs)->pluck('category_id')->unique();
+        return Category::whereIn('id', $ids)->get();
+    }
+
+    /**
+     * Get unique templates from template_configs
+     */
+    public function getTemplatesAttribute()
+    {
+        if (empty($this->template_configs)) return collect();
+        $ids = collect($this->template_configs)->pluck('template_id')->unique();
+        return ChecklistTemplate::whereIn('id', $ids)->get();
+    }
+
     public function assets(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(Asset::class, 'maintenance_plan_assets');
+    }
+
+    public function locations(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Location::class, 'maintenance_plan_locations');
     }
 
     /**
@@ -103,6 +125,24 @@ class MaintenancePlan extends Model
      */
     public function getAffectedAssetsCountAttribute(): int
     {
-        return Asset::where('category_id', $this->category_id)->count();
+        // 1. Jika target_type == 'location', hitung jumlah aset di lokasi-lokasi tersebut (dan childnya jika area-centric)
+        // Disini kita approach sederhana dulu, count per location
+        if ($this->target_type === 'location' && $this->locations()->exists()) {
+            $locationIds = $this->locations()->pluck('locations.id');
+            // Menghitung jumlah aset hardware yang ada di lokasi-lokasi tersebut (boleh beserta anak lokasinya)
+            // Untuk sementara kita count direct assets di lokasi tersebut
+            return Asset::whereIn('location_id', $locationIds)->count();
+        }
+
+        // 2. Prioritaskan jika user memilih aset secara spesifik
+        if ($this->target_type === 'asset' && $this->assets()->exists()) {
+            return $this->assets()->count();
+        }
+
+        // 3. Fallback: Hitung semua aset dalam kategori yang dipilih
+        if (empty($this->template_configs)) return 0;
+        
+        $categoryIds = collect($this->template_configs)->pluck('category_id')->unique()->toArray();
+        return Asset::whereIn('category_id', $categoryIds)->count();
     }
 }

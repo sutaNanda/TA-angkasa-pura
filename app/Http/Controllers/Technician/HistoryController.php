@@ -28,7 +28,7 @@ class HistoryController extends Controller
         // DATA 1: RIWAYAT PATROLI (Scan QR)
         // ==========================================
         // ==========================================
-        $patrols = PatrolLog::with(['asset.location', 'checklistTemplate.items'])
+        $patrols = PatrolLog::with(['asset.location', 'location', 'workOrder', 'checklistTemplate.items'])
             ->where('technician_id', $user->id)
             ->whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
@@ -40,12 +40,31 @@ class HistoryController extends Controller
             return $item->created_at->format('Y-m-d');
         });
 
+        // Eager load ALL relevant checklist items for grouped/unified patrols
+        $allItemIds = [];
+        foreach ($patrols as $log) {
+            $data = is_string($log->inspection_data) ? json_decode($log->inspection_data, true) : $log->inspection_data;
+            $answers = isset($data['answers']) ? $data['answers'] : (is_array($data) ? $data : []);
+            $allItemIds = array_merge($allItemIds, array_keys($answers));
+        }
+        $allItemIds = array_unique(array_filter($allItemIds));
+        
+        $checklistItems = \App\Models\ChecklistItem::with('template')
+            ->whereIn('id', $allItemIds)
+            ->get()
+            ->keyBy('id');
+
+        // Attach items to logs for easy access in Blade
+        foreach ($patrols as $log) {
+            $log->all_checklist_items = $checklistItems;
+        }
+
         // ==========================================
         // DATA 2: RIWAYAT PERBAIKAN (Work Orders)
         // ==========================================
         // Ambil WO yang Selesai oleh User INI
         // ATAU yang pernah di-Handover oleh User INI
-        $workOrders = WorkOrder::with(['asset.location', 'histories'])
+        $workOrders = WorkOrder::with(['asset.location', 'histories', 'location'])
             ->where(function($q) use ($user) {
                 // Completed by me
                 $q->where('technician_id', $user->id)

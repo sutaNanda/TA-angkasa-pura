@@ -17,12 +17,14 @@ class PatrolLog extends Model
         'inspection_data',
         'status',
         'notes',
-        'photo',
+        'photos',
         'work_order_id',
+        'shift_id',
     ];
 
     protected $casts = [
         'inspection_data' => 'array',
+        'photos' => 'array',
     ];
 
     // Relationships
@@ -49,5 +51,10 @@ class PatrolLog extends Model
     public function workOrder()
     {
         return $this->belongsTo(WorkOrder::class);
+    }
+
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class);
     }
 }

@@ -11,6 +11,10 @@ class WorkOrderHistory extends Model
 
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'photos' => 'array',
+    ];
+
     public function workOrder()
     {
         return $this->belongsTo(WorkOrder::class);

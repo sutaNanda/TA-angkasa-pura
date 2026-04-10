@@ -19,7 +19,7 @@ class TaskController extends Controller
 
         // 1. TUGAS SAYA (My Tasks)
         // Milik user login, status belum completed
-        $myTasks = WorkOrder::with(['asset.location'])
+        $myTasks = WorkOrder::with(['asset.location', 'location'])
             ->where('technician_id', $user->id)
             ->whereIn('status', ['assigned', 'open', 'in_progress', 'pending_part'])
             ->orderByRaw("FIELD(priority, 'high', 'medium', 'low')") // Prioritas
@@ -30,7 +30,7 @@ class TaskController extends Controller
         // Belum ada teknisi (Open) ATAU Handover dari teknisi lain
         // 2. TUGAS POOL (Available)
         // Belum ada teknisi (Open) ATAU Handover dari teknisi lain
-        $poolTasks = WorkOrder::with(['asset.location', 'reporter'])
+        $poolTasks = WorkOrder::with(['asset.location', 'reporter', 'location'])
             ->where(function($q) use ($user) {
                 $q->whereNull('technician_id')
                   ->where('status', '!=', 'completed')
@@ -53,13 +53,21 @@ class TaskController extends Controller
 
     public function show($id)
     {
-        $task = WorkOrder::with(['asset.location', 'reporter'])->findOrFail($id);
+        $task = WorkOrder::with(['asset.location', 'reporter', 'histories.user', 'location'])->findOrFail($id);
 
         $otherTechnicians = User::where('role', 'teknisi')
                                 ->where('id', '!=', auth()->id())
                                 ->get();
 
-        return view('technician.tasks.show', compact('task', 'otherTechnicians'));
+        $locationAssets = [];
+        if (!$task->asset_id && $task->location_id) {
+            // Tampilkan aset fisik di lokasi tersebut + semua aset virtual/software
+            $locationAssets = \App\Models\Asset::where('location_id', $task->location_id)
+                                               ->orWhereNull('location_id')
+                                               ->get();
+        }
+
+        return view('technician.tasks.show', compact('task', 'otherTechnicians', 'locationAssets'));
     }
 
     // 1. CLAIM TASK (Ambil Tugas)
@@ -73,15 +81,7 @@ class TaskController extends Controller
              return back()->with('error', 'Tugas ini tidak bisa diambil (Status tidak valid).');
         }
 
-        // CONSTRAINT: Single Active Task
-        // Cek apakah user sedang mengerjakan tugas lain (in_progress)
-        $hasActiveTask = WorkOrder::where('technician_id', $user->id)
-                                  ->where('status', 'in_progress')
-                                  ->exists();
-
-        if ($hasActiveTask) {
-            return back()->with('error', 'Selesaikan atau Tunda tugas yang sedang berjalan sebelum mengambil tugas baru!');
-        }
+        // Logika: Ambil tugas dari Pool
 
         DB::transaction(function() use ($task, $user) {
             // Update Work Order
@@ -112,14 +112,7 @@ class TaskController extends Controller
             return back()->with('error', 'Anda tidak memiliki akses untuk memulai tugas ini.');
         }
 
-        // Cek Single Active Task
-        $hasActiveTask = WorkOrder::where('technician_id', $user->id)
-                                  ->where('status', 'in_progress')
-                                  ->exists();
-
-        if ($hasActiveTask) {
-            return back()->with('error', 'Selesaikan tugas lain sebelum memulai tugas ini!');
-        }
+        // Logika: Mulai mengerjakan
 
         DB::transaction(function() use ($task, $user) {
             $task->status = 'in_progress';
@@ -139,12 +132,21 @@ class TaskController extends Controller
     // 2. COMPLETE TASK (Selesai)
     public function complete(Request $request, $id)
     {
-        $request->validate([
-            'description' => 'required|string|min:10',
-            'photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Wajib Foto, Max 5MB
-        ]);
-
         $task = WorkOrder::findOrFail($id);
+
+        $rules = [
+            'description' => 'required|string|min:10',
+            'photos' => 'required|array|max:5', // Wajib Foto
+            'photos.*' => 'image|mimes:jpeg,png,jpg|max:5120', // Max 5MB
+        ];
+
+        // Jika tiket belum memiliki asset_id, wajib diidentifikasi saat selesai
+        if (!$task->asset_id) {
+            $rules['asset_id'] = 'required|exists:assets,id';
+        }
+
+        $request->validate($rules);
+
         $user = auth()->user();
 
         // Validasi kepemilikan
@@ -153,14 +155,20 @@ class TaskController extends Controller
         }
 
         DB::transaction(function() use ($task, $user, $request) {
-            // Upload Foto
-            $photoPath = $request->file('photo')->store('completion-photos', 'public');
+            // Upload Foto Array
+            $photoPaths = [];
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $file) {
+                    $photoPaths[] = $file->store('completion-photos', 'public');
+                }
+            }
 
             // Update Work Order
+            if (!$task->asset_id && $request->filled('asset_id')) {
+                $task->asset_id = $request->asset_id;
+            }
             $task->status = 'completed';
-            // Simpan foto terakhir di kolom legacy (opsional, jika masih dipakai dashboard lama)
-            $task->last_progress_photo = $photoPath; 
-            $task->photo_after = $photoPath; // Simpan di kolom utama
+            $task->photos_after = $photoPaths; // Simpan array di kolom utama
             $task->save();
 
             // Create History
@@ -169,7 +177,7 @@ class TaskController extends Controller
                 'user_id' => $user->id,
                 'action' => 'completed',
                 'description' => $request->description,
-                'photo' => $photoPath,
+                'photos' => $photoPaths,
             ]);
         });
 
@@ -182,7 +190,9 @@ class TaskController extends Controller
     {
         $request->validate([
             'note' => 'required|string|min:10', // Alasan handover
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:5120', // Foto opsional, max 5MB
+            'photos' => 'nullable|array|max:5', // Foto opsional, max 5MB
+            'photos.*' => 'image|mimes:jpeg,png,jpg|max:5120',
+            'asset_id' => 'nullable|exists:assets,id',
         ]);
 
         $task = WorkOrder::findOrFail($id);
@@ -190,19 +200,22 @@ class TaskController extends Controller
 
         // Validasi kepemilikan (Hanya yang sedang mengerjakan bisa handover)
         if ($task->technician_id != $user->id && $task->technician_id != null) {
-             // Exception: jika belum diklaim, anyone can handover? NO. Only assigned user.
-             // Tapi jika status sudah handover, tidak perlu handover lagi.
              return back()->with('error', 'Anda tidak memiliki akses untuk handover tugas ini.');
         }
 
         DB::transaction(function() use ($task, $user, $request) {
             // Check if photo is uploaded
-            $photoPath = null;
-            if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('handover-photos', 'public');
+            $photoPaths = [];
+            if ($request->hasFile('photos')) {
+                foreach ($request->file('photos') as $file) {
+                    $photoPaths[] = $file->store('handover-photos', 'public');
+                }
             }
 
             // Update Work Order
+            if (!$task->asset_id && $request->filled('asset_id')) {
+                $task->asset_id = $request->asset_id;
+            }
             $task->technician_id = null; // Lepas ke pool
             $task->status = 'handover';
             $task->save();
@@ -213,7 +226,7 @@ class TaskController extends Controller
                 'user_id' => $user->id,
                 'action' => 'handover', 
                 'description' => 'Handover: ' . $request->note,
-                'photo' => $photoPath, // Simpan path foto jika ada
+                'photos' => $photoPaths, // Simpan path foto array jika ada
             ]);
         });
 

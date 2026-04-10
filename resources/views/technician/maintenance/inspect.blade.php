@@ -11,8 +11,13 @@
                 <h2 class="font-bold text-gray-800 text-base">{{ $asset->name }}</h2>
                 <p class="text-xs text-gray-500 font-mono mt-0.5">{{ $asset->serial_number ?? '-' }}</p>
                 <div class="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                    <i class="fa-solid fa-location-dot text-orange-400"></i>
-                    <span>{{ $asset->location->name }}</span>
+                    @if($asset->location_id)
+                        <i class="fa-solid fa-location-dot text-orange-400"></i>
+                        <span>{{ $asset->location->name }}</span>
+                    @else
+                        <i class="fa-solid fa-cloud text-blue-500"></i>
+                        <span>Virtual / Software</span>
+                    @endif
                 </div>
             </div>
         </div>
@@ -37,6 +42,16 @@
 
             <div class="p-4 space-y-4">
                 @foreach($template->items as $item)
+                    @if($item->type === 'header')
+                        <div class="pt-6 pb-2 border-b-2 border-gray-800 mb-2 mt-4 first:mt-0">
+                            <h4 class="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                                <i class="fa-solid fa-layer-group text-blue-600"></i>
+                                {{ $item->question }}
+                            </h4>
+                        </div>
+                        @continue
+                    @endif
+
                     <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             {{ $loop->iteration }}. {{ $item->question }}
@@ -120,8 +135,9 @@
                         <textarea name="notes" rows="2" class="w-full text-sm border-2 pl-2 py-2 border-red-200 rounded-lg focus:ring-red-500 focus:border-red-500" placeholder="Jelaskan detail kerusakannya"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="block text-xs font-bold text-red-700 mb-1">Foto Bukti <span class="text-red-500">*</span></label>
-                        <input type="file" name="photo" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200" accept="image/*">
+                        <label class="block text-xs font-bold text-red-700 mb-1">Foto Bukti (Maks 5) <span class="text-red-500">*</span></label>
+                        <input type="file" id="inspectFileInput" multiple class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200" accept="image/*" onchange="handleInspectPhotos(this)">
+                        <div id="inspectPreview" class="mt-3 flex gap-2 flex-wrap"></div>
                     </div>
                     <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-red-100">
                         <div>
@@ -137,8 +153,8 @@
             </div>
         </div>
 
-        {{-- HANYA TOMBOL INI YANG MELAYANG (FIXED) --}}
-        <div class="fixed left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-5px_15px_rgba(0,0,0,0.08)] md:relative md:bottom-auto md:border-0 md:shadow-none md:bg-transparent z-40 p-3 md:p-0 transition-all" 
+        {{-- HANYA TOMBOL INI YANG MELAYANG (FIXED) di mobile --}}
+        <div class="inspect-submit-bar fixed left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-5px_15px_rgba(0,0,0,0.08)] z-40 p-3 transition-all" 
              style="bottom: calc(64px + env(safe-area-inset-bottom, 0px));">
             
             <button type="submit" id="submitBtn" class="w-full max-w-3xl mx-auto bg-green-600 text-white font-bold py-3.5 rounded-xl hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -147,6 +163,20 @@
             </button>
         </div>
     </form>
+
+    <style>
+        @media (min-width: 768px) {
+            .inspect-submit-bar {
+                position: relative !important;
+                bottom: auto !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin-top: 1rem;
+            }
+        }
+    </style>
 
     {{-- TRIAGE MODAL --}}
     <div x-data="{ show: false, ticketUrl: '#', locationUrl: '#' }"
@@ -226,6 +256,41 @@
                 }
             }
 
+            // Managed photos for inspect form
+            let inspectPendingFiles = [];
+
+            window.handleInspectPhotos = function(input) {
+                if (!input.files || input.files.length === 0) return;
+                Array.from(input.files).forEach(file => {
+                    inspectPendingFiles.push(file);
+                    const idx = inspectPendingFiles.length - 1;
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const container = document.getElementById('inspectPreview');
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'relative';
+                        wrapper.id = `inspect-photo-${idx}`;
+                        wrapper.innerHTML = `
+                            <img src="${e.target.result}" class="h-16 w-16 object-cover rounded-lg border border-red-200 shadow-sm">
+                            <button type="button" 
+                                class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm transition" 
+                                title="Hapus foto ini">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>`;
+                        wrapper.querySelector('button').addEventListener('click', () => {
+                            inspectPendingFiles[idx] = null;
+                            wrapper.style.transition = 'opacity 0.2s, transform 0.2s';
+                            wrapper.style.opacity = '0';
+                            wrapper.style.transform = 'scale(0.8)';
+                            setTimeout(() => wrapper.remove(), 200);
+                        });
+                        container.appendChild(wrapper);
+                    }
+                    reader.readAsDataURL(file);
+                });
+                input.value = '';
+            }
+
             // 2. AJAX Submission
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
@@ -237,6 +302,12 @@
 
                 try {
                     const formData = new FormData(form);
+
+                    // Inject managed photos
+                    formData.delete('photos[]');
+                    inspectPendingFiles.forEach(f => {
+                        if (f) formData.append('photos[]', f);
+                    });
                     
                     const response = await fetch(form.action, {
                         method: 'POST',

@@ -3,251 +3,309 @@
 @section('title', 'Riwayat Laporan Saya')
 
 @section('content')
-<div class="max-w-7xl mx-auto pb-10" x-data="{ showModal: false, selectedTicket: null }">
+<div class="max-w-7xl mx-auto pb-12 px-4 sm:px-6 lg:px-8 mt-6" x-data="{ showModal: false, selectedTicket: null }">
     
     {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-5 mb-8">
         <div>
-            <h1 class="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Riwayat Laporan</h1>
-            <p class="text-gray-500 text-sm mt-1 font-medium">Pantau status perbaikan aset yang Anda laporkan secara real-time.</p>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Riwayat Laporan Saya</h1>
+            <p class="text-gray-500 text-sm mt-1.5 font-medium leading-relaxed max-w-2xl">Pantau status perbaikan aset atau ruangan yang telah Anda laporkan ke tim teknisi secara real-time.</p>
         </div>
-        {{-- Diperbaiki: Tombol sekarang muncul di HP (Full width) dan menyesuaikan di Laptop --}}
-        <a href="{{ route('user.tickets.create') }}" class="w-full sm:w-auto inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md hover:shadow-lg transition gap-2">
-            <i class="fa-solid fa-plus"></i> Buat Laporan Baru
-        </a>
+        <div class="w-full md:w-auto shrink-0">
+            <a href="{{ route('user.tickets.create') }}" class="w-full md:w-auto inline-flex justify-center items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-200 gap-2.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <i class="fa-solid fa-plus text-sm"></i> Buat Laporan Baru
+            </a>
+        </div>
     </div>
 
     {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10">
         {{-- Total --}}
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-ticket text-base"></i>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-start gap-3 hover:shadow-md transition-shadow duration-200 group">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-blue-100">
+                <i class="fa-solid fa-ticket-simple text-xl"></i>
             </div>
             <div>
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Total Tiket</p>
-                <p class="text-xl font-black text-gray-900">{{ $tickets->total() }}</p>
+                <p class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-1">Total Laporan</p>
+                <p class="text-2xl font-black text-gray-900 leading-none">{{ $tickets->total() }}</p>
             </div>
         </div>
         {{-- Open (Menunggu) --}}
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200">
-            <div class="w-10 h-10 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-clock-rotate-left text-base"></i>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-start gap-3 hover:shadow-md transition-shadow duration-200 group">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-amber-100">
+                <i class="fa-solid fa-clock-rotate-left text-xl"></i>
             </div>
             <div>
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Menunggu</p>
-                <p class="text-xl font-black text-gray-900">{{ $tickets->where('status', 'open')->count() }}</p> 
+                <p class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-1">Menunggu</p>
+                <p class="text-2xl font-black text-gray-900 leading-none">{{ $tickets->where('status', 'open')->count() }}</p> 
             </div>
         </div>
         {{-- In Progress (Diproses) --}}
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200" title="Termasuk status in_progress">
-            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-person-digging text-base"></i>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-start gap-3 hover:shadow-md transition-shadow duration-200 group" title="Sedang dikerjakan oleh teknisi">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-indigo-100">
+                <i class="fa-solid fa-person-digging text-xl"></i>
             </div>
             <div>
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Diproses</p>
-                <p class="text-xl font-black text-gray-900">{{ $tickets->where('status', 'in_progress')->count() }}</p> 
+                <p class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-1">Diproses</p>
+                <p class="text-2xl font-black text-gray-900 leading-none">{{ $tickets->whereIn('status', ['in_progress', 'pending_part', 'handover'])->count() }}</p> 
             </div>
         </div>
         {{-- Completed (Selesai) --}}
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left hover:shadow-md transition-shadow duration-200">
-            <div class="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-check-double text-base"></i>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-start gap-3 hover:shadow-md transition-shadow duration-200 group">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-emerald-100">
+                <i class="fa-solid fa-check-double text-xl"></i>
             </div>
             <div>
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Selesai</p>
-                <p class="text-xl font-black text-gray-900">{{ $tickets->where('status', 'completed')->count() }}</p> 
+                <p class="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-1">Selesai</p>
+                <p class="text-2xl font-black text-gray-900 leading-none">{{ $tickets->whereIn('status', ['completed', 'verified'])->count() }}</p> 
             </div>
         </div>
     </div>
 
-    {{-- Ticket List (Diubah menjadi Responsive Flex-List pengganti Table) --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        
-        @if($tickets->count() > 0)
-            <div class="divide-y divide-gray-100">
-                @foreach($tickets as $ticket)
-                <div class="p-4 md:p-5 hover:bg-blue-50/30 transition grid grid-cols-1 md:grid-cols-12 gap-4 items-start md:items-center">
-                    
-                    {{-- KIRI: Info Aset (Cols 1-4) --}}
-                    <div class="md:col-span-4 flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                            @if($ticket->asset->image)
-                                <img src="{{ asset('storage/'.$ticket->asset->image) }}" class="w-full h-full object-cover">
-                            @else
-                                <i class="fa-solid fa-cube text-gray-400 text-lg"></i>
-                            @endif
-                        </div>
-                        <div class="min-w-0">
-                            <p class="font-bold text-gray-900 text-sm line-clamp-1" title="{{ $ticket->asset->name }}">{{ $ticket->asset->name }}</p>
-                            <p class="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                <i class="fa-solid fa-location-dot text-blue-500 mr-1"></i> {{ $ticket->asset->location->name ?? '-' }}
-                            </p>
-                        </div>
-                    </div>
+    {{-- Ticket List (Cards Layout for User Dashboard) --}}
+    @if($tickets->count() > 0)
+        <div class="flex flex-col gap-4">
+            @foreach($tickets as $ticket)
+            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 flex flex-col lg:flex-row gap-6 relative overflow-hidden group">
+                
+                {{-- Decorative Side Border --}}
+                <div class="absolute left-0 top-0 bottom-0 w-1.5 
+                    {{ $ticket->status == 'open' ? 'bg-amber-400' : 
+                      (in_array($ticket->status, ['in_progress', 'pending_part', 'handover']) ? 'bg-indigo-400' : 'bg-emerald-400') }}">
+                </div>
 
-                    {{-- TENGAH: Info Laporan (Cols 5-9) --}}
-                    <div class="md:col-span-5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-[10px] font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded border">{{ $ticket->ticket_number }}</span>
-                            <span class="text-[10px] font-bold uppercase tracking-wider {{ $ticket->priority == 'high' ? 'text-red-500' : ($ticket->priority == 'medium' ? 'text-orange-500' : 'text-green-500') }}">
-                                • {{ ucfirst($ticket->priority) }}
+                {{-- KIRI: Info Aset & Tiket --}}
+                <div class="flex items-start gap-4 lg:w-1/3 shrink-0">
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gray-50 border border-gray-200 flex-shrink-0 overflow-hidden flex items-center justify-center shadow-sm">
+                        @if($ticket->asset && $ticket->asset->image)
+                            <img src="{{ asset('storage/'.$ticket->asset->image) }}" class="w-full h-full object-cover">
+                        @else
+                            <i class="fa-solid {{ $ticket->asset ? 'fa-box' : 'fa-layer-group' }} text-gray-300 text-2xl"></i>
+                        @endif
+                    </div>
+                    <div class="flex flex-col min-w-0 pt-0.5">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-[10px] font-bold font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200 tracking-wide">{{ $ticket->ticket_number }}</span>
+                            <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border
+                                {{ $ticket->priority == 'high' ? 'bg-rose-50 text-rose-600 border-rose-200' : 
+                                  ($ticket->priority == 'medium' ? 'bg-amber-50 text-amber-600 border-amber-200' : 
+                                  'bg-emerald-50 text-emerald-600 border-emerald-200') }}">
+                                {{ $ticket->priority }}
                             </span>
                         </div>
-                        <p class="font-medium text-gray-800 text-sm line-clamp-2 md:line-clamp-1" title="{{ $ticket->issue_description }}">{{ $ticket->issue_description }}</p>
+                        @if($ticket->asset)
+                            <p class="font-bold text-gray-900 text-sm sm:text-base line-clamp-1" title="{{ $ticket->asset->name }}">{{ $ticket->asset->name }}</p>
+                            <p class="text-[11px] text-gray-500 mt-1 line-clamp-1 flex items-center gap-1.5">
+                                <i class="fa-solid fa-location-dot text-gray-400"></i> {{ $ticket->asset->location->name ?? '-' }}
+                            </p>
+                        @else
+                            <p class="font-bold text-gray-900 text-sm sm:text-base line-clamp-1">{{ $ticket->location->name ?? 'Lokasi tidak diketahui' }}</p>
+                            <p class="text-[11px] text-amber-600 mt-1 line-clamp-1 flex items-center gap-1.5 font-medium bg-amber-50 px-2 py-0.5 rounded w-fit border border-amber-100">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Aset spesifik tidak dipilih
+                            </p>
+                        @endif
                     </div>
+                </div>
 
-                    {{-- KANAN: Status & Tanggal (Cols 10-12) --}}
-                    <div class="md:col-span-3 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 border-t md:border-t-0 border-gray-100 pt-3 md:pt-0 w-full md:w-auto">
-                        
+                {{-- TENGAH: Deskripsi Masalah --}}
+                <div class="lg:w-2/5 flex flex-col justify-center">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5"><i class="fa-solid fa-comment-dots mr-1"></i> Laporan Anda</p>
+                    <p class="font-medium text-gray-700 text-sm line-clamp-2 md:line-clamp-3 leading-relaxed" title="{{ $ticket->issue_description }}">
+                        "{{ $ticket->issue_description }}"
+                    </p>
+                </div>
+
+                {{-- KANAN: Status, Teknisi, Aksi --}}
+                <div class="lg:w-1/4 flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-4 lg:gap-3 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-6 w-full shrink-0">
+                    
+                    <div class="flex flex-col lg:items-end gap-2">
                         {{-- Badge Status --}}
                         @if($ticket->status == 'open')
-                            <span class="bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-yellow-200 w-fit">
-                                <i class="fa-solid fa-hourglass-half mr-1"></i> Menunggu
+                            <span class="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-bold ring-1 ring-inset ring-amber-600/20 w-fit flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-hourglass-half"></i> Menunggu Teknisi
                             </span>
-                        @elseif($ticket->status == 'in_progress')
-                            <span class="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-200 w-fit">
-                                <i class="fa-solid fa-person-digging mr-1"></i> Diproses
+                        @elseif(in_array($ticket->status, ['in_progress', 'pending_part', 'handover']))
+                            <span class="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-bold ring-1 ring-inset ring-indigo-600/20 w-fit flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-person-digging fa-fade"></i> Sedang Diproses
                             </span>
-                        @elseif($ticket->status == 'completed')
-                            <span class="bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-green-200 w-fit">
-                                <i class="fa-solid fa-check-circle mr-1"></i> Selesai
+                        @elseif(in_array($ticket->status, ['completed', 'verified']))
+                            <span class="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold ring-1 ring-inset ring-emerald-600/20 w-fit flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-check-double"></i> Selesai
                             </span>
                         @else
-                            <span class="bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 w-fit">
+                            <span class="bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-gray-200 w-fit flex items-center gap-1.5">
                                 {{ ucfirst($ticket->status) }}
                             </span>
                         @endif
 
                         {{-- Waktu --}}
-                        <div class="text-right flex items-center gap-3">
-                            <div>
-                                <p class="text-[11px] font-bold text-gray-600">{{ $ticket->created_at->format('d M Y') }}</p>
-                                <p class="text-[10px] text-gray-400">{{ $ticket->created_at->format('H:i') }}</p>
-                            </div>
-                            
-                            @php
-                                // Data tracking untuk Alpine Modal
-                                $completedHistory = $ticket->histories()->where('action', 'completed')->latest()->first();
-                                $photoBefore = $ticket->initial_photo ? asset('storage/' . $ticket->initial_photo) : null;
-                                $photoAfter = $ticket->photo_after ? asset('storage/' . $ticket->photo_after) : ($ticket->last_progress_photo ? asset('storage/'. $ticket->last_progress_photo) : null);
-                                
-                                $ticketData = [
-                                    'ticket_number' => $ticket->ticket_number,
-                                    'asset_name' => $ticket->asset->name,
-                                    'location_name' => $ticket->asset->location->name ?? '-',
-                                    'status' => $ticket->status,
-                                    'priority' => $ticket->priority,
-                                    'issue_description' => $ticket->issue_description,
-                                    'created_at' => $ticket->created_at->format('d M Y, H:i'),
-                                    'completed_date' => $ticket->status == 'completed' ? $ticket->updated_at->format('d M Y, H:i') : null,
-                                    'photo_before' => $photoBefore,
-                                    'photo_after' => $photoAfter,
-                                    'completed_note' => $completedHistory ? $completedHistory->description : 'Perbaikan telah diselesaikan oleh teknisi.',
-                                ];
-                            @endphp
-                            <button @click="selectedTicket = {{ json_encode($ticketData) }}; showModal = true" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition shadow-sm border border-blue-100">
-                                <i class="fa-solid fa-eye text-sm"></i>
-                            </button>
+                        <div class="text-left lg:text-right">
+                            <p class="text-[11px] font-bold text-gray-600">{{ $ticket->created_at->format('d M Y') }}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5"><i class="fa-regular fa-clock"></i> {{ $ticket->created_at->format('H:i') }} WITA</p>
                         </div>
                     </div>
+                    
+                    @php
+                        // Data tracking untuk Alpine Modal
+                        $completedHistory = $ticket->histories()->where('action', 'completed')->latest()->first();
+                        $photoBeforeUrls = $ticket->photos_before_urls;
+                        $photoAfterUrls = $ticket->photos_after_urls;
+                        
+                        $ticketData = [
+                            'ticket_number' => $ticket->ticket_number,
+                            'asset_name' => $ticket->asset ? $ticket->asset->name : ($ticket->location ? $ticket->location->name : 'Tidak diketahui'),
+                            'location_name' => $ticket->asset ? ($ticket->asset->location->name ?? '-') : ($ticket->location ? $ticket->location->name : '-'),
+                            'status' => $ticket->status,
+                            'priority' => $ticket->priority,
+                            'issue_description' => $ticket->issue_description,
+                            'created_at' => $ticket->created_at->format('d M Y, H:i'),
+                            'completed_date' => in_array($ticket->status, ['completed', 'verified']) ? $ticket->updated_at->format('d M Y, H:i') : null,
+                            'photos_before_urls' => $photoBeforeUrls,
+                            'photos_after_urls' => $photoAfterUrls,
+                            'technician_name' => $ticket->technician ? $ticket->technician->name : 'Tim Teknisi',
+                            'completed_note' => $completedHistory ? $completedHistory->description : 'Perbaikan telah diselesaikan oleh teknisi.',
+                        ];
+                    @endphp
+                    
+                    <button @click="selectedTicket = {{ json_encode($ticketData) }}; showModal = true" class="shrink-0 w-10 h-10 lg:w-auto lg:h-auto lg:px-4 lg:py-2 rounded-xl lg:rounded-lg bg-gray-50 text-gray-600 flex items-center justify-center lg:justify-between gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fa-solid fa-expand text-sm"></i>
+                        <span class="hidden lg:inline text-xs font-bold">Lihat Detail</span>
+                    </button>
 
                 </div>
-                @endforeach
-            </div>
-            
-            {{-- Pagination --}}
-            <div class="p-4 border-t border-gray-100 bg-gray-50/50">
-                {{ $tickets->links() }}
-            </div>
 
-        @else
-            {{-- Empty State --}}
-            <div class="text-center py-16 px-4">
-                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400 border border-gray-100 shadow-inner">
-                    <i class="fa-regular fa-clipboard text-3xl"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-800">Belum Ada Laporan</h3>
-                <p class="text-gray-500 mb-6 max-w-sm mx-auto text-sm mt-2">Anda belum pernah membuat laporan kerusakan aset. Jika menemukan masalah, segera laporkan agar tim Teknisi dapat menanganinya.</p>
-                <a href="{{ route('user.tickets.create') }}" class="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md">
-                    <i class="fa-solid fa-plus"></i> Buat Laporan Sekarang
-                </a>
             </div>
-        @endif
-
-    </div>
-
-    {{-- MODAL DETAIL TIKET --}}
-    <div x-show="showModal" style="display: none;" class="fixed inset-0 z-[60] flex items-center justify-center p-4"
-         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+            @endforeach
+        </div>
         
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showModal = false"></div>
+        {{-- Pagination --}}
+        <div class="mt-8">
+            {{ $tickets->links() }}
+        </div>
+
+    @else
+        {{-- Empty State (No Tickets) --}}
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 text-center py-20 px-4 mt-6 py-10">
+            <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-gray-200 text-gray-300">
+                <i class="fa-solid fa-clipboard-check text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Belum Ada Laporan Aktif</h3>
+            <p class="text-gray-500 mb-8 max-w-md mx-auto text-sm leading-relaxed">Anda belum pernah membuat laporan kerusakan aset. Jika menemukan kendala fasilitas atau peralatan, segera laporkan agar tim teknisi kami dapat menanganinya.</p>
+            <a href="{{ route('user.tickets.create') }}" class="inline-flex items-center gap-2.5 bg-blue-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-blue-700 transition shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ">
+                <i class="fa-solid fa-plus"></i> Buat Laporan Pertama Anda
+            </a>
+        </div>
+    @endif
+
+    {{-- MODAL DETAIL TIKET (ALPINE JS) --}}
+    <div x-show="showModal" style="display: none;" class="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6"
+         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         
-        <div class="bg-white w-full max-w-md sm:max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] relative z-10 transform transition-all">
+        {{-- Backdrop Blur --}}
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showModal = false"></div>
+        
+        {{-- Modal Content --}}
+        <div class="bg-white w-full max-w-lg sm:max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] relative z-10 transform transition-all"
+             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-8 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-8 scale-95">
             
             {{-- Header Berwarna Gelap --}}
-            <div class="relative bg-gray-900 text-white p-5">
-                <button @click="showModal = false" class="absolute top-4 right-4 w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition">
+            <div class="relative bg-slate-900 text-white p-6 sm:p-8">
+                <button @click="showModal = false" class="absolute top-4 right-4 sm:top-6 sm:right-6 w-8 h-8 bg-white/10 text-white/70 rounded-full flex items-center justify-center hover:bg-white/20 hover:text-white transition focus:outline-none">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
                 <div class="flex items-center gap-3">
-                    <span class="bg-white/20 text-white px-2.5 py-1 rounded font-mono text-xs font-bold shadow-sm" x-text="selectedTicket?.ticket_number"></span>
-                    <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded" 
-                          :class="{'bg-red-500/20 text-red-300': selectedTicket?.priority === 'high', 'bg-orange-500/20 text-orange-300': selectedTicket?.priority === 'medium', 'bg-green-500/20 text-green-300': selectedTicket?.priority === 'low'}"
-                          x-text="selectedTicket?.priority"></span>
+                    <span class="bg-blue-500/30 border border-blue-400/30 text-blue-100 px-2.5 py-1 rounded font-mono text-[10px] font-bold shadow-sm tracking-widest" x-text="selectedTicket?.ticket_number"></span>
+                    <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded border" 
+                          :class="{'bg-rose-500/20 text-rose-300 border-rose-500/30': selectedTicket?.priority === 'high', 'bg-amber-500/20 text-amber-300 border-amber-500/30': selectedTicket?.priority === 'medium', 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30': selectedTicket?.priority === 'low'}"
+                          x-text="'PRIORITAS ' + selectedTicket?.priority"></span>
                 </div>
-                <h4 class="font-bold text-xl mt-3 leading-tight" x-text="selectedTicket?.asset_name"></h4>
-                <div class="flex items-center gap-2 text-xs text-gray-300 mt-2">
-                    <i class="fa-solid fa-location-dot text-red-400"></i>
+                <h4 class="font-bold text-xl sm:text-2xl mt-4 leading-tight" x-text="selectedTicket?.asset_name"></h4>
+                <div class="flex items-center gap-2 text-xs text-slate-300 mt-2.5">
+                    <i class="fa-solid fa-location-dot text-rose-400"></i>
                     <span x-text="selectedTicket?.location_name"></span>
                 </div>
             </div>
 
-            <div class="p-5 overflow-y-auto bg-gray-50 flex-1 custom-scrollbar">
+            {{-- Scrollable Body --}}
+            <div class="p-6 sm:p-8 overflow-y-auto bg-gray-50 flex-1 custom-scrollbar">
                 
                 {{-- Laporan Awal --}}
-                <div class="mb-5 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i class="fa-solid fa-clipboard-question text-blue-500"></i> Laporan Awal Anda</p>
-                    <p class="text-sm text-gray-800 font-medium leading-relaxed mb-3" x-text="selectedTicket?.issue_description"></p>
-                    <div class="text-[10px] text-gray-400 flex items-center gap-1.5">
+                <div class="mb-6 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-red-400 rounded-l-2xl"></div>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><i class="fa-solid fa-comment-dots text-gray-400"></i> Keluhan / Laporan Awal</p>
+                    <p class="text-sm text-gray-800 font-medium leading-relaxed mb-3" x-text="`&quot;${selectedTicket?.issue_description}&quot;`"></p>
+                    <div class="text-[10px] text-gray-400 flex items-center gap-1.5 font-medium bg-gray-50 px-2.5 py-1.5 rounded-lg w-fit border border-gray-100">
                         <i class="fa-regular fa-clock"></i> Dilaporkan: <span x-text="selectedTicket?.created_at"></span>
                     </div>
 
                     {{-- Foto Sebelum --}}
-                    <template x-if="selectedTicket?.photo_before">
-                        <div class="mt-3 rounded-lg overflow-hidden border border-gray-100">
-                            <img :src="selectedTicket?.photo_before" class="w-full h-32 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(selectedTicket?.photo_before, '_blank')">
-                            <div class="bg-gray-100 text-[10px] text-center py-1 font-bold text-gray-500">Lampiran Foto Anda</div>
+                    <template x-if="selectedTicket?.photos_before_urls?.length > 0">
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">Lampiran Bukti Laporan</p>
+                            <div class="flex flex-wrap gap-2">
+                                <template x-for="(url, index) in selectedTicket?.photos_before_urls" :key="index">
+                                    <div class="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                                        <img :src="url" class="h-20 w-20 sm:h-24 sm:w-24 object-cover hover:opacity-90 hover:scale-105 transition-all cursor-pointer duration-300" @click="window.open(url, '_blank')">
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </template>
                 </div>
 
-                {{-- Hasil Perbaikan (Jika Selesai) --}}
-                <template x-if="selectedTicket?.status === 'completed'">
-                    <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm relative overflow-hidden">
-                        <div class="absolute -right-2 -top-2 text-green-600/10"><i class="fa-solid fa-check-circle text-6xl"></i></div>
+                {{-- Hasil Perbaikan (Hanya Muncul Jika Status Completed/Verified) --}}
+                <template x-if="selectedTicket?.status === 'completed' || selectedTicket?.status === 'verified'">
+                    <div class="bg-emerald-50 p-5 sm:p-6 rounded-2xl border border-emerald-200 shadow-sm relative overflow-hidden mt-6">
+                        {{-- Decorative background icon --}}
+                        <div class="absolute -right-4 -top-4 text-emerald-600/10 pointer-events-none"><i class="fa-solid fa-clipboard-check text-8xl"></i></div>
                         
-                        <p class="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i class="fa-solid fa-wrench text-green-500"></i> Hasil Perbaikan Teknisi</p>
-                        <p class="text-sm text-green-900 font-medium leading-relaxed drop-shadow-sm relative z-10 mb-3" x-html="selectedTicket?.completed_note"></p>
-                        
-                        <div class="flex items-center gap-2 mb-3 z-10 relative">
-                            <span class="bg-white text-green-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm border border-green-100">Selesai: <span x-text="selectedTicket?.completed_date"></span></span>
-                        </div>
+                        <div class="relative z-10">
+                            <p class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                <i class="fa-solid fa-wrench"></i> Hasil Tindakan Teknisi
+                            </p>
+                            <div class="bg-white/60 p-4 rounded-xl border border-emerald-100/50 mb-4">
+                                <p class="text-sm text-emerald-900 font-medium leading-relaxed italic" x-html="`&quot;${selectedTicket?.completed_note}&quot;`"></p>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="bg-white text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm border border-emerald-100 flex items-center gap-1.5">
+                                    <i class="fa-regular fa-circle-check"></i> Selesai pada: <span x-text="selectedTicket?.completed_date"></span>
+                                </div>
+                            </div>
 
-                        {{-- Foto Setelah Perbaikan --}}
-                        <template x-if="selectedTicket?.photo_after">
-                            <div class="mt-2 rounded-lg overflow-hidden border border-green-200 shadow-sm relative z-10">
-                                <img :src="selectedTicket?.photo_after" class="w-full h-40 object-cover hover:opacity-90 transition cursor-pointer" @click="window.open(selectedTicket?.photo_after, '_blank')">
-                                <div class="bg-green-100 text-[10px] text-center py-1 font-bold text-green-700">Foto Bukti Perbaikan dari Teknisi</div>
-                            </div>
-                        </template>
-                        <template x-if="!selectedTicket?.photo_after">
-                            <div class="mt-2 w-full h-24 bg-green-100/50 rounded-lg flex flex-col items-center justify-center text-green-600/50 border border-green-200 border-dashed relative z-10">
-                                <i class="fa-solid fa-image-slash text-xl mb-1"></i>
-                                <span class="text-[10px] font-bold">Teknisi tidak melampirkan foto</span>
-                            </div>
-                        </template>
+                            {{-- Foto Setelah Perbaikan --}}
+                            <template x-if="selectedTicket?.photos_after_urls?.length > 0">
+                                <div class="mt-4 pt-4 border-t border-emerald-200/50">
+                                    <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-2.5">Foto Bukti Perbaikan</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(url, index) in selectedTicket?.photos_after_urls" :key="index">
+                                            <div class="rounded-xl overflow-hidden border border-emerald-200 shadow-sm bg-white">
+                                                <img :src="url" class="h-20 w-20 sm:h-24 sm:w-24 object-cover hover:opacity-90 hover:scale-105 transition-all cursor-pointer duration-300" @click="window.open(url, '_blank')">
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            {{-- Jika tidak ada foto perbaikan --}}
+                            <template x-if="!selectedTicket?.photos_after_urls || selectedTicket?.photos_after_urls?.length === 0">
+                                <div class="mt-4 w-full py-4 bg-emerald-100/50 rounded-xl flex flex-col items-center justify-center text-emerald-600/60 border border-emerald-200/60 border-dashed">
+                                    <i class="fa-solid fa-camera-slash text-xl mb-1.5 opacity-50"></i>
+                                    <span class="text-[10px] font-bold tracking-wide">Teknisi tidak melampirkan foto hasil akhir</span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                
+                {{-- Info Proses (Jika Belum Selesai) --}}
+                <template x-if="selectedTicket?.status !== 'completed' && selectedTicket?.status !== 'verified'">
+                    <div class="mt-4 p-5 rounded-2xl border border-dashed border-gray-300 bg-transparent text-center flex flex-col items-center justify-center text-gray-500">
+                        <i class="fa-solid fa-spinner fa-spin-pulse text-2xl text-blue-400 mb-2"></i>
+                        <p class="text-sm font-bold text-gray-700">Dalam Proses Penanganan</p>
+                        <p class="text-[11px] mt-1">Laporan Anda telah masuk dan sedang ditindaklanjuti oleh tim <span x-text="selectedTicket?.technician_name"></span>.</p>
                     </div>
                 </template>
 
@@ -255,5 +313,12 @@
         </div>
     </div>
 
-</div>  
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        [x-cloak] { display: none !important; }
+    </style>
+</div>
 @endsection

@@ -16,7 +16,12 @@ class WorkOrderController extends Controller
     public function index(Request $request)
     {
         // Query Dasar
-        $query = WorkOrder::with(['asset.location', 'technician'])->latest();
+        $query = WorkOrder::with([
+            'asset' => function ($q) { $q->withTrashed(); },
+            'asset.location' => function ($q) { $q->withTrashed(); },
+            'technician',
+            'location' => function ($q) { $q->withTrashed(); }
+        ])->latest();
 
         // Filter Status Tab
         if ($request->tab == 'open') {
@@ -25,6 +30,13 @@ class WorkOrderController extends Controller
             $query->where('status', 'completed');
         } elseif ($request->tab == 'progress') {
             $query->whereIn('status', ['in_progress', 'pending_part']);
+        }
+
+        // Filter Tanggal
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $startDate = \Carbon\Carbon::parse($request->start_date)->startOfDay();
+            $endDate = \Carbon\Carbon::parse($request->end_date)->endOfDay();
+            $query->whereBetween('created_at', [$startDate, $endDate]);
         }
 
         // Pencarian
@@ -127,11 +139,46 @@ class WorkOrderController extends Controller
     }
 
     /**
+     * Tolak & Re-open Tiket (Kirim kembali ke teknisi)
+     */
+    public function reopen(Request $request, $id)
+    {
+        $request->validate([
+            'rejection_note' => 'required|string|max:500',
+        ]);
+
+        $ticket = WorkOrder::findOrFail($id);
+        
+        if ($ticket->status != 'completed') {
+            return back()->with('error', 'Hanya tiket berstatus Selesai yang bisa di-reopen.');
+        }
+
+        $ticket->update(['status' => 'in_progress']);
+
+        // Log history
+        \App\Models\WorkOrderHistory::create([
+            'work_order_id' => $ticket->id,
+            'action' => 'reopened',
+            'description' => $request->rejection_note,
+            'user_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Tiket berhasil di-reopen dan dikembalikan ke teknisi.');
+    }
+
+    /**
      * API: Ambil Detail Tiket (Untuk Modal)
      */
     public function show($id)
     {
-        $ticket = WorkOrder::with(['asset.location', 'technician', 'reporter', 'histories'])->findOrFail($id);
+        $ticket = WorkOrder::with([
+            'asset' => function ($q) { $q->withTrashed(); },
+            'asset.location' => function ($q) { $q->withTrashed(); },
+            'technician', 
+            'reporter', 
+            'histories', 
+            'location' => function ($q) { $q->withTrashed(); }
+        ])->findOrFail($id);
         return response()->json([
             'status' => 'success',
             'data' => $ticket

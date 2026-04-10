@@ -72,11 +72,23 @@ class DashboardController extends Controller
 
         // 4. JADWAL PATROLI HARI INI (Using Maintenance Model as requested)
         // Ambil data maintenance (preventive) yang dijadwalkan hari ini dan belum selesai
-        $patrols = \App\Models\Maintenance::with(['asset.location'])
+        $patrolQuery = \App\Models\Maintenance::with(['asset.location', 'asset.parentAsset.location', 'location', 'maintenancePlan.shift'])
             ->whereDate('scheduled_date', $now->toDateString())
             ->where('type', 'preventive')
-            ->whereIn('status', ['pending', 'in_progress'])
-            ->get();
+            ->whereIn('status', ['pending', 'in_progress']);
+
+        // Filter by user's shift: show matching shift OR tasks without shift (backward-compatible)
+        if ($user->shift_id) {
+            $patrolQuery->where(function($q) use ($user) {
+                $q->whereHas('maintenancePlan', function($sub) use ($user) {
+                    $sub->where('shift_id', $user->shift_id);
+                })->orWhereHas('maintenancePlan', function($sub) {
+                    $sub->whereNull('shift_id');
+                })->orWhereNull('maintenance_plan_id');
+            });
+        }
+
+        $patrols = $patrolQuery->get();
 
         // 5. STATS
         $completedToday = WorkOrderHistory::where('user_id', $user->id)
@@ -90,8 +102,29 @@ class DashboardController extends Controller
         ];
 
         // Group By Location ID agar tampilan dashboard lebih rapi (Location Cards)
+        // Software ("virtual") dipaksa memakai location_id induknya agar grouping satu ruangan.
         $patrols = $patrols->groupBy(function ($item) {
-            return $item->asset->location_id ?? 0;
+            if ($item->location_id) {
+                return $item->location_id;
+            }
+            if ($item->asset) {
+                if ($item->asset->location_id) {
+                    return $item->asset->location_id;
+                }
+                if ($item->asset->parentAsset && $item->asset->parentAsset->location_id) {
+                    return $item->asset->parentAsset->location_id;
+                }
+            }
+            // Fallback for Area-Centric maintenance missing main asset, but having multiple target_assets
+            if ($item->target_asset_ids && is_array($item->target_asset_ids) && count($item->target_asset_ids) > 0) {
+                $firstId = $item->target_asset_ids[0];
+                $firstAsset = \App\Models\Asset::with('parentAsset')->find($firstId);
+                if ($firstAsset) {
+                    if ($firstAsset->location_id) return $firstAsset->location_id;
+                    if ($firstAsset->parentAsset && $firstAsset->parentAsset->location_id) return $firstAsset->parentAsset->location_id;
+                }
+            }
+            return 0; // Completely Virtual / No Location
         });
 
         return view('technician.dashboard', compact('greeting', 'user', 'stats', 'poolTasks', 'myTasks', 'patrols', 'handoverTasks', 'userReports'));

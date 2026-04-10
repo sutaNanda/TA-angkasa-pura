@@ -88,8 +88,14 @@
                     class="flex-1 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1">
                     <i class="fa-solid fa-magnifying-glass"></i> Filter
                 </button>
+                @if(auth()->user()->role === 'manajer')
+                <a href="{{ route('admin.audit.export', request()->all()) }}" target="_blank"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1" title="Export PDF">
+                    <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
+                @endif
                 <a href="{{ route('admin.audit.index') }}"
-                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition" title="Reset Filter">
                     <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>
@@ -141,12 +147,25 @@
                             </td>
                             <td class="px-6 py-4">
                                 @if($log->user)
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-7 h-7 rounded-full bg-slate-700 text-white text-xs flex items-center justify-center font-bold flex-shrink-0">
-                                            {{ substr($log->user->name, 0, 1) }}
+                                    <div class="flex items-center gap-3">
+                                        @php
+                                            $roleColor = match(strtolower($log->user->role ?? '')) {
+                                                'admin'   => 'bg-purple-100 text-purple-600',
+                                                'teknisi' => 'bg-blue-100 text-blue-600',
+                                                'manajer' => 'bg-emerald-100 text-emerald-600',
+                                                default   => 'bg-slate-100 text-slate-600'
+                                            };
+                                            $initials = collect(explode(' ', $log->user->name))->map(fn($n) => strtoupper(substr($n, 0, 1)))->take(2)->join('');
+                                        @endphp
+                                        <div class="w-8 h-8 rounded-full shrink-0 {{ $roleColor }} flex items-center justify-center font-bold text-[10px] shadow-sm overflow-hidden ring-2 ring-white">
+                                            @if($log->user->avatar)
+                                                <img src="{{ asset('storage/' . $log->user->avatar) }}" class="w-full h-full object-cover">
+                                            @else
+                                                {{ $initials }}
+                                            @endif
                                         </div>
                                         <div>
-                                            <div class="font-semibold text-gray-800 text-xs">{{ $log->user->name }}</div>
+                                            <div class="font-bold text-gray-800 text-xs">{{ $log->user->name }}</div>
                                             <div class="text-[10px] text-gray-400 capitalize">{{ $log->user->role }}</div>
                                         </div>
                                     </div>
