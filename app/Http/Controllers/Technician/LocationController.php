@@ -85,7 +85,7 @@ class LocationController extends Controller
     public function getTree()
     {
         $locations = Location::whereNull('parent_id')
-                    ->with('children.children')
+                    ->with('childrenRecursive')
                     ->orderBy('name', 'asc')
                     ->get();
         return response()->json([

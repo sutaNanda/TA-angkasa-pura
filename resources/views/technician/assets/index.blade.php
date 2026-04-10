@@ -171,7 +171,8 @@
     }
 
     function createTreeNode(loc) {
-        const hasChildren = loc.children && loc.children.length > 0;
+        const childrenArray = loc.children_recursive || loc.children || [];
+        const hasChildren = childrenArray.length > 0;
         
         const node = document.createElement('div');
         node.className = "mb-1";
@@ -206,7 +207,7 @@
         if (hasChildren) {
             const childContainer = document.createElement('div');
             childContainer.className = "children-container space-y-0.5 hidden"; 
-            loc.children.forEach(c => childContainer.appendChild(createTreeNode(c)));
+            childrenArray.forEach(c => childContainer.appendChild(createTreeNode(c)));
             node.appendChild(childContainer);
         }
         return node;

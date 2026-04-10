@@ -634,7 +634,8 @@
         }
 
         function createTreeNode(loc) {
-            const hasChildren = loc.children && loc.children.length > 0;
+            const childrenArray = loc.children_recursive || loc.children || [];
+            const hasChildren = childrenArray.length > 0;
             const isParent = hasChildren;
             
             const node = document.createElement('div');
@@ -675,7 +676,7 @@
                 const childContainer = document.createElement('div');
                 // [NEW] Updated class for visual hierarchy
                 childContainer.className = "children-container space-y-0.5 hidden"; 
-                loc.children.forEach(c => childContainer.appendChild(createTreeNode(c)));
+                childrenArray.forEach(c => childContainer.appendChild(createTreeNode(c)));
                 node.appendChild(childContainer);
             }
             return node;
