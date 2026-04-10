@@ -7,7 +7,7 @@
     {{-- Favicon --}}
     <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
     
-    <title>Login - Asset Monitoring</title>
+    <title>Login - AviaTrack</title>
 
     {{-- Memuat CSS & JS via Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -24,12 +24,11 @@
     <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in">
 
         {{-- Header / Logo --}}
-        <div class="bg-blue-600 p-8 text-center uppercase tracking-widest">
+        <div class="bg-blue-600 p-8 text-center tracking-widest">
             <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-4 shadow-lg">
                 <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
-            <h2 class="text-2xl font-bold text-white tracking-tight">Angkasa Pura</h2>
-            <p class="text-blue-100 text-xs mt-1 font-medium italic opacity-80">Asset Monitoring System</p>
+            <h2 class="text-4xl font-bold text-white tracking-tight">AviaTrack</h2>
         </div>
 
         {{-- Form Login --}}
@@ -90,7 +89,7 @@
 
             <div class="mt-6 text-center">
                 <p class="text-xs text-gray-400">
-                    &copy; {{ date('Y') }} Asset Management System. <br>PT Angkasa Pura Indonesia.
+                    &copy; {{ date('Y') }} AviaTrack. 
                 </p>
             </div>
         </div>

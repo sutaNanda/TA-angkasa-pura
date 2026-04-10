@@ -170,7 +170,10 @@
             </td>
             <td width="35%" class="text-center">
                 <p>Disahkan Oleh,</p>
-                <p style="margin-top: 60px;"><strong>.......................................</strong><br>Manajer Aset / General Affairs</p>
+                <div style="margin-top: 15px; margin-bottom: 5px;">
+                    <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(80)->generate('Dokumen Inventaris Aset Sah AviaTrack. Dicetak: ' . now()->format('d F Y H:i'))) }}" alt="QR Code" />
+                </div>
+                <p><strong>{{ strtoupper(auth()->check() ? auth()->user()->name : 'MANAJER ASET') }}</strong><br>Manajer Aset / General Affairs</p>
             </td>
         </tr>
     </table>

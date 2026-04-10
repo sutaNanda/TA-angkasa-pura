@@ -164,4 +164,19 @@ class WorkOrder extends Model
         }
         return array_map(fn($p) => asset('storage/' . $p), $photos);
     }
+
+    public function getActualReporterNameAttribute()
+    {
+        if ($this->reported_by && $this->reporter) {
+            return $this->reporter->name;
+        }
+
+        // Jika Work Order degenerate secara otomatis dari inspeksi rutin/patroli,
+        // maka pelapor adalah teknisi yang melakukan inspeksi tersebut.
+        if ($this->maintenance_id && $this->maintenance && $this->maintenance->technician) {
+            return $this->maintenance->technician->name;
+        }
+
+        return 'Sistem Otomatis';
+    }
 }

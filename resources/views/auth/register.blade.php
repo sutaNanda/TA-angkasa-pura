@@ -7,7 +7,7 @@
     {{-- Favicon --}}
     <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
     
-    <title>Register - Asset Monitoring</title>
+    <title>Register - AviaTrack</title>
 
     {{-- Memuat CSS & JS via Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -28,7 +28,7 @@
             <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-4 shadow-lg">
                 <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
-            <h2 class="text-2xl font-bold text-white tracking-tight">Angkasa Pura</h2>
+            <h2 class="text-2xl font-bold text-white tracking-tight">AviaTrack</h2>
             <p class="text-blue-100 text-xs mt-1 font-medium italic opacity-80">Pendaftaran Karyawan</p>
         </div>
 

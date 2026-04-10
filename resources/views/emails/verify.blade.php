@@ -3,7 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Verifikasi Alamat Email - Asset Monitoring System</title>
+    <title>Verifikasi Alamat Email - AviaTrack</title>
     <style>
         /* Base Reset */
         body {
@@ -209,7 +209,7 @@
                     <table role="presentation" class="main">
                         <tr>
                             <td class="header-top">
-                                <h1>ANGKASA PURA</h1>
+                                <h1>AVIATRACK</h1>
                                 <p>Sistem Informasi Manajemen Aset & Operasional M/E</p>
                             </td>
                         </tr>
@@ -223,7 +223,7 @@
                                             
                                             <p class="greeting">Yth. {{ $user->name }},</p>
                                             
-                                            <p>Terima kasih telah mendaftar di <strong>Aplikasi Asset Monitoring System</strong>. Untuk alasan keamanan dan memastikan bahwa alamat email ini milik Anda, kami perlu memverifikasi email Anda.</p>
+                                            <p>Terima kasih telah mendaftar di <strong>Aplikasi AviaTrack</strong>. Untuk alasan keamanan dan memastikan bahwa alamat email ini milik Anda, kami perlu memverifikasi email Anda.</p>
                                             
                                             <p>Silakan klik tombol di bawah ini untuk menyelesaikan proses verifikasi dan mengaktifkan akun Anda:</p>
                                             
@@ -243,7 +243,7 @@
                                             
                                             <div class="signature">
                                                 <p>Salam Hormat,</p>
-                                                <p><strong>Tim IT Administrator</strong><br>PT. Angkasa Pura Indonesia</p>
+                                                <p><strong>Tim IT Administrator</strong></p>
                                             </div>
                                         </td>
                                     </tr>
@@ -256,7 +256,7 @@
                             <tr>
                                 <td>
                                     <p>Pesan ini dihasilkan secara otomatis oleh sistem. Mohon untuk tidak membalas ke alamat email ini.</p>
-                                    <p>&copy; {{ date('Y') }} PT. Angkasa Pura - Asset Monitoring System. Seluruh Hak Cipta Dilindungi.</p>
+                                    <p>&copy; {{ date('Y') }} AviaTrack. Seluruh Hak Cipta Dilindungi.</p>
                                 </td>
                             </tr>
                         </table>

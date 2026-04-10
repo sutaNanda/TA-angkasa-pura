@@ -116,8 +116,10 @@
                     </td>
                     <td>{{ \Illuminate\Support\Str::limit($wo->issue_description, 60) }}</td>
                     <td>
-                        <strong>T:</strong> {{ $wo->technician ? $wo->technician->name : '-' }}<br>
-                        <strong>P:</strong> {{ $wo->reporter ? $wo->reporter->name : 'Sistem/Patroli' }}
+                        <span style="color:#666; font-size:9px;">Pelapor:</span><br>
+                        <strong>{{ $wo->actual_reporter_name }}</strong><br>
+                        <span style="color:#666; font-size:9px;">Teknisi Ditunjuk:</span><br>
+                        <strong>{{ $wo->technician ? $wo->technician->name : 'Belum Ditugaskan' }}</strong>
                     </td>
                     <td class="text-center mttr-badge">
                         @if($wo->status == 'completed' || $wo->status == 'verified')
@@ -147,7 +149,10 @@
             <td width="70%"></td>
             <td width="30%" class="text-center">
                 <p>Mengetahui,</p>
-                <p style="margin-top: 60px;"><strong>.......................................</strong><br>Manajer Operasional M/E</p>
+                <div style="margin-top: 15px; margin-bottom: 5px;">
+                    <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(80)->generate('Dokumen Laporan Perbaikan Sah AviaTrack. Dicetak: ' . now()->format('d F Y H:i'))) }}" alt="QR Code" />
+                </div>
+                <p><strong>{{ strtoupper(auth()->check() ? auth()->user()->name : 'MANAJER OPERASIONAL') }}</strong><br>Manajer Operasional M/E</p>
             </td>
         </tr>
     </table>

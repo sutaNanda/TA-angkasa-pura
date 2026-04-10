@@ -46,12 +46,12 @@
         {{-- DESKTOP SIDEBAR (Static, Hidden on Mobile) --}}
         <aside class="hidden md:flex flex-col w-64 bg-slate-800 text-white flex-shrink-0 h-screen sticky top-0 overflow-hidden">
             <div class="p-6 border-b border-slate-700 flex items-center gap-3">
-                <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
                     <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none tracking-tight">User Hub</h1>
-                    <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Enterprise</span>
+                    <h1 class="font-bold text-lg leading-none tracking-tight">AVIATRACK</h1>
+                    <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">User Panel</span>
                 </div>
             </div>
 
@@ -96,7 +96,7 @@
                     </div>
                     <div>
                         <h1 class="font-bold text-lg leading-none tracking-tight">Portal User</h1>
-                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest leading-none mt-1">Asset Monitoring</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-widest leading-none mt-1">AviaTrack</span>
                     </div>
                 </div>
                 <button @click="sidebarOpen = false" class="text-slate-400 hover:text-white">

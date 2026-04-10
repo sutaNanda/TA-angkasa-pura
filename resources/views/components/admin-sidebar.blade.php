@@ -1,12 +1,16 @@
 <aside class="w-64 bg-slate-800 text-white flex flex-col transition-all duration-300">
-    <div class="h-20 flex items-center justify-center border-b border-slate-700 bg-slate-900 px-4">
+    <div class="h-20 flex items-center border-b border-slate-700 bg-slate-900 px-4">
         <div class="flex items-center gap-3 font-bold text-lg tracking-tight">
-            <div class="w-10 h-10 bg-white rounded-lg p-1.5 flex-shrink-0">
+            <div class="w-12 h-12 bg-white rounded-lg p-1.5 flex-shrink-0">
                 <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
             <div class="flex flex-col">
-                <span class="text-white leading-none">ANGKASA PURA</span>
-                <span class="text-[9px] text-blue-400 font-medium uppercase tracking-[0.2em] mt-1 text-center">Indonesia</span>
+                <span class="text-white text-2xl leading-none mb-1">AVIATRACK</span>
+                @if(auth()->user()->role === 'admin')
+                    <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Admin Panel</span>
+                @elseif(auth()->user()->role === 'manajer')
+                    <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Manajer Panel</span>
+                @endif
             </div>
         </div>
     </div>

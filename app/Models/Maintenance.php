@@ -12,7 +12,6 @@ class Maintenance extends Model
 
     protected $fillable = [
         'maintenance_plan_id',
-        'maintenance_schedule_id',
         'location_id',
         'target_asset_ids',
         'scheduled_date',
@@ -65,16 +64,6 @@ class Maintenance extends Model
     public function technician()
     {
         return $this->belongsTo(User::class, 'technician_id');
-    }
-
-    public function maintenanceSchedule()
-    {
-        return $this->belongsTo(MaintenanceSchedule::class);
-    }
-
-    public function results()
-    {
-        return $this->hasMany(MaintenanceDetail::class, 'maintenance_id');
     }
 
     /**

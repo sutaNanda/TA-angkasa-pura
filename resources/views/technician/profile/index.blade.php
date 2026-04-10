@@ -132,7 +132,7 @@
     </div>
 
     <div class="text-center mt-8 mb-4">
-        <p class="text-xs text-gray-400">Asset Management System v1.0.0</p>
+        <p class="text-xs text-gray-400">AviaTrack v1.0.0</p>
     </div>
 
     {{-- MODAL EDIT DATA DIRI --}}

@@ -18,12 +18,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Teknisi - Asset Monitoring</title>
+    <title>Teknisi - AviaTrack</title>
     
     {{-- Favicon --}}
     <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
     
-    <title>Teknisi - Asset Monitoring</title>
+    <title>Teknisi - AviaTrack</title>
     
     {{-- Scripts/Styles --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -51,11 +51,11 @@
         {{-- SIDEBAR (Hanya Muncul di Laptop/Desktop) --}}
         <aside class="hidden md:flex flex-col w-64 bg-slate-900 text-white flex-shrink-0 h-screen sticky top-0 overflow-hidden shadow-2xl z-50">
             <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-                <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
                     <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-none tracking-tight">Teknisi App</h1>
+                    <h1 class="font-bold text-2xl leading-none tracking-tight">AVIATRACK</h1>
                     <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Technician Panel</span>
                 </div>
             </div>
@@ -95,7 +95,7 @@
 
             <div class="p-4 border-t border-slate-800 bg-slate-900/50">
                 <div class="flex items-center gap-3 px-2 py-2">
-                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">PT Angkasa Pura Indonesia</span>
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">AviaTrack System</span>
                 </div>
             </div>
         </aside>
