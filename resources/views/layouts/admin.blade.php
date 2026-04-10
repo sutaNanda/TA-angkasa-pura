@@ -55,12 +55,26 @@
                 });
             @endif
 
-            // Cek Session Error
             @if(session('error'))
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
                     text: "{{ session('error') }}",
+                });
+            @endif
+
+            // Cek Validation Error
+            @if($errors->any())
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validasi Gagal!',
+                    html: `
+                        <ul class="text-left text-sm text-red-600 list-disc pl-5 space-y-1">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    `,
                 });
             @endif
 

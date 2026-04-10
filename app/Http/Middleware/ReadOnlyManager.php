@@ -21,6 +21,11 @@ class ReadOnlyManager
             // Allow methods GET, HEAD, OPTIONS
             if (!$request->isMethodSafe()) {
                 
+                // Allow Manager to update their own profile
+                if ($request->routeIs('admin.profile.update') || $request->routeIs('profile.update')) {
+                    return $next($request);
+                }
+                
                 // Jika request adalah AJAX / JSON
                 if ($request->expectsJson() || $request->ajax()) {
                     return response()->json([
