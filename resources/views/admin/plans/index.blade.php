@@ -1,13 +1,14 @@
 @extends('layouts.admin')
 
 @section('title', 'Aturan Preventive Maintenance')
+@section('page-title', 'Rencana Maintenance')
 
 @section('content')
 <div class="container-fluid px-4 py-6 max-w-7xl mx-auto w-full overflow-hidden">
     {{-- Header Section --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Rencana Perawatan Aset</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Rencana Perawatan</h1>
             <p class="text-sm text-gray-500 mt-1">Kelola aturan dan jadwal perawatan otomatis berdasarkan kategori aset.</p>
         </div>
         

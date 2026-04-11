@@ -18,18 +18,17 @@
     {{-- Alpine.js for Password Toggle --}}
     <script src="//unpkg.com/alpinejs" defer></script>
 </head>
-<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+<body class="md:bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
     {{-- Container Card --}}
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-in my-8">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-md overflow-hidden animate-fade-in my-8">
 
         {{-- Header / Logo --}}
-        <div class="bg-blue-600 p-8 text-center uppercase tracking-widest">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-4 shadow-lg">
+        <div class="bg-blue-600 p-8 text-center tracking-widest">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-2 shadow-lg">
                 <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
-            <h2 class="text-2xl font-bold text-white tracking-tight">AviaTrack</h2>
-            <p class="text-blue-100 text-xs mt-1 font-medium italic opacity-80">Pendaftaran Karyawan</p>
+            <h2 class="text-4xl font-bold text-white tracking-tight">AviaTrack</h2>
         </div>
 
         {{-- Form Register --}}
@@ -46,7 +45,7 @@
                 @csrf
 
                 {{-- Input Nama --}}
-                <div class="mb-5">
+                <div class="mb-2">
                     <label for="name" class="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -64,7 +63,7 @@
                 </div>
 
                 {{-- Input Email --}}
-                <div class="mb-5">
+                <div class="mb-2">
                     <label for="email" class="block text-sm font-bold text-gray-700 mb-2">Email</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -82,7 +81,7 @@
                 </div>
 
                 {{-- Input Divisi --}}
-                <div class="mb-5">
+                <div class="mb-2">
                     <label for="division" class="block text-sm font-bold text-gray-700 mb-2">Divisi / Unit</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -105,7 +104,7 @@
                 </div>
 
                 {{-- Input Password --}}
-                <div class="mb-5" x-data="{ show: false }">
+                <div class="mb-2" x-data="{ show: false }">
                     <label for="password" class="block text-sm font-bold text-gray-700 mb-2">Password</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
@@ -125,7 +124,7 @@
                 </div>
 
                 {{-- Input Konfirmasi Password --}}
-                <div class="mb-8" x-data="{ show: false }">
+                <div class="mb-5" x-data="{ show: false }">
                     <label for="password_confirmation" class="block text-sm font-bold text-gray-700 mb-2">Konfirmasi Password</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">

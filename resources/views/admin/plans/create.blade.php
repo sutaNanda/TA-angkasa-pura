@@ -83,7 +83,7 @@
                                             <select :name="`configs[${index}][template_id]`" x-model="config.template_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none bg-white">
                                                 <option value="">Pilih Template</option>
                                                 @foreach($templates as $template)
-                                                    <option value="{{ $template->id }}">{{ $template->name }} ({{ $template->frequency ?? '-' }})</option>
+                                                    <option value="{{ $template->id }}">{{ $template->name }} </option>
                                                 @endforeach
                                             </select>
                                         </div>

@@ -281,7 +281,7 @@
                             <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
                             <div>
                                 <strong>Catatan Sistem:</strong><br>
-                                Password default akan dibuat otomatis oleh sistem dan dikirimkan ke email yang bersangkutan (atau menggunakan password default jika SMTP mati). Teknisi butuh akun untuk scan QR Code di aplikasi mobile.
+                                Password default akan dibuat otomatis oleh sistem dan dikirimkan ke email yang bersangkutan.
                             </div>
                         </div>
                     </div>
