@@ -25,7 +25,7 @@
     </div>
 
     {{-- Statistics Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+    <div class="grid grid-cols-3 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
             <div class="flex items-center justify-between">
                 <div>

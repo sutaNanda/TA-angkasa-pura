@@ -37,28 +37,92 @@ class AssetController extends Controller
     }
 
     /**
-     * Display the specified asset details.
+     * API: Ambil Daftar Aset (DENGAN PAGINATION + TOGGLE SUB-LOKASI)
      */
-    public function show($id)
+    public function getByLocation(Request $request, $id)
     {
-        $asset = Asset::with(['category', 'location', 'maintenances' => function($q) {
-            $q->latest('scheduled_date')->take(5);
-        }, 'workOrders' => function($q) {
-            $q->latest('created_at')->take(5);
-        }])->findOrFail($id);
+        // Tangani kasus aset tanpa lokasi (Software/Virtual)
+        if ($id === 'unassigned') {
+            $assets = Asset::whereNull('location_id')
+                ->with(['category', 'location'])
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+            return response()->json(['status' => 'success', 'data' => $assets]);
+        }
 
-        return view('technician.assets.show', compact('asset'));
-    }
+        $location = \App\Models\Location::with('childrenRecursive')->find($id);
+        
+        if (!$location) {
+            return response()->json(['status' => 'error', 'message' => 'Location not found'], 404);
+        }
 
-    /**
-     * API: Get assets by location ID for the Tree View Datatable
-     */
-    public function getByLocation($id)
-    {
-        $assets = Asset::with('category')->where('location_id', $id)->paginate(10);
+        // Cek parameter toggle: include_sub (default = true)
+        $includeSub = filter_var($request->query('include_sub', true), FILTER_VALIDATE_BOOLEAN);
+
+        if ($includeSub) {
+            $locationIds = $this->getAllLocationIds($location);
+        } else {
+            $locationIds = [$location->id];
+        }
+
+        $assets = Asset::whereIn('location_id', $locationIds)
+                    ->with(['category', 'location'])
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(10);
+
         return response()->json([
             'status' => 'success',
             'data' => $assets
         ]);
+    }
+
+    /**
+     * Helper recursive untuk mendapatkan array ID Lokasi + cabangnya.
+     */
+    private function getAllLocationIds($location)
+    {
+        $ids = [$location->id];
+        if ($location->relationLoaded('childrenRecursive')) {
+            foreach ($location->childrenRecursive as $child) {
+                $ids = array_merge($ids, $this->getAllLocationIds($child));
+            }
+        }
+        return $ids;
+    }
+
+    /**
+     * Display the specified asset details (Smart: JSON for modal, View for Page).
+     */
+    public function show(Request $request, $id)
+    {
+        $asset = Asset::with([
+            'category', 
+            'location', 
+            'parentAsset.location', 
+            'childAssets.category',
+            'maintenances' => function($q) {
+                $q->latest('scheduled_date')->take(10);
+            }, 
+            'workOrders' => function($q) {
+                $q->latest('created_at')->take(10);
+            }
+        ])->findOrFail($id);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            // Generate full URLs for multiple images
+            $asset->image_urls = [];
+            if (is_array($asset->images) && count($asset->images) > 0) {
+                $asset->image_urls = array_map(fn($img) => asset('storage/' . $img), $asset->images);
+            } elseif ($asset->image) {
+                $asset->image_urls = [asset('storage/' . $asset->image)];
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $asset
+            ]);
+        }
+
+        return view('technician.assets.show', compact('asset'));
     }
 }

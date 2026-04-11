@@ -74,7 +74,7 @@
         </h3>
 
         @if($location->assets->isEmpty())
-            <div class="bg-white p-12 text-center rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center flex-col">
+            <div class="bg-white py-10 text-center rounded-2xl border border-gray-100 shadow-sm flex items-center justify-center flex-col">
                 <i class="fa-solid fa-box-open text-4xl text-gray-300 mb-3"></i>
                 <h4 class="font-bold text-gray-600">Terpantau Kosong</h4>
                 <p class="text-sm text-gray-400 mt-1">Belum ada aset IT yang terdaftar secara sistem di ruangan ini.</p>
