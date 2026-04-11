@@ -70,76 +70,37 @@
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {{-- DYNAMIC LEVELS (Recursive) --}}
+                        <template x-for="(level, index) in levels" :key="index">
+                            <div class="group relative bg-white border-2 border-gray-300 rounded-xl p-5 hover:border-gray-500 hover:shadow-md transition-all duration-300 animate-fade-in">
+                                <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2 fokus:outline-none">
+                                    <span class="w-6 h-6 rounded-md flex items-center justify-center text-xs font-black border-2 border-gray-300" x-text="index + 1"></span>
+                                    <span x-text="level.label"></span>
+                                    <span x-show="index > 0" class="text-[10px] font-medium text-gray-400 ml-1">(opsional)</span>
+                                </label>
+                                <div class="relative">
+                                    <select x-model="level.selected" @change="handleSelection(index)" :disabled="level.loading" class="w-full border-2 border-gray-300 rounded-lg pl-4 pr-10 py-3 text-sm font-medium appearance-none bg-white cursor-pointer">
+                                        <option value="" x-text="index === 0 ? 'Pilih Lokasi Utama' : 'Area Umum Sub-Lokasi'"></option>
+                                        <template x-for="opt in level.options" :key="opt.id">
+                                            <option :value="opt.id" x-text="opt.name"></option>
+                                        </template>
+                                    </select>
+                                    <div x-show="!level.loading" class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                                        <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                    </div>
+                                    <div x-show="level.loading" class="absolute right-4 top-1/2 -translate-y-1/2">
+                                        <i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-sm"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                         
-                        {{-- STEP 1: PILIH GEDUNG --}}
-                        <div class="group relative bg-white border-2 border-gray-100 rounded-xl p-5 hover:border-blue-300 hover:shadow-md transition-all duration-300">
-                            <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black shadow-sm border border-blue-100">1</span>
-                                Gedung / Area
-                            </label>
-                            <div class="relative">
-                                <select x-model="selectedBuilding" @change="onBuildingChange()" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-11 pr-10 py-3 text-sm font-medium appearance-none bg-gray-50 hover:bg-white shadow-inner transition-all cursor-pointer px-2">
-                                    <option value="">Pilih Gedung</option>
-                                    @foreach($rootLocations as $loc)
-                                        <option value="{{ $loc->id }}">{{ $loc->name }}</option>
-                                    @endforeach
-                                </select>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- STEP 2: PILIH LANTAI --}}
-                        <div class="group relative bg-white border-2 border-gray-100 rounded-xl p-5 transition-all duration-300" :class="!selectedBuilding ? 'opacity-40 grayscale pointer-events-none' : 'hover:border-blue-300 hover:shadow-md'">
-                            <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black shadow-sm border border-blue-100">2</span>
-                                Lantai / Level <span class="text-[10px] font-medium text-gray-400 ml-1">(opsional)</span>
-                            </label>
-                            <div class="relative">
-                                <select x-model="selectedFloor" @change="onFloorChange()" :disabled="!selectedBuilding || loadingFloor" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-11 pr-10 py-3 text-sm font-medium appearance-none bg-gray-50 hover:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none shadow-inner transition-all cursor-pointer px-2">
-                                    <option value="">Area Umum Gedung / Pilih Lantai</option>
-                                    <template x-for="floor in floors" :key="floor.id">
-                                        <option :value="floor.id" x-text="floor.name"></option>
-                                    </template>
-                                </select>
-                                <div x-show="!loadingFloor" class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                </div>
-                                <div x-show="loadingFloor" class="absolute right-4 top-1/2 -translate-y-1/2">
-                                    <i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-sm"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- STEP 3: PILIH RUANGAN (Muncul dinamis) --}}
-                        <div x-show="rooms.length > 0" x-transition class="group relative bg-white border-2 border-gray-100 rounded-xl p-5 hover:border-blue-300 hover:shadow-md transition-all duration-300">
-                            <label class="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black shadow-sm border border-blue-100">3</span>
-                                Ruangan Spesifik <span class="text-[10px] font-medium text-gray-400 ml-1">(opsional)</span>
-                            </label>
-                            <div class="relative">
-                                <select x-model="selectedRoom" @change="onRoomChange()" :disabled="loadingRoom" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pl-11 pr-10 py-3 text-sm font-medium appearance-none bg-gray-50 hover:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none shadow-inner transition-all cursor-pointer px-2">
-                                    <option value="">Area Umum Lantai</option>
-                                    <template x-for="room in rooms" :key="room.id">
-                                        <option :value="room.id" x-text="room.name"></option>
-                                    </template>
-                                </select>
-                                <div x-show="!loadingRoom" class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                </div>
-                                <div x-show="loadingRoom" class="absolute right-4 top-1/2 -translate-y-1/2">
-                                    <i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-sm"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Status Terpilih --}}
+                        {{-- Status Terpilih (Deepest) --}}
                         <div x-show="finalLocationId" x-transition class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5 flex items-center gap-4 shadow-sm">
                             <div class="w-12 h-12 rounded-full bg-green-100 text-green-500 flex items-center justify-center text-xl flex-shrink-0 shadow-inner">
                                 <i class="fa-solid fa-check"></i>
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <p class="text-sm font-bold text-green-800">Titik Terkunci</p>
                                 <p class="text-[11px] font-medium text-green-600 mt-0.5 leading-tight">Lokasi dipilih. Lanjut ke rincian di bawah.</p>
                             </div>
@@ -164,18 +125,18 @@
                         <div class="lg:col-span-7 space-y-6">
                             
                             {{-- Textarea Info Laporan --}}
-                            <div class="group bg-white rounded-xl border-2 border-gray-100 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50 transition-all p-1">
-                                <div class="px-4 pt-3 pb-1">
+                            <div class="group bg-white focus-within:ring-4 focus-within:ring-blue-50 transition-all p-1">
+                                <div class="pb-1">
                                     <label class="block text-sm font-bold text-gray-700">
                                         Deksripsi Masalah <span class="text-red-500">*</span>
                                     </label>
                                     <p class="text-xs text-gray-400 mt-0.5 mb-2">Ceritakan kronologi, titik tepat kendala di dalam ruangan (opsional jika besar), dan tanda-tanda kerusakan.</p>
                                 </div>
-                                <textarea name="issue_description" rows="5" required class="w-full placeholder:text-gray-300 text-sm font-medium bg-transparent px-4 pb-4 resize-y py-2" placeholder="Cth: AC dinding paling pojok dekat jendela meneteskan air terus menerus dan suhunya tidak dingin lagi walau sudah diremote ke 16 derajat."></textarea>
+                                <textarea name="issue_description" rows="5" required class="w-full placeholder:text-gray-300 text-sm font-medium bg-transparent px-2 pb-4 resize-y py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-0" placeholder="Cth: AC dinding paling pojok dekat jendela meneteskan air terus menerus dan suhunya tidak dingin lagi walau sudah diremote ke 16 derajat."></textarea>
                             </div>
 
                             {{-- Optional Asset Selection --}}
-                            <div class="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100">
+                            <div class="bg-white p-5 rounded-xl border border-gray-100">
                                 <label class="block text-sm font-bold text-indigo-900 mb-1 flex items-center gap-2">
                                     <i class="fa-solid fa-cube text-indigo-500"></i>
                                     Spesifikasi Aset <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md ml-2 font-semibold">TENTATIF</span>
@@ -183,7 +144,7 @@
                                 <p class="text-xs font-medium text-indigo-400 mb-4">Jika Anda mengetahui objek pastinya, pilih aset terkait agar mempermudah riwayat perawatan. Jika Anda tidak tahu barangnya, biarkan kosong.</p>
                                 
                                 <div class="relative">
-                                    <select name="asset_id" x-model="selectedAsset" :disabled="loadingAsset" class="w-full border-indigo-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 py-3 pl-4 pr-10 text-sm font-medium appearance-none bg-white shadow-sm disabled:opacity-60 transition-all cursor-pointer">
+                                    <select name="asset_id" x-model="selectedAsset" :disabled="loadingAsset" class="w-full border-gray-300 border-2 rounded-lg py-3 pl-4 pr-10 text-sm font-medium appearance-none bg-white disabled:opacity-60 transition-all cursor-pointer">
                                         <option value="">Lainnya / Tidak Tahu</option>
                                         <template x-for="asset in assets" :key="asset.id">
                                             <option :value="asset.id" x-text="(asset.category && asset.category.name === 'Software & Lisensi' ? '[SOFTWARE] ' : '') + asset.name + ' (' + (asset.serial_number || 'Tanpa SN') + ')'"></option>
@@ -203,12 +164,12 @@
                         <div class="lg:col-span-5 space-y-6">
                             
                             {{-- Prioritas --}}
-                            <div class="bg-white border-2 border-gray-100 rounded-xl p-5 hover:border-gray-200 transition-all">
+                            <div class="bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 transition-all">
                                 <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                     <i class="fa-solid fa-fire text-orange-500"></i> Tingkat Urgensi
                                 </label>
                                 <div class="relative group">
-                                    <select name="priority" class="w-full border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 pl-4 pr-10 py-3 text-sm font-bold text-gray-700 appearance-none bg-gray-50 hover:bg-white shadow-inner transition-all cursor-pointer group-hover:border-orange-300">
+                                    <select name="priority" class="w-full border-2 border-gray-300 rounded-lg focus:outline-none pl-4 pr-10 py-3 text-sm font-bold text-gray-700 appearance-none bg-white/50 transition-all cursor-pointer">
                                         <option value="low">🟡 Low (Tidak Terlalu Mendesak)</option>
                                         <option value="medium" selected>🟠 Medium (Perlu Perbaikan Standar)</option>
                                         <option value="high">🔴 High (Darurat / Operasional Terhenti)</option>
@@ -250,7 +211,7 @@
                     <div class="pt-8 mt-4 flex justify-end">
                         <button type="submit" 
                                 x-bind:disabled="!finalLocationId"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 hover:-translate-y-0.5 transition-all flex items-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none disabled:cursor-not-allowed">
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 hover:-translate-y-0.5 transition-all flex items-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none disabled:cursor-not-allowed w-full md:w-auto">
                             Kirim Laporan Kerusakan <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
@@ -346,91 +307,87 @@
 
     function ticketForm() {
         return {
-            selectedBuilding: '',
-            selectedFloor: '',
-            selectedRoom: '',
-            selectedAsset: '',
-            floors: [],
-            rooms: [],
+            levels: [
+                { 
+                    label: 'Gedung / Area', 
+                    options: @json($rootLocations->map(function($l) { return ['id' => $l->id, 'name' => $l->name]; })), 
+                    selected: '', 
+                    loading: false 
+                }
+            ],
             assets: [],
-            loadingFloor: false,
-            loadingRoom: false,
             loadingAsset: false,
+            selectedAsset: '',
 
             get finalLocationId() {
-                if (this.selectedRoom) return this.selectedRoom;
-                if (this.selectedFloor) return this.selectedFloor;
-                if (this.selectedBuilding) return this.selectedBuilding;
+                // Return the deepest selected location ID
+                for (let i = this.levels.length - 1; i >= 0; i--) {
+                    if (this.levels[i].selected) return this.levels[i].selected;
+                }
                 return '';
             },
 
-            async onBuildingChange() {
-                this.selectedFloor = '';
-                this.selectedRoom = '';
-                this.selectedAsset = '';
-                this.floors = [];
-                this.rooms = [];
+            async handleSelection(index) {
+                const selectedId = this.levels[index].selected;
+                
+                // 1. Remove all levels below the current one
+                this.levels = this.levels.slice(0, index + 1);
                 this.assets = [];
-                if (!this.selectedBuilding) return;
+                this.selectedAsset = '';
 
-                this.loadingFloor = true;
+                if (!selectedId) {
+                    // Load assets for parent level if available
+                    if (index > 0) {
+                        this.fetchAssets(this.levels[index - 1].selected);
+                    }
+                    return;
+                }
+
+                // 2. Fetch children for the next level
+                this.levels[index].loading = true;
                 try {
-                    const url = "{{ route('user.api.locations', ':id') }}".replace(':id', this.selectedBuilding);
+                    const url = "{{ route('user.api.locations', ':id') }}".replace(':id', selectedId);
                     const response = await fetch(url);
                     const json = await response.json();
-                    if (json.status === 'success') { this.floors = json.data; }
                     
-                    await this.fetchAssets(this.selectedBuilding);
-                } catch (error) {
-                    console.error(error);
-                    Swal.fire('Error', 'Gagal memuat data lantai.', 'error');
-                } finally { this.loadingFloor = false; }
-            },
+                    if (json.status === 'success' && json.data.length > 0) {
+                        // Dynamically determine index-based label or generic label
+                        let nextLabel = 'Sub-Lokasi / Unit';
+                        if (index === 0) nextLabel = 'Lantai / Level';
+                        else if (index === 1) nextLabel = 'Ruangan / Area';
 
-            async onFloorChange() {
-                this.selectedRoom = '';
-                this.selectedAsset = '';
-                this.rooms = [];
-                this.assets = [];
-                if (!this.selectedFloor) {
-                    if (this.selectedBuilding) this.fetchAssets(this.selectedBuilding);
-                    return;
-                }
-
-                this.loadingRoom = true;
-                try {
-                    const locUrl = "{{ route('user.api.locations', ':id') }}".replace(':id', this.selectedFloor);
-                    const locResponse = await fetch(locUrl);
-                    const locJson = await locResponse.json();
-                    if (locJson.status === 'success' && locJson.data.length > 0) {
-                        this.rooms = locJson.data;
-                    } else {
-                        this.rooms = [];
+                        this.levels.push({
+                            label: nextLabel,
+                            options: json.data,
+                            selected: '',
+                            loading: false
+                        });
                     }
-                    await this.fetchAssets(this.selectedFloor);
-                } catch (error) { console.error(error); }
-                finally { this.loadingRoom = false; }
-            },
-
-            async onRoomChange() {
-                this.selectedAsset = '';
-                this.assets = [];
-                if (!this.selectedRoom) {
-                    if (this.selectedFloor) this.fetchAssets(this.selectedFloor);
-                    return;
+                    
+                    // 3. Always fetch assets for the current selection
+                    await this.fetchAssets(selectedId);
+                } catch (error) {
+                    console.error('Error fetching sub-locations:', error);
+                } finally {
+                    this.levels[index].loading = false;
                 }
-                await this.fetchAssets(this.selectedRoom);
             },
 
             async fetchAssets(locationId) {
+                if (!locationId) return;
                 this.loadingAsset = true;
                 try {
                     const url = "{{ route('user.api.assets', ':id') }}".replace(':id', locationId);
                     const response = await fetch(url);
                     const json = await response.json();
-                    if (json.status === 'success') { this.assets = json.data; }
-                } catch (error) { console.error(error); }
-                finally { this.loadingAsset = false; }
+                    if (json.status === 'success') {
+                        this.assets = json.data;
+                    }
+                } catch (error) {
+                    console.error('Error fetching assets:', error);
+                } finally {
+                    this.loadingAsset = false;
+                }
             }
         }
     }

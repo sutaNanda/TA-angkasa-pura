@@ -185,15 +185,12 @@
 
     @else
         {{-- Empty State (No Tickets) --}}
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 text-center py-20 px-4 mt-6 py-10">
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 text-center py-20 px-5 mt-6 py-10">
             <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-gray-200 text-gray-300">
                 <i class="fa-solid fa-clipboard-check text-4xl"></i>
             </div>
             <h3 class="text-xl font-bold text-gray-900 mb-2">Belum Ada Laporan Aktif</h3>
-            <p class="text-gray-500 mb-8 max-w-md mx-auto text-sm leading-relaxed">Anda belum pernah membuat laporan kerusakan aset. Jika menemukan kendala fasilitas atau peralatan, segera laporkan agar tim teknisi kami dapat menanganinya.</p>
-            <a href="{{ route('user.tickets.create') }}" class="inline-flex items-center gap-2.5 bg-blue-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-blue-700 transition shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ">
-                <i class="fa-solid fa-plus"></i> Buat Laporan Pertama Anda
-            </a>
+            <p class="text-gray-500 mb-8 max-w-md mx-auto text-xs leading-relaxed">Anda belum pernah membuat laporan kerusakan aset. Jika menemukan kendala fasilitas atau peralatan, segera laporkan agar tim teknisi kami dapat menanganinya.</p>
         </div>
     @endif
 
