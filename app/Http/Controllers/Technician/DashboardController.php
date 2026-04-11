@@ -101,30 +101,28 @@ class DashboardController extends Controller
             'completed_today' => $completedToday
         ];
 
-        // Group By Location ID agar tampilan dashboard lebih rapi (Location Cards)
-        // Software ("virtual") dipaksa memakai location_id induknya agar grouping satu ruangan.
         $patrols = $patrols->groupBy(function ($item) {
+            $locId = 0;
             if ($item->location_id) {
-                return $item->location_id;
-            }
-            if ($item->asset) {
+                $locId = $item->location_id;
+            } elseif ($item->asset) {
                 if ($item->asset->location_id) {
-                    return $item->asset->location_id;
+                    $locId = $item->asset->location_id;
+                } elseif ($item->asset->parentAsset && $item->asset->parentAsset->location_id) {
+                    $locId = $item->asset->parentAsset->location_id;
                 }
-                if ($item->asset->parentAsset && $item->asset->parentAsset->location_id) {
-                    return $item->asset->parentAsset->location_id;
-                }
-            }
-            // Fallback for Area-Centric maintenance missing main asset, but having multiple target_assets
-            if ($item->target_asset_ids && is_array($item->target_asset_ids) && count($item->target_asset_ids) > 0) {
+            } elseif ($item->target_asset_ids && is_array($item->target_asset_ids) && count($item->target_asset_ids) > 0) {
                 $firstId = $item->target_asset_ids[0];
                 $firstAsset = \App\Models\Asset::with('parentAsset')->find($firstId);
                 if ($firstAsset) {
-                    if ($firstAsset->location_id) return $firstAsset->location_id;
-                    if ($firstAsset->parentAsset && $firstAsset->parentAsset->location_id) return $firstAsset->parentAsset->location_id;
+                    if ($firstAsset->location_id) $locId = $firstAsset->location_id;
+                    if ($firstAsset->parentAsset && $firstAsset->parentAsset->location_id) $locId = $firstAsset->parentAsset->location_id;
                 }
             }
-            return 0; // Completely Virtual / No Location
+            
+            $planId = $item->maintenance_plan_id ?: 0;
+            
+            return $locId . '-' . $planId;
         });
 
         return view('technician.dashboard', compact('greeting', 'user', 'stats', 'poolTasks', 'myTasks', 'patrols', 'handoverTasks', 'userReports'));

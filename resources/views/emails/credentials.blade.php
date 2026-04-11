@@ -226,8 +226,8 @@
                     <table role="presentation" class="main">
                         <tr>
                             <td class="header-top">
+                                <img src="{{ $message->embed(public_path('logo.jpg')) }}" alt="AviaTrack Logo" style="width: 100px; height: 100px; margin-bottom: 10px; object-fit: contain;">
                                 <h1>AVIATRACK</h1>
-                                <p>Asset & Operational M/E Management System</p>
                             </td>
                         </tr>
 

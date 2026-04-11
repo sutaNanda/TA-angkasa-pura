@@ -112,9 +112,11 @@
 
                 {{-- Tab Content: Patroli --}}
                 <div x-show="tab === 'patrol'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translateY(10px)" x-transition:enter-end="opacity-100 translateY(0)">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @forelse($patrols as $locationId => $items)
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @forelse($patrols as $groupKey => $items)
                             @php
+                                $parts = explode('-', $groupKey);
+                                $locationId = $parts[0] ?? 0;
                                 $firstItem = $items->first();
                                 $location = $firstItem->location ?? ($firstItem->asset->location ?? ($firstItem->asset->parentAsset->location ?? null));
                                 
@@ -146,12 +148,34 @@
                                     </div>
                                     @php
                                         $shiftInfo = $firstItem->maintenancePlan->shift ?? null;
+                                        $freq = $firstItem->maintenancePlan->frequency ?? null;
+                                        $freqLabel = match($freq) {
+                                            'daily' => 'Harian',
+                                            'weekly' => 'Mingguan',
+                                            'monthly' => 'Bulanan',
+                                            'yearly' => 'Tahunan',
+                                            default => null
+                                        };
+                                        $freqColor = match($freq) {
+                                            'daily' => 'bg-green-50 text-green-700 border-green-200',
+                                            'weekly' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                            'monthly' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                            'yearly' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                            default => ''
+                                        };
                                     @endphp
-                                    @if($shiftInfo)
-                                        <span class="{{ $shiftInfo->badge_class }} px-2 py-0.5 rounded-full text-[9px] font-bold border inline-flex items-center gap-1">
-                                            <i class="{{ $shiftInfo->icon_class }}"></i> {{ $shiftInfo->name }}
-                                        </span>
-                                    @endif
+                                    <div class="flex flex-col items-end gap-1">
+                                        @if($freqLabel)
+                                            <span class="{{ $freqColor }} px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border inline-flex items-center gap-1 shadow-sm">
+                                                <i class="fa-solid fa-clock-rotate-left"></i> {{ $freqLabel }}
+                                            </span>
+                                        @endif
+                                        @if($shiftInfo)
+                                            <span class="{{ $shiftInfo->badge_class }} px-2 py-0.5 rounded-full text-[9px] font-bold border inline-flex items-center gap-1">
+                                                <i class="{{ $shiftInfo->icon_class }}"></i> {{ $shiftInfo->name }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 {{-- Asset Preview (Avatars) --}}
