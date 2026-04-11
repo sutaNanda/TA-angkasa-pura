@@ -38,7 +38,7 @@
             <li>
                 <a href="{{ route('admin.categories.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.categories.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-tags w-5 text-center"></i>
-                    <span class="text-sm font-medium">Kategori Aset</span>
+                    <span class="text-sm font-medium">Kategori</span>
                 </a>
             </li>
 

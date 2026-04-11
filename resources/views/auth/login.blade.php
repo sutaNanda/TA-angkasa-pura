@@ -87,8 +87,24 @@
                 </button>
             </form>
 
+            {{-- Divider & Register Link untuk User Karyawan --}}
+            <div class="mt-8 mb-4 relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200"></div>
+                </div>
+                <div class="relative flex justify-center text-xs">
+                    <span class="px-2 bg-white text-gray-400 uppercase tracking-widest font-black">Pengguna Baru?</span>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="{{ route('register') }}" class="inline-flex items-center justify-center gap-2 text-xs font-black text-blue-600 hover:underline">
+                    <span>Daftar Akun Baru</span>
+                </a>
+            </div>
+
             <div class="mt-6 text-center">
-                <p class="text-xs text-gray-400">
+                <p class="text-xs text-slate-400 font-medium">
                     &copy; {{ date('Y') }} AviaTrack. 
                 </p>
             </div>
