@@ -22,7 +22,7 @@
                 <h1 class="text-2xl md:text-3xl text-gray-900 font-extrabold flex items-center gap-3">
                     Form Laporan Kerusakan
                 </h1>
-                <p class="text-blue-900 text-sm mt-2 opacity-90 max-w-2xl leading-relaxed">Bantu kami menjaga fasilitas tetap prima. Isi formulir berikut untuk melaporkan kendala di area operasional atau aset perusahaan secara spesifik.</p>
+                <p class="text-gray-400 text-sm mt-2 opacity-90 max-w-2xl leading-relaxed">Bantu kami menjaga fasilitas tetap prima. Isi formulir berikut untuk melaporkan kendala di area operasional atau aset perusahaan secara spesifik.</p>
             </div>
         </div>
 
