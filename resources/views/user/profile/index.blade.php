@@ -87,7 +87,7 @@
                     </div>
 
                     <div class="pt-1 ml-2">
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-600/20 transition flex items-center gap-2 active:scale-95 text-sm">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md cursor-pointer flex items-center gap-2 text-sm">
                             <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
                         </button>
                     </div>
@@ -151,7 +151,7 @@
                 </div>
 
                 <div class="pt-2">
-                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-red-500/20 transition flex items-center gap-2 active:scale-95 text-sm">
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-md cursor-pointer flex items-center gap-2 text-sm">
                         <i class="fa-solid fa-key"></i> Update Password
                     </button>
                 </div>
