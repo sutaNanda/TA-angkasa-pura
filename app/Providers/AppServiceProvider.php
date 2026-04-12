@@ -30,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Trik khusus untuk membersihkan cache otomatis ketika di-hosting
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+
         // 1. Paksa HTTPS jika di Ngrok (Agar CSS tidak error mixed content)
         if ($this->app->environment('production') || str_contains(request()->getHost(), 'ngrok-free.app')) {
             URL::forceScheme('https');
