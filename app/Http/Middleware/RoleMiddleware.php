@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
+use App\Models\AuditLog;
 
 class RoleMiddleware
 {
@@ -27,6 +28,9 @@ class RoleMiddleware
 
         // Check if user has the required role
         if (!in_array($user->role, $roles)) {
+            // Catat log pelanggaran akses
+            AuditLog::record('access_denied', 'Authorization', "User mencoba mengakses halaman tanpa izin ({$request->path()})");
+
             // Redirect based on role if they try to access unauthorized area
             if ($user->role === 'admin' || $user->role === 'manajer') {
                 return redirect()->route('admin.dashboard')->with('error', 'Anda tidak memiliki hak akses ke halaman tersebut.');

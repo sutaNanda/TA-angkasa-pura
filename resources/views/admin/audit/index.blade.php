@@ -204,12 +204,42 @@
             </table>
         </div>
 
-        {{-- PAGINATION --}}
-        <div class="px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+    {{-- PAGINATION --}}
+        <div class="px-6 py-4 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
             <span class="text-xs text-gray-500">
-                Menampilkan {{ $logs->firstItem() ?? 0 }}–{{ $logs->lastItem() ?? 0 }} dari {{ $logs->total() }} log
+                Menampilkan <span class="font-bold text-gray-700">{{ $logs->firstItem() ?? 0 }}</span>
+                hingga <span class="font-bold text-gray-700">{{ $logs->lastItem() ?? 0 }}</span>
+                dari <span class="font-bold text-gray-700">{{ $logs->total() }}</span> log
             </span>
-            {{ $logs->links() }}
+
+            <div class="flex items-center gap-2">
+                {{-- Tombol Previous --}}
+                @if ($logs->onFirstPage())
+                    <span class="w-8 h-8 flex items-center justify-center rounded-md text-gray-300 bg-gray-50 border border-gray-100 cursor-not-allowed" title="Halaman Pertama">
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                    </span>
+                @else
+                    <a href="{{ $logs->previousPageUrl() }}" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:text-blue-600 transition shadow-sm" title="Halaman Sebelumnya">
+                        <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                    </a>
+                @endif
+
+                {{-- Indikator Halaman --}}
+                <span class="text-xs text-gray-600 px-3 font-medium bg-gray-50 py-1.5 rounded-md border border-gray-100">
+                    Hal {{ $logs->currentPage() }} / {{ $logs->lastPage() }}
+                </span>
+
+                {{-- Tombol Next --}}
+                @if ($logs->hasMorePages())
+                    <a href="{{ $logs->nextPageUrl() }}" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:text-blue-600 transition shadow-sm" title="Halaman Selanjutnya">
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </a>
+                @else
+                    <span class="w-8 h-8 flex items-center justify-center rounded-md text-gray-300 bg-gray-50 border border-gray-100 cursor-not-allowed" title="Halaman Terakhir">
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </span>
+                @endif
+            </div>
         </div>
     </div>
 

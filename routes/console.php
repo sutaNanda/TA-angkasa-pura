@@ -17,3 +17,7 @@ Schedule::command('maintenance:generate-daily')
 Schedule::command('maintenance:purge-logs 3')
     ->monthly()
     ->description('Purge maintenance and patrol records older than 3 months');
+
+Schedule::call(function () {
+    \Log::info('CRON AVIATRACK JALAN');
+})->everyMinute();

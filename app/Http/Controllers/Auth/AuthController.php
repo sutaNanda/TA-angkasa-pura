@@ -45,6 +45,9 @@ class AuthController extends Controller
             return redirect('/');
         }
 
+        // Catat log gagal masuk
+        AuditLog::record('login_failed', 'Authentication', "Gagal login dengan email: {$request->email} (Password salah / tidak terdaftar)");
+
         return back()->withErrors([
             'email' => 'Email atau password salah.',
         ])->onlyInput('email');

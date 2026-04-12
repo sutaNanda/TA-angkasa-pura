@@ -193,11 +193,11 @@
                                 <select name="type" id="locType" required
                                     class="w-full appearance-none border-2 border-gray-500 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pr-8 bg-white py-2 pl-2">
                                     <option value="" disabled selected>Pilih Tipe</option>
-                                    <option value="building">🏢  Gedung (Building)</option>
-                                    <option value="floor">📊  Lantai (Floor)</option>
-                                    <option value="room">🚪  Ruangan (Room)</option>
-                                    <option value="area">📍  Area / Lainnya</option>
-                                    <option value="outdoor">🌿  Outdoor</option>
+                                    <option value="building">Gedung</option>
+                                    <option value="floor">Lantai</option>
+                                    <option value="room">Ruangan</option>
+                                    <option value="area">Area / Lainnya</option>
+                                    <option value="outdoor">Outdoor</option>
                                 </select>
                                 <i class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-gray-400 text-xs pointer-events-none"></i>
                             </div>
