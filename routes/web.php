@@ -275,21 +275,22 @@ Route::prefix('technician')->name('technician.')->middleware(['auth', 'role:tekn
 // ====================================================
 Route::prefix('user')->name('user.')->middleware(['auth', 'role:user', 'verified'])->group(function () {
     
-    // Dashboard User = List Tiket Saya
-    Route::get('/dashboard', [App\Http\Controllers\User\TicketController::class, 'index'])->name('tickets.index');
-    
-    // Manajemen Tiket (Create Only)
-    Route::get('/tickets/create', [App\Http\Controllers\User\TicketController::class, 'create'])->name('tickets.create');
-    Route::post('/tickets', [App\Http\Controllers\User\TicketController::class, 'store'])->name('tickets.store');
-    
-    // API Helper untuk Cascading Dropdown
-    Route::get('/api/locations/{parentId}', [App\Http\Controllers\User\TicketController::class, 'getLocations'])->name('api.locations');
-    Route::get('/api/assets/{locationId}', [App\Http\Controllers\User\TicketController::class, 'getAssets'])->name('api.assets');
+    // --- DASHBOARD & TIKET USER ---
+    Route::get('/dashboard', [App\Http\Controllers\user\TicketController::class, 'index'])->name('tickets.index');
+
+    // Proses Buat Laporan / Tiket Baru
+    Route::get('/tickets/create', [App\Http\Controllers\user\TicketController::class, 'create'])->name('tickets.create');
+    Route::post('/tickets', [App\Http\Controllers\user\TicketController::class, 'store'])->name('tickets.store');
+
+    // AJAX Endpoint untuk dropdown bertingkat
+    Route::get('/api/locations/{parentId}', [App\Http\Controllers\user\TicketController::class, 'getLocations'])->name('api.locations');
+    Route::get('/api/assets/{locationId}', [App\Http\Controllers\user\TicketController::class, 'getAssets'])->name('api.assets');
 
     // Profil User
-    Route::controller(App\Http\Controllers\User\ProfileController::class)->group(function() {
+    Route::controller(App\Http\Controllers\user\ProfileController::class)->group(function() {
         Route::get('/profile', 'index')->name('profile.index');
         Route::put('/profile/update', 'update')->name('profile.update');
+
         Route::get('/profile/update', fn() => redirect()->route('user.profile.index')); // Fallback anti-error
         Route::put('/profile/password', 'updatePassword')->name('profile.password');
     });
