@@ -16,10 +16,10 @@
         
         <div class="px-6 md:px-10 pt-8 pb-6 relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 py-4">
             <div>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-blue-900 rounded-full text-xs font-semibold backdrop-blur-sm mb-3">
-                    <i class="fa-solid fa-flag text-blue-800"></i> Sistem Pelaporan
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-gray-900 rounded-full text-xs font-semibold backdrop-blur-sm mb-3">
+                    <i class="fa-solid fa-flag text-gray-800"></i> Sistem Pelaporan
                 </span>
-                <h1 class="text-2xl md:text-3xl text-blue-900 font-extrabold flex items-center gap-3">
+                <h1 class="text-2xl md:text-3xl text-gray-900 font-extrabold flex items-center gap-3">
                     Form Laporan Kerusakan
                 </h1>
                 <p class="text-blue-900 text-sm mt-2 opacity-90 max-w-2xl leading-relaxed">Bantu kami menjaga fasilitas tetap prima. Isi formulir berikut untuk melaporkan kendala di area operasional atau aset perusahaan secara spesifik.</p>
@@ -118,7 +118,7 @@
                         <div class="lg:col-span-7 space-y-6">
                             
                             {{-- Textarea Info Laporan --}}
-                            <div class="group bg-white focus-within:ring-4 focus-within:ring-blue-50 transition-all p-1">
+                            <div class="group bg-white p-1">
                                 <div class="pb-1">
                                     <label class="block text-sm font-bold text-gray-700">
                                         Deksripsi Masalah <span class="text-red-500">*</span>
@@ -130,11 +130,11 @@
 
                             {{-- Optional Asset Selection --}}
                             <div class="bg-white p-5 rounded-xl border border-gray-100">
-                                <label class="block text-sm font-bold text-indigo-900 mb-1 flex items-center gap-2">
-                                    <i class="fa-solid fa-cube text-indigo-500"></i>
-                                    Spesifikasi Aset <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md ml-2 font-semibold">TENTATIF</span>
+                                <label class="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
+                                    <i class="fa-solid fa-cube text-gray-500"></i>
+                                    Spesifikasi Aset <span class="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md ml-2 font-semibold">TENTATIF</span>
                                 </label>
-                                <p class="text-xs font-medium text-indigo-400 mb-4">Jika Anda mengetahui objek pastinya, pilih aset terkait agar mempermudah riwayat perawatan. Jika Anda tidak tahu barangnya, biarkan kosong.</p>
+                                <p class="text-xs font-medium text-gray-400 mb-4">Jika Anda mengetahui objek pastinya, pilih aset terkait agar mempermudah riwayat perawatan. Jika Anda tidak tahu barangnya, biarkan kosong.</p>
                                 
                                 <div class="relative">
                                     <select name="asset_id" x-model="selectedAsset" :disabled="loadingAsset" class="w-full border-gray-300 border-2 rounded-lg py-3 pl-4 pr-10 text-sm font-medium appearance-none bg-white disabled:opacity-60 transition-all cursor-pointer">
@@ -174,16 +174,16 @@
                             </div>
 
                             {{-- Foto Bukti (Multi) Drag n Drop Style --}}
-                            <div class="bg-white border-2 border-gray-100 rounded-xl p-5 hover:border-blue-300 transition-all">
+                            <div class="bg-white border-2 border-gray-100 rounded-xl p-5 hover:border-gray-300 transition-all">
                                 <div class="flex justify-between items-center mb-2">
                                     <label class="block text-sm font-bold text-gray-700 flex items-center gap-2">
-                                        <i class="fa-solid fa-camera text-blue-500"></i> Foto Temuan Kendala
+                                        <i class="fa-solid fa-camera text-gray-500"></i> Foto Temuan Kendala
                                     </label>
                                     <span class="text-[10px] font-bold bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Maks 5</span>
                                 </div>
                                 <p class="text-xs text-gray-400 mb-4 font-medium">Bantu teknisi mengidentifikasi alat dengan bukti foto.</p>
                                 
-                                <div class="relative w-full border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition cursor-pointer group" onclick="document.getElementById('ticketFileInput').click()">
+                                <div class="relative w-full border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 hover:border-gray-400 transition cursor-pointer group" onclick="document.getElementById('ticketFileInput').click()">
                                     <div class="flex flex-col items-center justify-center">
                                         <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors mb-3">
                                             <i class="fa-solid fa-cloud-arrow-up text-xl text-gray-400 group-hover:text-blue-600 transition"></i>
@@ -204,7 +204,7 @@
                     <div class="pt-8 mt-4 flex justify-end">
                         <button type="submit" 
                                 x-bind:disabled="!finalLocationId"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 hover:-translate-y-0.5 transition-all flex items-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none disabled:cursor-not-allowed w-full md:w-auto">
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg cursor-pointer flex items-center gap-3 w-full md:w-auto">
                             Kirim Laporan Kerusakan <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
