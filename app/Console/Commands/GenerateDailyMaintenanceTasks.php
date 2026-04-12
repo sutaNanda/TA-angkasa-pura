@@ -15,7 +15,8 @@ class GenerateDailyMaintenanceTasks extends Command
 
     public function handle()
     {
-        $isDryRun = $this->option('dry-run');
+        $isDryRun = false;
+        try { if (isset($this->input) && $this->input->hasOption('dry-run')) $isDryRun = $this->option('dry-run'); } catch (\Exception $e) {}
         $today = now()->startOfDay();
         
         if ($isDryRun) {
