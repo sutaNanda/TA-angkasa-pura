@@ -14,13 +14,6 @@
 
     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative">
         
-        {{-- Decorative SVG Background --}}
-        <div class="absolute top-0 left-0 w-full h-36 bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-800 z-0">
-            <svg class="absolute inset-0 w-full h-full object-cover opacity-20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-                <path fill="#ffffff" fill-opacity="1" d="M0,160L80,144C160,128,320,96,480,106.7C640,117,800,171,960,176C1120,181,1280,139,1360,117.3L1440,96L1440,0L1360,0C1280,0,1120,0,960,0C800,0,640,0,480,0C320,0,160,0,80,0L0,0Z"></path>
-            </svg>
-        </div>
-        
         <div class="px-6 md:px-10 pt-8 pb-6 relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 py-4">
             <div>
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 text-blue-900 rounded-full text-xs font-semibold backdrop-blur-sm mb-3">
