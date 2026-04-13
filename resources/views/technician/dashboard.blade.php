@@ -142,7 +142,10 @@
                                             <i class="fa-solid {{ $locationId == 0 ? 'fa-cloud' : 'fa-location-dot' }}"></i>
                                         </div>
                                         <div>
-                                            <h4 class="text-sm font-black text-gray-900 leading-tight">{{ $locationName }}</h4>
+                                            <div class="text-[9px] text-blue-600 font-bold uppercase tracking-widest leading-none mb-0.5" title="Nama Rencana / Aturan">
+                                                {{ $firstItem->maintenancePlan->name ?? 'Tugas Rutin' }}
+                                            </div>
+                                            <h4 class="text-sm font-black text-gray-900 leading-none">{{ $locationName }}</h4>
                                             <p class="text-[10px] text-orange-600 font-black uppercase tracking-widest mt-0.5">{{ $pendingCount }} Aset</p>
                                         </div>
                                     </div>
@@ -165,6 +168,15 @@
                                         };
                                     @endphp
                                     <div class="flex flex-col items-end gap-1">
+                                        @if($firstItem->scheduled_time)
+                                            <span class="bg-blue-100 text-blue-700 border-blue-200 px-2 py-0.5 rounded text-[9px] font-black tracking-widest border inline-flex items-center gap-1 shadow-sm">
+                                                <i class="fa-regular fa-clock"></i> Jam {{ \Carbon\Carbon::parse($firstItem->scheduled_time)->format('H:i') }}
+                                            </span>
+                                        @else
+                                            <span class="bg-gray-100 text-gray-600 border-gray-200 px-2 py-0.5 rounded text-[9px] font-black tracking-widest border inline-flex items-center gap-1 shadow-sm">
+                                                <i class="fa-solid fa-infinity"></i> Sepanjang Hari
+                                            </span>
+                                        @endif
                                         @if($freqLabel)
                                             <span class="{{ $freqColor }} px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border inline-flex items-center gap-1 shadow-sm">
                                                 <i class="fa-solid fa-clock-rotate-left"></i> {{ $freqLabel }}

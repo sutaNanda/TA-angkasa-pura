@@ -15,6 +15,7 @@ class Maintenance extends Model
         'location_id',
         'target_asset_ids',
         'scheduled_date',
+        'scheduled_time',
         'type',
         'checklist_id',
         'asset_id',
