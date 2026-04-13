@@ -133,8 +133,9 @@ class DashboardController extends Controller
             }
             
             $planId = $item->maintenance_plan_id ?: 0;
+            $time = $item->scheduled_time ?? 'flex';
             
-            return $locId . '-' . $planId;
+            return $locId . '-' . $planId . '-' . $time;
         });
 
         return view('technician.dashboard', compact('greeting', 'user', 'stats', 'poolTasks', 'myTasks', 'patrols', 'handoverTasks', 'userReports'));
