@@ -88,6 +88,18 @@ class DashboardController extends Controller
             });
         }
 
+        // HIDDEN MODE: Sembunyikan tugas terjadwal yang belum waktunya
+        // Muncul tepat di jam yang di-setting (scheduled_time <= jam sekarang), atau fleksibel (null), atau sedang dikerjakan.
+        $currentTime = $now->format('H:i:s');
+        $patrolQuery->where(function($q) use ($currentTime) {
+            $q->whereNull('scheduled_time')
+              ->orWhere('scheduled_time', '<=', $currentTime)
+              ->orWhere('status', 'in_progress');
+        });
+
+        // Sort by scheduled_time (specific time first, null/flexible last)
+        $patrolQuery->orderByRaw('scheduled_time IS NULL ASC, scheduled_time ASC');
+
         $patrols = $patrolQuery->get();
 
         // 5. STATS

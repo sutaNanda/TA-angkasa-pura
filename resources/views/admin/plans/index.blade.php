@@ -174,9 +174,16 @@
                                     @else
                                         <span class="text-xs text-gray-500 whitespace-nowrap">Semua Shift</span>
                                     @endif
-                                    <span class="text-sm text-gray-600 mt-1 line-clamp-2" title="{{ $plan->schedule_description }}">
-                                        {{ $plan->schedule_description }}
-                                    </span>
+                                    <div class="text-sm text-gray-600 mt-1 flex flex-col gap-0.5">
+                                        <span class="line-clamp-2" title="{{ $plan->schedule_description }}">
+                                            {{ $plan->schedule_description }}
+                                        </span>
+                                        @if($plan->start_time)
+                                            <span class="text-[11px] font-bold text-blue-600 flex items-center gap-1"><i class="fa-regular fa-clock"></i> Jam {{ \Carbon\Carbon::parse($plan->start_time)->format('H:i') }}</span>
+                                        @else
+                                            <span class="text-[11px] font-bold text-gray-400 flex items-center gap-1"><i class="fa-solid fa-infinity"></i> Sepanjang Hari (Fleksibel)</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">

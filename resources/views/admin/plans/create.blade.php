@@ -307,7 +307,7 @@
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">Shift Kerja Target <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
                                 <select name="shift_id" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none bg-white">
-                                    <option value="">— Semua Shift (Tidak Spesifik) —</option>
+                                    <option value="">— Semua Shift (Tugas Berulang di Tiap Shift) —</option>
                                     @foreach($shifts as $shift)
                                         <option value="{{ $shift->id }}" {{ old('shift_id') == $shift->id ? 'selected' : '' }}>
                                             {{ $shift->name }} ({{ \Carbon\Carbon::parse($shift->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('H:i') }})
@@ -317,10 +317,32 @@
                                 <p class="text-[11px] text-gray-500 mt-2 leading-relaxed">Pilih shift jika tugas ini hanya khusus teknisi pada shift tertentu.</p>
                             </div>
 
-                            {{-- Dynamic Date Input --}}
+                            {{-- Dynamic Date & Time Input --}}
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Mulai / Acuan</label>
-                                <input type="date" name="start_date" value="{{ old('start_date', date('Y-m-d')) }}" required class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal & Jam Eksekusi Target <span class="text-red-500">*</span></label>
+                                <div x-data="{ timeValue: '{{ old('start_time') }}' }">
+                                    <div class="flex flex-col sm:flex-row gap-3">
+                                        {{-- Input Tanggal --}}
+                                        <div class="flex-1">
+                                            <input type="date" name="start_date" value="{{ old('start_date', date('Y-m-d')) }}" required class="w-full rounded-xl border border-gray-300 bg-gray-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all outline-none cursor-pointer text-gray-700" title="Tanggal Mulai">
+                                        </div>
+                                        
+                                        {{-- Input Jam --}}
+                                        <div class="w-full sm:w-40 shrink-0">
+                                            <input type="time" name="start_time" x-model="timeValue" class="rounded-xl border border-gray-300 bg-gray-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all outline-none font-medium cursor-pointer text-gray-700" title="Jam Eksekusi Spesifik">
+                                        </div>
+                                    </div>
+                                    
+                                    {{-- Helper & Tombol Clear --}}
+                                    <div class="mt-2.5 flex items-center justify-between px-1">
+                                        <p class="text-[11px] text-gray-500">Kosongkan jam untuk tugas <strong>sepanjang hari</strong>.</p>
+                                        
+                                        {{-- Tombol ini hanya muncul jika jam sudah terisi --}}
+                                        <button type="button" x-show="timeValue" @click="timeValue = ''" x-transition.opacity class="text-[11px] text-red-500 hover:text-red-700 font-medium transition-colors focus:outline-none flex items-center gap-1.5 bg-red-50 px-2 py-1 rounded-md">
+                                            <i class="fa-solid fa-eraser"></i> Hapus Jam
+                                        </button>
+                                    </div>
+                                </div>
                                 
                                 {{-- Dynamic Helper Text --}}
                                 <div class="mt-3 flex gap-2.5 items-start text-[11px] text-gray-600 bg-gray-50/80 p-3 rounded-lg border border-gray-200/60">

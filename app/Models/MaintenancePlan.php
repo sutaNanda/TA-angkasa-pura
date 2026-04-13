@@ -15,6 +15,7 @@ class MaintenancePlan extends Model
         'template_configs',
         'frequency',
         'start_date',
+        'start_time',
         'is_active',
         'notes',
         'shift_id',
