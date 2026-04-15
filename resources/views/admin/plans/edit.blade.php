@@ -330,7 +330,7 @@
                                     <div class="flex-1">
                                         <input type="date" name="start_date" value="{{ old('start_date', $plan->start_date ? $plan->start_date->format('Y-m-d') : date('Y-m-d')) }}" required class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none" title="Tanggal Mulai">
                                     </div>
-                                    <div class="w-full sm:w-32 shrink-0 relative">
+                                    <div class="sm:w-32 shrink-0 relative">
                                         <input type="time" name="start_time" value="{{ old('start_time', $plan->start_time ? \Carbon\Carbon::parse($plan->start_time)->format('H:i') : '') }}" class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none font-mono" title="Jam Eksekusi Spesifik">
                                     </div>
                                 </div>
