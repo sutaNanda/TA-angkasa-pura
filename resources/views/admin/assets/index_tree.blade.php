@@ -667,7 +667,7 @@
                     <span class="truncate text-sm node-text">${loc.name}</span>
                 </div>
                 <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <button onclick="event.stopPropagation(); openLocationModal(null, '${loc.id}', '${safeName}', '${safeDesc}', null, '${loc.type || ''}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                    <button onclick="event.stopPropagation(); openLocationModal('${loc.parent_id || ''}', '${loc.id}', '${safeName}', '${safeDesc}', null, '${loc.type || ''}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-pen text-[10px]"></i></button>
                     <button onclick="event.stopPropagation(); openLocationModal('${loc.id}', null, null, null, '${safeName}', null, '${loc.type || ''}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-green-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-plus text-[10px]"></i></button>
                 </div>`;
             node.appendChild(header);
