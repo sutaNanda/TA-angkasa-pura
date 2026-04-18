@@ -270,12 +270,12 @@
                         <td>
                             @if($result->item->type == 'pass_fail')
                                 @if(strtolower($result->value) == 'ok' || strtolower($result->value) == 'pass')
-                                    <span class="text-success">✔ AMAN (OK)</span>
+                                    <span class="text-success">AMAN (OK)</span>
                                 @else
-                                    <span class="text-danger">✖ KONDISI BURUK ({{ $result->value }})</span>
+                                    <span class="text-danger">KONDISI BURUK ({{ $result->value }})</span>
                                 @endif
                             @elseif($result->item->type == 'checkbox')
-                                {{ $result->value == '1' || strtolower($result->value) == 'true' ? '✔ YA' : '✖ TIDAK' }}
+                                {{ $result->value == '1' || strtolower($result->value) == 'true' ? 'YA' : 'TIDAK' }}
                             @elseif($result->item->type == 'number')
                                 <strong>{{ $result->value }}</strong> {{ $result->item->unit ?? '' }}
                             @else
@@ -347,7 +347,10 @@
         
         <div class="sig-box right">
             <p>Mengetahui / Verifikator,</p>
-            <div class="sig-name">{{ auth()->user()->name ?? 'Administrator' }}</div>
+            <div style="margin-top: 10px; margin-bottom: 5px;">
+                <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(70)->generate('Laporan Perawatan Aset Sah Sistem AviaTrack. Dicetak: ' . now()->format('d F Y H:i'))) }}" alt="QR Code TTD" />
+            </div>
+            <div class="sig-name" style="margin-top: 5px;">{{ auth()->user()->name ?? 'Administrator' }}</div>
             <div class="sig-title">Manajer Operasional / Admin</div>
         </div>
     </div>

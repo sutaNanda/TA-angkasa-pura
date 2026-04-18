@@ -157,8 +157,10 @@
             </td>
             <td>
                 <p>Mengetahui,</p>
-                <div class="signature-space"></div>
-                <p><strong>Manajer Inventaris Aset</strong></p>
+                <div style="margin-top: 15px; margin-bottom: 5px;">
+                    <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(70)->generate('Laporan Produktivitas Teknisi Sah Sistem AviaTrack. Dicetak: ' . now()->format('d F Y H:i'))) }}" alt="QR Code TTD" />
+                </div>
+                <p style="margin-bottom: 2px;"><strong>{{ strtoupper(auth()->check() ? auth()->user()->name : 'MANAJER INVENTARIS ASET') }}</strong><br>Manajer Inventaris Aset</p>
                 <hr style="width: 60%; border: 0.5px solid #000;">
             </td>
         </tr>

@@ -25,6 +25,7 @@ class ExportController extends Controller
             }
             
             $answers = isset($inspectionData['answers']) ? $inspectionData['answers'] : $inspectionData;
+            $notes = isset($inspectionData['notes']) ? $inspectionData['notes'] : [];
             $itemIds = is_array($answers) ? array_keys($answers) : [];
             
             // Ambil item checklist agar bisa menampilkan pertanyaan/standar di PDF
@@ -33,8 +34,14 @@ class ExportController extends Controller
             $results = collect();
             foreach ($answers as $itemId => $value) {
                 if (isset($items[$itemId])) {
+                    $item = $items[$itemId];
+                    // Untuk form unified, data numerik/teks aktual disimpan di notes, sedangkan answers hanya pass/fail/na
+                    if (($item->type === 'number' || $item->type === 'text') && isset($notes[$itemId]) && $notes[$itemId] !== '') {
+                        $value = $notes[$itemId];
+                    }
+
                     $results->push((object)[
-                        'item' => $items[$itemId],
+                        'item' => $item,
                         'value' => $value
                     ]);
                 }

@@ -129,11 +129,21 @@
     </table>
 
     <!-- Area Tanda Tangan Footer -->
-    <div class="footer">
-        <div class="ttd-box">
-            <p>Disahkan Oleh,</p>
-            <p style="margin-top: 60px;"><strong>.......................................</strong><br>Manajer Inventaris Aset</p>
-        </div>
-    </div>
+    <table class="footer">
+        <tr>
+            <td width="65%">
+                <p style="font-size: 10px; color: #666;">
+                    * Dokumen Laporan Inventaris Aset ini sah dikeluarkan oleh Sistem AviaTrack.<br>
+                </p>
+            </td>
+            <td width="35%" class="text-center">
+                <p>Disahkan Oleh,</p>
+                <div style="margin-top: 15px; margin-bottom: 5px;">
+                    <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(70)->generate('Laporan Rekapitulasi Lokasi & Inventaris Aset Sah Sistem AviaTrack. Dicetak: ' . now()->format('d F Y H:i'))) }}" alt="QR Code TTD" />
+                </div>
+                <p><strong>{{ strtoupper(auth()->check() ? auth()->user()->name : 'MANAJER INVENTARIS ASET') }}</strong><br>Manajer Inventaris Aset</p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
