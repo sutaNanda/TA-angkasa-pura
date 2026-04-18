@@ -15,7 +15,7 @@
         .text-center { text-align: center; }
         .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; color: #fff; background-color: #64748b; }
         .signature { margin-top: 40px; text-align: right; width: 100%; }
-        .signature p { margin-bottom: 50px; }
+        .signature p { margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -63,8 +63,11 @@
     </table>
 
     <div class="signature">
-        <p>Mengetahui,</p>
-        <div style="font-weight: bold; text-decoration: underline;">{{ auth()->user()->name ?? 'Administrator' }}</div>
+        <p style="margin-bottom: 5px;">Mengetahui,</p>
+        <div style="margin-top: 10px; margin-bottom: 5px;">
+            <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(70)->generate('Laporan Log Aktivitas Sistem Sah AviaTrack. Dicetak: ' . now()->format('d F Y H:i'))) }}" alt="QR Code TTD" />
+        </div>
+        <div style="font-weight: bold; text-decoration: underline; margin-top: 5px;">{{ auth()->user()->name ?? 'Administrator' }}</div>
         <div style="font-size: 9px; color: #64748b;">Security / IT Admin</div>
     </div>
 

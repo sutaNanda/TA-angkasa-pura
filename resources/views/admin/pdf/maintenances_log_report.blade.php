@@ -84,7 +84,7 @@
             width: 250px; 
         }
         .signature p { 
-            margin: 0 0 70px 0; 
+            margin: 0 0 5px 0; 
             color: #475569;
         }
         .signature-name {
@@ -274,8 +274,11 @@
 
     <div class="signature-container">
         <div class="signature">
-            <p>Disahkan Oleh,</p>
-            <div class="signature-name">{{ auth()->user()->name ?? 'Administrator' }}</div>
+            <p style="margin-bottom: 5px;">Disahkan Oleh,</p>
+            <div style="margin-top: 10px; margin-bottom: 5px;">
+                <img src="data:image/svg+xml;base64,{{ base64_encode(QrCode::format('svg')->size(70)->generate('Laporan Log Pengecekan Sah Sistem AviaTrack. Dicetak: ' . now()->format('d F Y H:i'))) }}" alt="QR Code TTD" />
+            </div>
+            <div class="signature-name" style="margin-top: 5px;">{{ auth()->user()->name ?? 'Administrator' }}</div>
             <div class="signature-role">Manajer Inventaris Aset</div>
         </div>
     </div>

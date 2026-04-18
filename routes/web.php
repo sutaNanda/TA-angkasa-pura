@@ -169,17 +169,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
         Route::get('/export/technician-productivity', [App\Http\Controllers\Admin\UserReportController::class, 'exportProductivity'])->name('export.technician-productivity');
         Route::get('/export/audit-logs', [App\Http\Controllers\Admin\ExportController::class, 'exportAuditLogs'])->name('audit.export');
 
-        // Modul Laporan (Reporting)
-        Route::prefix('reports')->name('reports.')->group(function () {
-            Route::get('/work-orders', [App\Http\Controllers\Admin\WorkOrderReportController::class, 'index'])->name('work-orders.index');
-            Route::get('/work-orders/pdf', [App\Http\Controllers\Admin\WorkOrderReportController::class, 'printPdf'])->name('work-orders.pdf');
-            
-            Route::get('/assets', [App\Http\Controllers\Admin\AssetReportController::class, 'index'])->name('assets.index');
-            Route::get('/assets/pdf', [App\Http\Controllers\Admin\AssetReportController::class, 'printPdf'])->name('assets.pdf');
-            
-            Route::get('/patrol-logs', [App\Http\Controllers\Admin\PatrolLogReportController::class, 'index'])->name('patrol-logs.index');
-            Route::get('/patrol-logs/pdf', [App\Http\Controllers\Admin\PatrolLogReportController::class, 'printPdf'])->name('patrol-logs.pdf');
-        });
+        // Modul Laporan (Reporting) dihapus karena sudah digabung dengan menu utama (ExportController)
     });
 
 });
