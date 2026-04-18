@@ -255,6 +255,7 @@
                                         <option value="teknisi">Teknisi</option>
                                         <option value="admin">Admin</option>
                                         <option value="manajer">Manajer</option>
+                                        <option value="user">Karyawan Umum (User)</option>
                                     </select>
                                     <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
                                         <i class="fa-solid fa-chevron-down text-xs"></i>
@@ -336,6 +337,7 @@
                                         <option value="teknisi">Teknisi</option>
                                         <option value="admin">Admin</option>
                                         <option value="manajer">Manajer</option>
+                                        <option value="user">Karyawan Umum (User)</option>
                                     </select>
                                     <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
                                         <i class="fa-solid fa-chevron-down text-xs"></i>
@@ -360,8 +362,8 @@
 
                         <div class="pt-4 border-t border-gray-100">
                             <label class="block text-sm font-semibold text-gray-700 mb-1.5">Reset Password <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
-                            <input type="password" name="password" class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition" placeholder="Ketik password baru jika ingin mengubahnya...">
-                            <p class="text-[10px] text-orange-500 mt-1.5 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Biarkan kosong jika tidak ingin mengubah password akun ini.</p>
+                            <input type="password" name="password" class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition" placeholder="Min. 8 Karakter + Simbol">
+                            <p class="text-[10px] text-orange-500 mt-1.5 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Biarkan kosong jika tidak mengubah password akun. Jika diubah, wajib memenuhi format (8 karakter, Punya Huruf Besar, Huruf Kecil, Angka & Simbol).</p>
                         </div>
                     </div>
 

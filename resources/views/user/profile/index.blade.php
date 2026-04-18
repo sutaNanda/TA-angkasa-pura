@@ -122,19 +122,34 @@
                     @enderror
                 </div>
 
-                <div>
+                <div x-data="{ password: '' }">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password Baru</label>
-                    <div class="relative border-2 border-gray-200 rounded-xl">
+                    <div class="relative border-2 border-gray-200 rounded-xl mb-2">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fa-solid fa-key text-gray-400"></i>
                         </div>
-                        <input type="password" name="new_password" class="pl-10 w-full rounded-xl border-gray-200 focus:border-red-500 focus:ring-red-500 transition text-sm py-2" required placeholder="Minimal 12 karakter + simbol">
+                        <input x-model="password" type="password" name="new_password" class="pl-10 w-full rounded-xl border-gray-200 focus:border-red-500 focus:ring-red-500 transition text-sm py-2" required placeholder="Minimal 8 karakter + simbol">
                     </div>
-                    <ul class="text-[10px] text-gray-400 mt-2 list-disc list-inside">
-                        <li>Minimal 12 karakter panjangnya</li>
-                        <li>Mengandung huruf besar & huruf kecil</li>
-                        <li>Mengandung kombinasi angka & simbol (!@#$%^&*)</li>
-                    </ul>
+                    
+                    {{-- Realtime Feedback --}}
+                    <div x-show="password.length > 0" x-cloak class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-2">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Syarat Keamanan:</p>
+                        <ul class="text-[11px] space-y-1">
+                            <li :class="password.length >= 8 ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="password.length >= 8 ? 'fa-check' : 'fa-xmark'"></i> Minimal 8 karakter
+                            </li>
+                            <li :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'fa-check' : 'fa-xmark'"></i> Huruf Besar & Kecil
+                            </li>
+                            <li :class="/[0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="/[0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i> Mengandung Angka
+                            </li>
+                            <li :class="/[^A-Za-z0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="/[^A-Za-z0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i> Simbol Kreatif (!@# dll)
+                            </li>
+                        </ul>
+                    </div>
+
                     @error('new_password')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror

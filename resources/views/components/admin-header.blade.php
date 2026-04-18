@@ -86,7 +86,7 @@
                         </div>
                         
                         {{-- Ubah Password --}}
-                        <div class="pt-4 mt-2 border-t border-gray-100">
+                        <div class="pt-4 mt-2 border-t border-gray-100" x-data="{ password: '' }">
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Password Baru <span class="text-xs text-gray-400 font-normal">(Opsional)</span>
                             </label>
@@ -94,7 +94,26 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
                                 </div>
-                                <input type="password" name="password" class="pl-10 w-full border border-gray-300 rounded-lg text-sm px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition shadow-sm" placeholder="Biarkan kosong jika tidak diubah">
+                                <input x-model="password" type="password" name="password" class="pl-10 w-full border border-gray-300 rounded-lg text-sm px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition shadow-sm" placeholder="Min. 8 Karakter + Simbol (opsional)">
+                            </div>
+                            
+                            {{-- Realtime Password Validation Info --}}
+                            <div x-show="password.length > 0" x-cloak class="mt-3 text-xs transition-all bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <p class="font-bold text-gray-600 mb-1.5 text-[10px] uppercase">Syarat Keamanan:</p>
+                                <ul class="space-y-1.5">
+                                    <li :class="password.length >= 8 ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                        <i class="fa-solid" :class="password.length >= 8 ? 'fa-check' : 'fa-xmark'"></i> Minimal 8 karakter
+                                    </li>
+                                    <li :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                        <i class="fa-solid" :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'fa-check' : 'fa-xmark'"></i> Huruf Besar & Kecil
+                                    </li>
+                                    <li :class="/[0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                        <i class="fa-solid" :class="/[0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i> Mengandung Angka
+                                    </li>
+                                    <li :class="/[^A-Za-z0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                        <i class="fa-solid" :class="/[^A-Za-z0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i> Mengandung Simbol
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>

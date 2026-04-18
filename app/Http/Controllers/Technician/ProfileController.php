@@ -69,7 +69,7 @@ class ProfileController extends Controller
             'new_password' => [
                 'required', 
                 'confirmed', 
-                \Illuminate\Validation\Rules\Password::min(12)
+                \Illuminate\Validation\Rules\Password::min(8)
                     ->letters()
                     ->mixedCase()
                     ->numbers()
@@ -77,7 +77,7 @@ class ProfileController extends Controller
                     ->uncompromised()
             ],
         ], [
-            'new_password.min' => 'Password baru minimal 12 karakter.',
+            'new_password.min' => 'Password baru minimal 8 karakter.',
             'new_password.letters' => 'Password harus mengandung setidaknya satu huruf.',
             'new_password.mixed' => 'Password harus mengandung huruf besar dan kecil.',
             'new_password.numbers' => 'Password harus mengandung setidaknya satu angka.',

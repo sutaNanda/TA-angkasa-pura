@@ -11,9 +11,12 @@
     {{-- Favicon --}}
     <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
 
-    {{-- VITE: Ini sudah memuat Tailwind CSS & SweetAlert dari 'app.js' --}}
-    {{-- Posisi harus DI DALAM <head>, bukan sebagai atribut --}}
+    {{-- VITE: CSS & JS (SweetAlert) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- Alpine.js --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>[x-cloak] { display: none !important; }</style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
