@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
@@ -43,7 +44,16 @@ class RegisterController extends Controller
                 'unique:users',
                 'regex:/(@angkasapura\.co\.id|@gmail\.com)$/',
             ],
-            'password'  => 'required|string|min:8|confirmed',
+            'password' => [
+                'required',
+                'confirmed',
+                Password::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised()
+            ],
             // Validasi division sebagai string pilihan, bukan FK
             'division'  => 'nullable|string|in:' . implode(',', self::DIVISIONS),
         ], [

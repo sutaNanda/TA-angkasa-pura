@@ -34,7 +34,7 @@
         </div>
 
         {{-- Form Area --}}
-        <form class="mt-8 space-y-6" action="{{ route('password.update') }}" method="POST" x-data="{ showPass1: false, showPass2: false }">
+        <form class="mt-8 space-y-6" action="{{ route('password.update') }}" method="POST" x-data="{ showPass1: false, showPass2: false, password: '' }">
             @csrf
             @method('PUT')
 
@@ -46,8 +46,8 @@
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <i class="fas fa-lock text-gray-400"></i>
                         </div>
-                        <input id="password" name="password" :type="showPass1 ? 'text' : 'password'" required 
-                            class="block w-full pl-11 pr-12 py-3 border border-gray-300 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all shadow-sm" 
+                        <input x-model="password" id="password" name="password" :type="showPass1 ? 'text' : 'password'" required 
+                            class="block w-full pl-11 pr-12 py-3 border border-gray-300 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all shadow-sm @error('password') border-red-500 @enderror" 
                             placeholder="Ketik password baru">
                         
                         {{-- Toggle Button Show/Hide (SVG for reliability) --}}
@@ -104,11 +104,21 @@
             </div>
 
             {{-- Persyaratan Keamanan Info Box --}}
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Saran Keamanan:</p>
-                <ul class="text-xs text-gray-500 space-y-1.5 font-medium">
-                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-400"></i> Minimal 8 karakter panjangnya</li>
-                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-blue-400"></i> Kombinasi huruf besar, kecil, & angka</li>
+            <div x-show="password.length > 0" x-cloak class="bg-gray-50 p-4 rounded-xl border border-gray-200 transition-all">
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Syarat Keamanan Password:</p>
+                <ul class="space-y-1 mt-1 text-xs">
+                    <li :class="password.length >= 8 ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                        <i class="fa-solid" :class="password.length >= 8 ? 'fa-check' : 'fa-times'"></i> Minimal 8 karakter
+                    </li>
+                    <li :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                        <i class="fa-solid" :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'fa-check' : 'fa-times'"></i> Huruf Besar & Kecil
+                    </li>
+                    <li :class="/[0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                        <i class="fa-solid" :class="/[0-9]/.test(password) ? 'fa-check' : 'fa-times'"></i> Mengandung Angka
+                    </li>
+                    <li :class="/[^A-Za-z0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                        <i class="fa-solid" :class="/[^A-Za-z0-9]/.test(password) ? 'fa-check' : 'fa-times'"></i> Mengandung Simbol
+                    </li>
                 </ul>
             </div>
 

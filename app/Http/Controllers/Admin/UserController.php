@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Shift;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -36,12 +37,12 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'role' => 'required|in:admin,teknisi,manajer',
+            'role' => 'required|in:admin,teknisi,manajer,user',
             'shift_id' => 'nullable|exists:shifts,id',
         ]);
 
-        // Generate Password Otomatis untuk SEMUA Role
-        $password = \Illuminate\Support\Str::random(10);
+        // Generate Password Otomatis utk role dengan format (Min 12, Ltr, Num, Symbol)
+        $password = \Illuminate\Support\Str::password(12, true, true, true, false);
         
         // Simpan Data
         $user = User::create([
@@ -70,7 +71,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)],
             'role' => 'required|in:admin,teknisi,manajer,user',
-            'password' => 'nullable|string|min:6',
+            'password' => ['nullable', 'string', Password::min(8)->letters()->mixedCase()->numbers()->symbols()->uncompromised()],
             'shift_id' => 'nullable|exists:shifts,id',
         ]);
 
@@ -113,7 +114,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password' => 'nullable|string|min:6',
+            'password' => ['nullable', 'string', Password::min(8)->letters()->mixedCase()->numbers()->symbols()->uncompromised()],
             'avatar' => 'nullable|image|max:2048',
         ]);
 

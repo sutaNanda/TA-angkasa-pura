@@ -104,13 +104,13 @@
                 </div>
 
                 {{-- Input Password --}}
-                <div class="mb-2" x-data="{ show: false }">
+                <div class="mb-2" x-data="{ show: false, password: '' }">
                     <label for="password" class="block text-sm font-bold text-gray-700 mb-2">Password</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                             <i class="fa-solid fa-lock"></i>
                         </div>
-                        <input :type="show ? 'text' : 'password'" name="password" id="password"
+                        <input x-model="password" :type="show ? 'text' : 'password'" name="password" id="password"
                             class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('password') border-red-500 bg-red-50 @enderror"
                             placeholder="••••••••"
                             required>
@@ -118,6 +118,26 @@
                             <i class="fa-solid" :class="show ? 'fa-eye-slash' : 'fa-eye'"></i>
                         </button>
                     </div>
+                    
+                    {{-- Realtime Password Validation Info --}}
+                    <div x-show="password.length > 0" x-cloak class="mt-2 text-xs transition-all bg-gray-50 p-2 rounded-lg border border-gray-200">
+                        <p class="font-bold text-gray-600 mb-1 text-[10px] uppercase">Syarat Keamanan:</p>
+                        <ul class="space-y-1">
+                            <li :class="password.length >= 8 ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="password.length >= 8 ? 'fa-check' : 'fa-xmark'"></i> Minimal 8 karakter
+                            </li>
+                            <li :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'fa-check' : 'fa-xmark'"></i> Huruf Besar & Kecil
+                            </li>
+                            <li :class="/[0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="/[0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i>  Mengandung Angka
+                            </li>
+                            <li :class="/[^A-Za-z0-9]/.test(password) ? 'text-green-600 font-semibold' : 'text-red-500 font-medium'">
+                                <i class="fa-solid" :class="/[^A-Za-z0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i>  Mengandung Simbol
+                            </li>
+                        </ul>
+                    </div>
+
                     @error('password')
                         <p class="text-red-500 text-xs mt-1 font-semibold">{{ $message }}</p>
                     @enderror

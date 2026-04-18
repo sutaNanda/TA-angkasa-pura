@@ -233,19 +233,33 @@
                             <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
-                    <div x-data="{ show: false }">
+                    <div x-data="{ show: false, password: '' }">
                         <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Password Baru</label>
                         <div class="relative">
-                            <input :type="show ? 'text' : 'password'" name="new_password" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition pl-10 pr-10 text-sm @error('new_password') border-red-500 @enderror" placeholder="Min. 12 karakter" required>
+                            <input x-model="password" :type="show ? 'text' : 'password'" name="new_password" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition pl-10 pr-10 text-sm @error('new_password') border-red-500 @enderror" placeholder="Min. 8 karakter" required>
                             <i class="fa-solid fa-key absolute left-3.5 top-3 text-gray-400 text-xs"></i>
                             <button type="button" @click="show = !show" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none">
                                 <i class="fa-solid" :class="show ? 'fa-eye-slash' : 'fa-eye'"></i>
                             </button>
                         </div>
-                        <p class="text-[10px] text-gray-500 mt-1">
-                            <i class="fa-solid fa-circle-info text-blue-500 mr-0.5"></i> 
-                            Min. 12 karakter (Huruf besar, kecil, angka & simbol).
-                        </p>
+                        
+                        <div x-show="password.length > 0" x-cloak class="mt-2 text-[10px] bg-gray-50 p-2 border border-gray-200 rounded-lg">
+                            <p class="font-bold text-gray-500 uppercase mb-1 flex items-center"><i class="fa-solid fa-shield-halved text-blue-500 mr-1"></i> Syarat Keamanan:</p>
+                            <ul class="space-y-1 mt-1 font-medium">
+                                <li :class="password.length >= 8 ? 'text-green-600' : 'text-red-500'">
+                                    <i class="fa-solid" :class="password.length >= 8 ? 'fa-check' : 'fa-xmark'"></i> Minimal 8 karakter
+                                </li>
+                                <li :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'text-green-600' : 'text-red-500'">
+                                    <i class="fa-solid" :class="(/[A-Z]/.test(password) && /[a-z]/.test(password)) ? 'fa-check' : 'fa-xmark'"></i> Huruf Besar & Kecil
+                                </li>
+                                <li :class="/[0-9]/.test(password) ? 'text-green-600' : 'text-red-500'">
+                                    <i class="fa-solid" :class="/[0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i> Memiliki Angka
+                                </li>
+                                <li :class="/[^A-Za-z0-9]/.test(password) ? 'text-green-600' : 'text-red-500'">
+                                    <i class="fa-solid" :class="/[^A-Za-z0-9]/.test(password) ? 'fa-check' : 'fa-xmark'"></i> Memiliki Simbol (!@#)
+                                </li>
+                            </ul>
+                        </div>
                         @error('new_password')
                             <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                         @enderror
