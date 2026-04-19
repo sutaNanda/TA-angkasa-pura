@@ -79,12 +79,14 @@
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
 
+                                    @if(!auth()->user()->isManajer())
                                     <button onclick="editTemplate({{ $template->id }})" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition flex items-center justify-center" title="Edit">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
                                     <button onclick="deleteTemplate({{ $template->id }})" class="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition flex items-center justify-center" title="Hapus">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
