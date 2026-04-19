@@ -245,20 +245,40 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                 }
             }
 
+            $issuesByAsset = [];
+
             // Loop mengecek jawaban
             foreach ($request->answers as $itemId => $answer) {
                 if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
                     $hasIssue = true;
                     
-                    $selectedAssetId = $request->failed_asset_ids[$itemId] ?? null;
-                    if ($selectedAssetId === 'area_general') {
-                        $selectedAssetId = null; 
-                    }
-                    
+                    $selectedAssetId = $request->failed_asset_ids[$itemId] ?? 'area_general';
+                    if (empty($selectedAssetId)) $selectedAssetId = 'area_general';
+
+                    // Cari pertanyaan untuk detail deskripsi
+                    $questionText = 'Pengecekan SOP';
+                    $item = \App\Models\ChecklistItem::find($itemId);
+                    if ($item) $questionText = $item->question;
+
                     // Logic Teks Deskripsi
-                    $issueDesc = !empty($request->notes[$itemId]) 
-                                    ? $request->notes[$itemId] 
-                                    : ($request->global_notes ?? 'Masalah ditemukan saat inspeksi area.');
+                    $specificNote = !empty($request->notes[$itemId]) ? $request->notes[$itemId] : 'Tidak ada keterangan spesifik';
+                    $baseDesc = "- SOP: {$questionText}\n  Keterangan: {$specificNote}";
+
+                    $issuesByAsset[$selectedAssetId][] = $baseDesc;
+                }
+            }
+
+            if ($hasIssue && !empty($issuesByAsset)) {
+                foreach ($issuesByAsset as $aId => $descLines) {
+                    $selectedAssetId = ($aId === 'area_general') ? null : $aId;
+                    
+                    $finalDesc = count($descLines) > 1 
+                        ? "Ditemukan " . count($descLines) . " masalah saat inspeksi:\n" . implode("\n", $descLines)
+                        : implode("\n", $descLines);
+
+                    if (!empty($request->global_notes)) {
+                         $finalDesc .= "\n\nCatatan Global Laporan: " . $request->global_notes;
+                    }
 
                     $workOrder = \App\Models\WorkOrder::create([
                         'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
@@ -269,7 +289,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                         'priority' => 'medium',
                         'status' => 'open',
                         'source' => 'patrol',
-                        'issue_description' => $issueDesc,
+                        'issue_description' => $finalDesc,
                         'maintenance_id' => $maintenance->id,
                         'initial_photo' => $photoPaths[0] ?? null,
                     ]);
@@ -579,6 +599,8 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                 }
             }
 
+            $issuesByAsset = [];
+
             // Loop mengecek jawaban
             foreach ($request->answers as $itemId => $answer) {
                 if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
@@ -589,51 +611,53 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                     // Juga cek format lama: failed_asset_ids[item_id] = single value
                     $legacySingleAsset = $request->input("failed_asset_ids.{$itemId}");
 
+                    // Cari pertanyaan untuk detail deskripsi
+                    $questionText = 'Pengecekan SOP';
+                    $item = \App\Models\ChecklistItem::find($itemId);
+                    if ($item) $questionText = $item->question;
+
                     // Logic Teks Deskripsi
-                    $baseDesc = !empty($request->notes[$itemId]) 
-                                    ? $request->notes[$itemId] 
-                                    : ($request->global_notes ?? 'Masalah ditemukan saat inspeksi area.');
+                    $specificNote = !empty($request->notes[$itemId]) ? $request->notes[$itemId] : 'Tidak ada keterangan spesifik';
+                    $baseDesc = "- SOP: {$questionText}\n  Keterangan: {$specificNote}";
 
                     if (!empty($failedAssetIds) && is_array($failedAssetIds)) {
-                        // FORMAT BARU: buat 1 WO per aset yang ditandai
                         foreach ($failedAssetIds as $selectedAssetId) {
-                            $selectedAssetId = ($selectedAssetId === 'area_general') ? null : $selectedAssetId;
-                            
-                            $workOrder = \App\Models\WorkOrder::create([
-                                'ticket_number'     => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
-                                'asset_id'          => $selectedAssetId,
-                                'location_id'       => $request->location_id,
-                                'technician_id'     => null,
-                                'reporter_id'       => Auth::id(),
-                                'priority'          => 'medium',
-                                'status'            => 'open',
-                                'source'            => 'patrol',
-                                'issue_description' => $baseDesc,
-                                'maintenance_id'    => $ids[0] ?? null,
-                                'initial_photo'     => $photoPaths[0] ?? null,
-                            ]);
-                            $workOrdersCreated[] = $workOrder->id;
+                            $issuesByAsset[$selectedAssetId][] = $baseDesc;
                         }
+                    } else if ($legacySingleAsset) {
+                        $issuesByAsset[$legacySingleAsset][] = $baseDesc;
                     } else {
-                        // FORMAT LAMA: single asset dropdown
-                        $selectedAssetId = $legacySingleAsset;
-                        if ($selectedAssetId === 'area_general') $selectedAssetId = null;
-
-                        $workOrder = \App\Models\WorkOrder::create([
-                            'ticket_number'     => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
-                            'asset_id'          => $selectedAssetId,
-                            'location_id'       => $request->location_id,
-                            'technician_id'     => null,
-                            'reporter_id'       => Auth::id(),
-                            'priority'          => 'medium',
-                            'status'            => 'open',
-                            'source'            => 'patrol',
-                            'issue_description' => $baseDesc,
-                            'maintenance_id'    => $ids[0] ?? null,
-                            'initial_photo'     => $photoPaths[0] ?? null,
-                        ]);
-                        $workOrdersCreated[] = $workOrder->id;
+                        $issuesByAsset['area_general'][] = $baseDesc;
                     }
+                }
+            }
+
+            if ($hasIssue && !empty($issuesByAsset)) {
+                foreach ($issuesByAsset as $aId => $descLines) {
+                    $selectedAssetId = ($aId === 'area_general') ? null : $aId;
+                    
+                    $finalDesc = count($descLines) > 1 
+                        ? "Ditemukan " . count($descLines) . " masalah pada unit ini:\n" . implode("\n", $descLines)
+                        : implode("\n", $descLines);
+
+                    if (!empty($request->global_notes)) {
+                         $finalDesc .= "\n\nCatatan Global Laporan: " . $request->global_notes;
+                    }
+
+                    $workOrder = \App\Models\WorkOrder::create([
+                        'ticket_number'     => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
+                        'asset_id'          => $selectedAssetId,
+                        'location_id'       => $request->location_id,
+                        'technician_id'     => null,
+                        'reporter_id'       => Auth::id(),
+                        'priority'          => 'medium',
+                        'status'            => 'open',
+                        'source'            => 'patrol',
+                        'issue_description' => $finalDesc,
+                        'maintenance_id'    => current($ids) ?: null,
+                        'initial_photo'     => $photoPaths[0] ?? null,
+                    ]);
+                    $workOrdersCreated[] = $workOrder->id;
                 }
             }
 
