@@ -103,10 +103,10 @@ class LocationInspectionController extends Controller
                     $workOrder = WorkOrder::create([
                         'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
                         'asset_id' => $assetId,
-                        'technician_id' => null, // Pool
+                        'technician_id' => null,
                         'reported_by' => Auth::id(),
                         'priority' => 'medium',
-                        'status' => 'open', // Terbuka
+                        'status' => 'open',
                         'source' => 'patrol',
                         'issue_description' => $notes ?? 'Masalah ditemukan saat inspeksi area.',
                         'initial_photo' => $photoPaths[0] ?? null,
