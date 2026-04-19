@@ -44,7 +44,7 @@
                                 <span class="text-gray-400 text-[10px] font-mono font-bold tracking-wider mb-1 block">
                                     #{{ $task->ticket_number }}
                                 </span>
-                                <h3 class="font-bold text-gray-800 text-base leading-snug group-hover:text-blue-600 transition-colors">{{ $task->issue_description }}</h3>
+                                <h3 class="font-medium text-gray-800 text-sm leading-relaxed group-hover:text-blue-600 transition-colors whitespace-pre-line">{{ Str::limit($task->issue_description, 150) }}</h3>
                             </div>
                         </div>
                         
@@ -140,7 +140,7 @@
                             @endif
                         </div>
 
-                        <h3 class="font-bold text-gray-800 text-lg mb-2 leading-snug group-hover:text-blue-600 transition-colors">{{ $task->issue_description }}</h3>
+                        <h3 class="font-medium text-gray-800 text-sm mb-2 leading-relaxed group-hover:text-blue-600 transition-colors whitespace-pre-line">{{ Str::limit($task->issue_description, 200) }}</h3>
                         
                         <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500 mb-5">
                             @if($task->asset)

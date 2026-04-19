@@ -80,8 +80,8 @@
                                 @php $headerCount++; $itemCount = 0; @endphp
                                 {{-- LEVEL 2: BARIS SUB-HEADER ITEM --}}
                                 <tr class="section-header-row">
-                                    <td colspan="6" class="bg-slate-50 px-5 py-2.5 border-b border-gray-100">
-                                        <div class="flex items-center gap-2 pl-4">
+                                    <td colspan="6" class="bg-slate-50 px-2 py-2.5 border-b border-gray-100">
+                                        <div class="flex items-center gap-2">
                                             <span class="w-1 h-4 rounded-full bg-slate-300 flex-shrink-0"></span>
                                             <span class="text-sm font-semibold text-slate-700 col-header-text">
                                                 <span class="col-header-no inline-block w-6 text-slate-400 font-bold">{{ $headerCount }}.</span>
@@ -278,7 +278,7 @@
         {{-- Tombol Kirim --}}
         <div class="sticky bottom-6 z-40 px-4 md:px-0">
             <button type="submit" id="submitBtn"
-                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all flex justify-center items-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed">
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all flex justify-center items-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed">
                 <i id="submitIcon" class="fa-solid fa-check-circle text-base"></i>
                 <span id="submitText" class="tracking-wide">TANDAI AREA SELESAI DI-CEK</span>
             </button>
@@ -495,6 +495,17 @@ document.addEventListener('DOMContentLoaded', function () {
             const itemId   = this.dataset.itemId;
             const isSelected = this.classList.contains('selected');
 
+            // Mutually Exclusive: Jika klik aset, deselect "Masalah Area Umum"
+            const gridRow = document.getElementById('triage-grid-' + itemId);
+            if (gridRow) {
+                const generalBtn = gridRow.querySelector('.asset-tile-general.selected');
+                if (generalBtn) {
+                    generalBtn.classList.remove('selected', 'bg-red-500', 'text-white', 'border-red-500', 'border-solid');
+                    generalBtn.classList.add('text-red-500', 'border-dashed');
+                    removeHiddenInput(itemId, 'area_general');
+                }
+            }
+
             if (isSelected) {
                 deselectTile(this);
                 removeHiddenInput(itemId, assetId);
@@ -512,12 +523,22 @@ document.addEventListener('DOMContentLoaded', function () {
             const itemId    = this.dataset.itemId;
             const isSelected = this.classList.contains('selected');
 
+            const gridRow = document.getElementById('triage-grid-' + itemId);
+
             if (isSelected) {
                 // Deselect: hapus style & hidden input
                 this.classList.remove('selected', 'bg-red-500', 'text-white', 'border-solid', 'border-red-500');
                 this.classList.add('text-red-500', 'border-dashed');
                 removeHiddenInput(itemId, 'area_general');
             } else {
+                // Mutually Exclusive: Jika klik area umum, deselect semua aset spesifik
+                if (gridRow) {
+                    gridRow.querySelectorAll('.asset-tile.selected').forEach(function (tile) {
+                        deselectTile(tile);
+                        removeHiddenInput(itemId, tile.dataset.assetId);
+                    });
+                }
+
                 // Select
                 this.classList.add('selected', 'bg-red-500', 'text-white', 'border-solid', 'border-red-500');
                 this.classList.remove('text-red-500', 'border-dashed');
@@ -596,6 +617,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     @media (max-width: 767px) {
         .inspect-table, .inspect-table tbody, .inspect-table tr, .inspect-table td, .inspect-table th { display: block; width: 100%; }
+        .inspect-table tr.hidden { display: none !important; }
         .inspect-table thead { display: none; }
         
         .inspect-table tbody { 
@@ -613,8 +635,10 @@ document.addEventListener('DOMContentLoaded', function () {
         
         .section-header-row td { 
             border: none !important; 
-            padding: 12px 16px !important; 
-            font-size: 14px !important; 
+            padding: 10px 12px !important; 
+            font-size: 12px !important; 
+            line-height: 1.4 !important;
+            white-space: normal !important;
         }
         
         .question-row { 
@@ -636,21 +660,22 @@ document.addEventListener('DOMContentLoaded', function () {
         
         .col-error, .col-na, .col-normal { 
             flex: 1; 
+            width: auto !important;
             border: 1px solid #e5e7eb !important; 
-            border-radius: 12px; 
-            padding: 12px !important; 
+            border-radius: 10px; 
+            padding: 10px 4px !important; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
-            position: relative; 
+            gap: 6px;
         }
         
-        .col-error::before { content: "ERROR ✖"; font-size: 11px; font-weight: 900; color: #dc2626; margin-bottom: 8px; }
-        .col-na::before { content: "N/A ➖"; font-size: 11px; font-weight: 900; color: #6b7280; margin-bottom: 8px; }
-        .col-normal::before { content: "NORMAL ✔"; font-size: 11px; font-weight: 900; color: #16a34a; margin-bottom: 8px; }
+        .col-error::before { content: "ERROR ✖"; font-size: 10px; font-weight: 900; color: #dc2626; }
+        .col-na::before { content: "N/A ➖"; font-size: 10px; font-weight: 900; color: #6b7280; }
+        .col-normal::before { content: "NORMAL ✔"; font-size: 10px; font-weight: 900; color: #16a34a; }
         
-        .radio-input { width: 24px !important; height: 24px !important; }
+        .radio-input { width: 22px !important; height: 22px !important; margin: 0 !important; }
         
         .col-notes { 
             flex: 0 0 100%; 
