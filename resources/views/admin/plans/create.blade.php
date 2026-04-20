@@ -131,7 +131,7 @@
                             </div>
                         </div>
 
-                        {{-- Target Assets Selection (Visible if Target = Asset) --}}
+                        <!-- {{-- Target Assets Selection (Visible if Target = Asset) --}} -->
                         <div x-show="targetType === 'asset' && selectedCategoryIds.length > 0" x-transition.opacity.duration.300ms class="mt-6 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
                             <div class="bg-gray-50 px-5 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div>
