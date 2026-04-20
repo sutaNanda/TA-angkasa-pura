@@ -3,8 +3,6 @@
 @section('title', 'Tambah Rencana Perawatan')
 
 @section('content')
-{{-- Alpine.js for interactivity --}}
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 
 <div class="container-fluid px-4 py-6 max-w-7xl mx-auto" x-data="maintenancePlanForm()">
     {{-- Header --}}
@@ -413,9 +411,7 @@
         return {
             targetType: '{{ old('target_type', 'asset') }}',
             frequency: '{{ old('frequency', 'daily') }}',
-            configs: [
-                { category_id: '', template_id: '' }
-            ],
+            configs: {!! json_encode(array_values(old('configs', [['category_id' => '', 'template_id' => '']]))) !!},
             assets: [],
             selectedAssets: {!! json_encode(old('asset_ids', [])) !!},
             locations: {!! json_encode($locations) !!},
