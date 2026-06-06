@@ -2,7 +2,7 @@
     <div class="h-20 flex items-center border-b border-slate-700 bg-slate-900 px-4">
         <div class="flex items-center gap-3 font-bold text-lg tracking-tight">
             <div class="w-12 h-12 bg-white rounded-lg p-1.5 flex-shrink-0">
-                <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
+                <img src="{{ asset('logo.svg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
             <div class="flex flex-col">
                 <span class="text-white text-2xl leading-none mb-1">AVIATRACK</span>
@@ -78,6 +78,20 @@
                 <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.users.*') ? 'bg-blue-600' : '' }}">
                     <i class="fa-solid fa-users w-5 text-center"></i>
                     <span class="text-sm font-medium">Manajemen Pengguna</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="{{ route('admin.groups.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.groups.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-solid fa-users-gear w-5 text-center"></i>
+                    <span class="text-sm font-medium">Grup Teknisi</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="{{ route('admin.departments.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 transition {{ request()->routeIs('admin.departments.*') ? 'bg-blue-600' : '' }}">
+                    <i class="fa-regular fa-building w-5 text-center"></i>
+                    <span class="text-sm font-medium">Departemen</span>
                 </a>
             </li>
 

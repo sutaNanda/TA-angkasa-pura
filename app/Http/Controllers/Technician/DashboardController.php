@@ -70,21 +70,23 @@ class DashboardController extends Controller
         // Gabungkan untuk list di bawah, tapi kita punya variabel terpisah untuk menghitung badge notifikasi
         $poolTasks = $handoverTasks->merge($userReports)->merge($poolTasksRaw);
 
-        // 4. JADWAL PATROLI HARI INI (Using Maintenance Model as requested)
-        // Ambil data maintenance (preventive) yang dijadwalkan hari ini dan belum selesai
-        $patrolQuery = \App\Models\Maintenance::with(['asset.location', 'asset.parentAsset.location', 'location', 'maintenancePlan.shift'])
+        // 4. JADWAL PATROLI HARI INI (Preventive Maintenance)
+        $patrolQuery = \App\Models\Maintenance::with([
+            'asset.location',
+            'asset.parentAsset.location',
+            'location',
+            'maintenancePlan',
+            'technicianGroup', // Eager-load grup untuk ditampilkan di card
+        ])
             ->whereDate('scheduled_date', $now->toDateString())
             ->where('type', 'preventive')
             ->whereIn('status', ['pending', 'in_progress']);
 
-        // Filter by user's shift: show matching shift OR tasks without shift (backward-compatible)
-        if ($user->shift_id) {
-            $patrolQuery->where(function($q) use ($user) {
-                $q->whereHas('maintenancePlan', function($sub) use ($user) {
-                    $sub->where('shift_id', $user->shift_id);
-                })->orWhereHas('maintenancePlan', function($sub) {
-                    $sub->whereNull('shift_id');
-                })->orWhereNull('maintenance_plan_id');
+        // Filter berdasarkan grup teknisi: tampilkan tugas milik grupnya ATAU tugas tanpa grup (fallback)
+        if ($user->technician_group_id) {
+            $patrolQuery->where(function ($q) use ($user) {
+                $q->where('technician_group_id', $user->technician_group_id)
+                  ->orWhereNull('technician_group_id'); // Tugas lama tanpa grup tetap tampil
             });
         }
 

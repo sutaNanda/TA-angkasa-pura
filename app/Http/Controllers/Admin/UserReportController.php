@@ -16,7 +16,7 @@ class UserReportController extends Controller
 
         // 1. Ambil data users dengan role teknisi (atau 2)
         $users = User::whereIn('role', ['teknisi', '2'])
-            ->with('shift') // Load relasi shift
+            ->with('group') // Load relasi grup
             ->withCount([
                 // Hitung Work Orders yang diselesaikan atau diverifikasi
                 'assignedWorkOrders as completed_work_orders_count' => function ($query) use ($startDate, $endDate) {

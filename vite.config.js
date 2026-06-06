@@ -11,12 +11,8 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
-        host: true,
-        port: 5173,
-        hmr: {
-            host: 'cfaf-103-19-231-203.ngrok-free.app',
-            protocol: 'wss',
-        },
+        // Hapus host: true karena di Windows hal ini akan membuat Vite 
+        // menyuntikkan URL http://0.0.0.0 yang tidak bisa dibaca browser.
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

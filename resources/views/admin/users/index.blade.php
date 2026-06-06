@@ -49,7 +49,7 @@
                         <th scope="col" class="px-6 py-4 w-12 text-center whitespace-nowrap">No</th>
                         <th scope="col" class="px-6 py-4 whitespace-nowrap min-w-[250px]">User Profile</th>
                         <th scope="col" class="px-6 py-4 whitespace-nowrap">Role / Jabatan</th>
-                        <th scope="col" class="px-6 py-4 whitespace-nowrap">Shift</th>
+                        <th scope="col" class="px-6 py-4 whitespace-nowrap">Grup</th>
                         <th scope="col" class="px-6 py-4 whitespace-nowrap">Status</th>
                         <th scope="col" class="px-6 py-4 whitespace-nowrap">Terdaftar Sejak</th>
                         @if(!auth()->user()->isManajer())
@@ -102,9 +102,13 @@
                             </td>
 
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($user->shift)
-                                    <span class="{{ $user->shift->badge_class }} px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5">
-                                        <i class="{{ $user->shift->icon_class }}"></i> {{ $user->shift->name }}
+                                @if($user->group)
+                                    <span class="{{ $user->group->badge_class ?? 'bg-blue-100 text-blue-700 border-blue-200' }} px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5">
+                                        <i class="fa-solid fa-users"></i> {{ $user->group->name }}
+                                    </span>
+                                @elseif($user->role === 'user' && $user->department)
+                                    <span class="bg-gray-100 text-gray-700 border-gray-200 px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5">
+                                        <i class="fa-solid fa-building"></i> {{ $user->department->name }}
                                     </span>
                                 @else
                                     <span class="text-gray-400 text-xs italic">—</span>
@@ -125,7 +129,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <div class="flex items-center justify-center gap-2">
                                     {{-- Edit Button --}}
-                                    <button onclick="openEditModal({{ $user->id }}, '{{ $user->name }}', '{{ $user->email }}', '{{ $user->role }}', '{{ $user->shift_id }}')" class="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all shadow-sm focus:outline-none" title="Edit">
+                                    <button onclick="openEditModal({{ $user->id }}, '{{ $user->name }}', '{{ $user->email }}', '{{ $user->role }}', '{{ $user->technician_group_id }}', '{{ $user->department_id }}')" class="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-all shadow-sm focus:outline-none" title="Edit">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                     
@@ -251,7 +255,7 @@
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Role / Hak Akses <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <select name="role" required class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                    <select name="role" id="add_role" required class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition" onchange="toggleDivision('add')">
                                         <option value="teknisi">Teknisi</option>
                                         <option value="admin">Admin</option>
                                         <option value="manajer">Manajer</option>
@@ -262,19 +266,34 @@
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Shift Kerja <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
+                            <div id="add_group_container">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Grup Teknisi <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <select name="shift_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                    <select name="technician_group_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition">
                                         <option value="">— Tidak Ada —</option>
-                                        @foreach($shifts as $shift)
-                                            <option value="{{ $shift->id }}">{{ $shift->name }}</option>
+                                        @foreach($groups as $group)
+                                            <option value="{{ $group->id }}">{{ $group->name }}</option>
                                         @endforeach
                                     </select>
                                     <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
                                         <i class="fa-solid fa-chevron-down text-xs"></i>
                                     </div>
                                 </div>
+                            </div>
+                            <div id="add_division_container" style="display: none;">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Departemen/Divisi <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <select name="department_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                        <option value="">— Pilih Departemen —</option>
+                                        @foreach($departments as $dept)
+                                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-1.5">1 Departemen hanya boleh memiliki 1 akun.</p>
                             </div>
                         </div>
 
@@ -333,7 +352,7 @@
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Role / Hak Akses <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <select name="role" id="edit_role" required class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                    <select name="role" id="edit_role" required class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition" onchange="toggleDivision('edit')">
                                         <option value="teknisi">Teknisi</option>
                                         <option value="admin">Admin</option>
                                         <option value="manajer">Manajer</option>
@@ -344,13 +363,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Shift Kerja</label>
+                            <div id="edit_group_container">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Grup Teknisi <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <select name="shift_id" id="edit_shift_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                    <select name="technician_group_id" id="edit_technician_group_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition">
                                         <option value="">— Tidak Ada —</option>
-                                        @foreach($shifts as $shift)
-                                            <option value="{{ $shift->id }}">{{ $shift->name }}</option>
+                                        @foreach($groups as $group)
+                                            <option value="{{ $group->id }}">{{ $group->name }}</option>
                                         @endforeach
                                     </select>
                                     <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
@@ -358,12 +377,21 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="pt-4 border-t border-gray-100">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Reset Password <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
-                            <input type="password" name="password" class="w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition" placeholder="Min. 8 Karakter + Simbol">
-                            <p class="text-[10px] text-orange-500 mt-1.5 font-medium"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Biarkan kosong jika tidak mengubah password akun. Jika diubah, wajib memenuhi format (8 karakter, Punya Huruf Besar, Huruf Kecil, Angka & Simbol).</p>
+                            <div id="edit_division_container" style="display: none;">
+                                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Departemen/Divisi <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <select name="department_id" id="edit_department_id" class="w-full appearance-none border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 px-3 py-2.5 outline-none shadow-sm transition">
+                                        <option value="">— Pilih Departemen —</option>
+                                        @foreach($departments as $dept)
+                                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-1.5">1 Departemen hanya boleh memiliki 1 akun.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -382,17 +410,41 @@
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         
-        function openEditModal(id, name, email, role, shiftId) {
+        function openEditModal(id, name, email, role, groupId, departmentId) {
             document.getElementById('edit_name').value = name;
             document.getElementById('edit_email').value = email;
             document.getElementById('edit_role').value = role;
-            document.getElementById('edit_shift_id').value = shiftId || '';
+            document.getElementById('edit_technician_group_id').value = groupId || '';
+            document.getElementById('edit_department_id').value = departmentId || '';
             
             const form = document.getElementById('editUserForm');
             form.action = `/admin/users/${id}`;
 
+            toggleDivision('edit');
             openModal('editUserModal');
         }
+
+        function toggleDivision(mode) {
+            const role = document.getElementById(mode + '_role').value;
+            const divContainer = document.getElementById(mode + '_division_container');
+            const groupContainer = document.getElementById(mode + '_group_container');
+            
+            if (role === 'user') {
+                divContainer.style.display = 'block';
+                groupContainer.style.display = 'none';
+            } else if (role === 'teknisi') {
+                divContainer.style.display = 'none';
+                groupContainer.style.display = 'block';
+            } else {
+                divContainer.style.display = 'none';
+                groupContainer.style.display = 'none';
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleDivision('add');
+        });
 
         function confirmDelete(userId) {
             Swal.fire({

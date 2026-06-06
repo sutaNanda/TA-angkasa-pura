@@ -21,7 +21,7 @@
     <title>Teknisi - AviaTrack</title>
     
     {{-- Favicon --}}
-    <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('logo.svg') }}">
     
     <title>Teknisi - AviaTrack</title>
     
@@ -52,7 +52,7 @@
         <aside class="hidden md:flex flex-col w-64 bg-slate-900 text-white flex-shrink-0 h-screen sticky top-0 overflow-hidden shadow-2xl z-50">
             <div class="p-6 border-b border-slate-800 flex items-center gap-3">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-lg">
-                    <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
+                    <img src="{{ asset('logo.svg') }}" alt="Logo" class="w-full h-full object-contain">
                 </div>
                 <div>
                     <h1 class="font-bold text-2xl leading-none tracking-tight">AVIATRACK</h1>

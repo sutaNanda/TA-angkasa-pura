@@ -126,7 +126,7 @@
                 <th width="5%">No</th>
                 <th width="25%">Nama Teknisi</th>
                 <th width="25%">Email</th>
-                <th width="15%">Sif</th>
+                <th width="15%">Grup Teknisi</th>
                 <th width="15%">Total Tiket Diselesaikan</th>
                 <th width="15%">Total Inspeksi (Patroli)</th>
             </tr>
@@ -137,7 +137,7 @@
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td><strong>{{ $user->name }}</strong></td>
                     <td>{{ $user->email }}</td>
-                    <td class="text-center">{{ optional($user->shift)->name ?? 'Tidak Ada' }}</td>
+                    <td class="text-center">{{ optional($user->group)->name ?? 'Tidak Ada' }}</td>
                     <td class="text-center"><strong>{{ $user->completed_work_orders_count }}</strong></td>
                     <td class="text-center"><strong>{{ $user->total_patrols_count }}</strong></td>
                 </tr>

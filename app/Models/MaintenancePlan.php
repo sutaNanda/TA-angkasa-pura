@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 
@@ -15,10 +16,10 @@ class MaintenancePlan extends Model
         'template_configs',
         'frequency',
         'start_date',
-        'start_time',
+        // start_time DIHAPUS — kini disimpan di pivot maintenance_plan_group per-grup
         'is_active',
         'notes',
-        'shift_id',
+        // shift_id DIHAPUS — diganti dengan relasi ke technician_groups via pivot
     ];
 
     protected $casts = [
@@ -30,9 +31,18 @@ class MaintenancePlan extends Model
     /**
      * Relationships
      */
-    public function shift(): BelongsTo
+    /**
+     * Grup-grup teknisi yang mendapat rencana pemeliharaan ini.
+     * Pivot menyimpan 'start_time' spesifik per-grup.
+     */
+    public function groups(): BelongsToMany
     {
-        return $this->belongsTo(Shift::class);
+        return $this->belongsToMany(
+            TechnicianGroup::class,
+            'maintenance_plan_group',
+            'maintenance_plan_id',
+            'technician_group_id'
+        )->withPivot('start_time')->withTimestamps();
     }
 
     public function maintenances(): HasMany

@@ -185,18 +185,27 @@
                             </td>
 
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($ticket->technician)
+                                @if($ticket->executedBy || $ticket->technician)
                                     <div class="flex items-center gap-2.5">
                                         <div class="w-8 h-8 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0">
-                                            {{ substr($ticket->technician->name, 0, 1) }}
+                                            {{ substr(($ticket->executedBy->name ?? $ticket->technician->name), 0, 1) }}
                                         </div>
                                         <div class="flex flex-col">
-                                            <span class="text-xs font-bold text-gray-900 truncate max-w-[120px]">{{ $ticket->technician->name }}</span>
-                                            <span class="text-[10px] text-gray-500">Teknisi</span>
+                                            <span class="text-xs font-bold text-gray-900 truncate max-w-[120px]">{{ $ticket->executedBy->name ?? $ticket->technician->name }}</span>
+                                            @if($ticket->assignedGroup)
+                                                <span class="text-[10px] text-gray-500 truncate max-w-[120px]" title="{{ $ticket->assignedGroup->name }}">{{ $ticket->assignedGroup->name }}</span>
+                                            @else
+                                                <span class="text-[10px] text-gray-500">Teknisi</span>
+                                            @endif
                                         </div>
                                     </div>
+                                @elseif($ticket->assignedGroup)
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-bold text-gray-700 truncate max-w-[120px]"><i class="fa-solid fa-users text-gray-400 mr-1"></i> {{ $ticket->assignedGroup->name }}</span>
+                                        <span class="text-[10px] text-orange-500 font-medium">Belum Diambil</span>
+                                    </div>
                                 @else
-                                    <span class="text-gray-400 italic text-[11px] bg-gray-50 px-2 py-1 rounded border border-gray-200">Belum Ditugaskan</span>
+                                    <span class="text-gray-500 font-medium text-[11px] bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200 shadow-sm"><i class="fa-solid fa-box-open mr-1"></i> Pool Umum</span>
                                 @endif
                             </td>
 
@@ -596,6 +605,29 @@
                 var assetName = data.asset ? data.asset.name : (data.location ? data.location.name : 'Tidak diketahui');
                 var assetLocation = data.asset ? (data.asset.location ? data.asset.location.name : '-') : (data.asset ? '-' : '<span class="text-orange-500 text-[11px] font-medium bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100"><i class="fa-solid fa-cube mr-1"></i> Aset tidak spesifik</span>');
 
+                // Build Handover History HTML
+                var handoverHtml = '';
+                if (data.handovers && data.handovers.length > 0) {
+                    handoverHtml += '<div class="mb-8">';
+                    handoverHtml += '<h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-yellow-500"></i> Riwayat Handover (' + data.handovers.length + ')</h4>';
+                    handoverHtml += '<div class="space-y-3">';
+                    data.handovers.forEach(function(ho) {
+                        handoverHtml += '<div class="bg-yellow-50/50 p-4 rounded-xl border border-yellow-200 shadow-sm">';
+                        handoverHtml += '  <div class="flex items-center justify-between mb-2 flex-wrap gap-2">';
+                        handoverHtml += '    <div class="flex items-center gap-2">';
+                        handoverHtml += '      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-gray-100 border border-gray-200">' + (ho.from_group ? ho.from_group.name : 'Unknown') + '</span>';
+                        handoverHtml += '      <i class="fa-solid fa-arrow-right text-yellow-500 text-[10px]"></i>';
+                        handoverHtml += '      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-white border border-yellow-300 text-yellow-800">' + (ho.to_group ? ho.to_group.name : 'Unknown') + '</span>';
+                        handoverHtml += '    </div>';
+                        handoverHtml += '    <span class="text-[10px] text-gray-500">' + formatDate(ho.created_at) + '</span>';
+                        handoverHtml += '  </div>';
+                        handoverHtml += '  <p class="text-[10px] text-gray-500 mb-2">Dihandover oleh: <strong class="text-gray-700">' + (ho.handed_over_by ? ho.handed_over_by.name : '-') + '</strong></p>';
+                        handoverHtml += '  <div class="bg-white p-2.5 rounded-lg border border-yellow-100 text-xs text-gray-700 italic border-l-2 border-l-yellow-400 leading-relaxed">"' + ho.notes + '"</div>';
+                        handoverHtml += '</div>';
+                    });
+                    handoverHtml += '</div></div>';
+                }
+
                 // Content Assembly
                 content.innerHTML = 
                       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">'
@@ -606,7 +638,7 @@
                     +   '</div>'
                     +   '<div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">'
                     +     '<p class="text-[10px] text-blue-600 uppercase tracking-wider font-bold mb-1.5 flex items-center gap-1.5"><i class="fa-solid fa-user-gear text-blue-400"></i> Teknisi Penanggung Jawab</p>'
-                    +     '<p class="font-bold text-gray-900 text-sm mb-0.5">' + (data.technician ? data.technician.name : '<span class="text-gray-500 italic">Belum Ditugaskan</span>') + '</p>'
+                    +     '<p class="font-bold text-gray-900 text-sm mb-0.5">' + (data.executed_by ? data.executed_by.name : (data.technician ? data.technician.name : (data.assigned_group ? ('Grup ' + data.assigned_group.name + ' (Belum Diambil)') : '<span class="text-gray-500 italic">Belum Ditugaskan / Pool Umum</span>'))) + '</p>'
                     +     '<p class="text-xs font-mono font-bold text-blue-700 bg-white inline-block px-1.5 py-0.5 rounded border border-blue-200 mt-1">' + data.ticket_number + '</p>'
                     +   '</div>'
                     + '</div>'
@@ -617,6 +649,8 @@
                     +   '<h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-red-500"></i> Masalah Dilaporkan</h4>'
                     +   '<div class="bg-red-50/50 p-4 rounded-xl border border-red-100 text-red-900 text-sm leading-relaxed">' + data.issue_description + '</div>'
                     + '</div>'
+                    
+                    + handoverHtml
 
                     + '<div>'
                     +   '<h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-clipboard-list text-emerald-500"></i> Laporan Pengerjaan & Bukti</h4>'

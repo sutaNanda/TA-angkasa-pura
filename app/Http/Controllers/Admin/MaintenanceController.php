@@ -14,8 +14,7 @@ class MaintenanceController extends Controller
      */
     public function index(Request $request)
     {
-        // Query Dasar ke PatrolLog
-        $query = PatrolLog::with(['asset.location', 'technician', 'checklistTemplate', 'workOrder.histories.user', 'shift'])
+        $query = PatrolLog::with(['asset.location', 'technician', 'checklistTemplate', 'workOrder.histories.user', 'technicianGroup'])
                     ->orderBy('created_at', 'desc');
 
         // 1. Filter Tanggal (Berdasarkan Waktu Patroli)

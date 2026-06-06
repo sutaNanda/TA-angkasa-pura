@@ -22,8 +22,8 @@
         
         {{-- Header --}}
         <div class="text-center">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-4 shadow-lg">
-                <img src="{{ asset('logo.jpg') }}" alt="Logo" class="w-full h-full object-contain">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white p-2 mb-4">
+                <img src="{{ asset('logo.svg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
             <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
                 Amankan Akun Anda

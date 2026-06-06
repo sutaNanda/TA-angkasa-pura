@@ -102,9 +102,9 @@ class MaintenanceController extends Controller
                     'checklist_template_id' => $templateId,
                     'inspection_data' => json_encode($filteredAnswers),
                     'status' => $request->has_issue ? 'issue_found' : 'normal',
-                    'notes' => $request->notes ?? $request->input('notes'),
-                    'photos' => $photoPaths,
-                    'shift_id' => auth()->user()->shift_id,
+                    'notes'               => $request->notes ?? $request->input('notes'),
+                    'photos'              => $photoPaths,
+                    'technician_group_id' => auth()->user()->technician_group_id,
                 ]);
                 
                 // 2. Update Maintenance Status
@@ -132,10 +132,12 @@ class MaintenanceController extends Controller
                         'reporter_id' => auth()->id(), // Self-reported
                         'priority' => $request->is_critical ? 'high' : 'medium',
                         'status' => 'open',
-                        'source' => 'patrol', // Or 'maintenance'
+                        'source'            => 'patrol',
                         'issue_description' => $request->notes ?? 'Masalah ditemukan saat maintenance rutin',
-                        'photos_before' => $photoPaths,
-                        'maintenance_id' => $maintenance->id, // Link to this maintenance schedule
+                        'photos_before'     => $photoPaths,
+                        'maintenance_id'    => $maintenance->id,
+                        // Assign ke grup yang sama dengan teknisi yang menemukan masalah
+                        'assigned_group_id' => auth()->user()->technician_group_id,
                     ]);
                     
                     // Link back in PatrolLog

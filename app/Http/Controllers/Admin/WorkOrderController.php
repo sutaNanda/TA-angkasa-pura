@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\WorkOrder;
 use App\Models\User;
 use App\Models\Asset;
+use App\Models\TechnicianGroup;
 
 class WorkOrderController extends Controller
 {
@@ -52,7 +53,8 @@ class WorkOrderController extends Controller
 
         // Data Pendukung untuk Modal & Badge
         $technicians = User::where('role', 'teknisi')->get();
-        $assets = Asset::all();
+        $assets      = Asset::all();
+        $groups      = TechnicianGroup::orderBy('name')->get(); // Untuk dropdown assign grup
         
         // Hitung Jumlah untuk Badge di Tab
         $counts = [
@@ -61,27 +63,35 @@ class WorkOrderController extends Controller
             'verify' => WorkOrder::where('status', 'completed')->count(),
         ];
 
-        return view('admin.work_orders.index', compact('tickets', 'technicians', 'assets', 'counts'));
+        return view('admin.work_orders.index', compact('tickets', 'technicians', 'assets', 'counts', 'groups'));
     }
 
     /**
-     * Simpan Tiket Manual (Create)
+     * Simpan Tiket Manual (Create) — Hybrid Pool.
+     *
+     * assigned_group_id opsional:
+     * - Diisi   → tiket masuk ke antrean grup tertentu
+     * - Null    → tiket masuk ke Pool Umum (siapapun bisa klaim)
      */
     public function store(Request $request)
     {
         $request->validate([
-            'asset_id' => 'required|exists:assets,id',
-            'issue_description' => 'required|string',
-            'priority' => 'required|in:low,medium,high'
+            'asset_id'           => 'required|exists:assets,id',
+            'issue_description'  => 'required|string',
+            'priority'           => 'required|in:low,medium,high',
+            // Grup tujuan opsional: null = Pool Umum
+            'assigned_group_id'  => 'nullable|exists:technician_groups,id',
         ]);
 
         WorkOrder::create([
-            'asset_id' => $request->asset_id,
+            'asset_id'          => $request->asset_id,
             'issue_description' => $request->issue_description,
-            'priority' => $request->priority,
-            'status' => 'open',
-            'reported_by' => auth()->id(), // ID Admin yang login
-            'source' => 'manual_ticket', // Laporan Manual
+            'priority'          => $request->priority,
+            'status'            => 'open',
+            'reported_by'       => auth()->id(),
+            'source'            => 'manual_ticket',
+            // Null = Pool Umum; diisi = masuk antrean grup spesifik
+            'assigned_group_id' => $request->assigned_group_id,
         ]);
 
         return back()->with('success', 'Tiket perbaikan berhasil dibuat.');
@@ -174,9 +184,14 @@ class WorkOrderController extends Controller
         $ticket = WorkOrder::with([
             'asset' => function ($q) { $q->withTrashed(); },
             'asset.location' => function ($q) { $q->withTrashed(); },
-            'technician', 
+            'technician',
+            'executedBy',
+            'assignedGroup',
             'reporter', 
             'histories', 
+            'handovers.fromGroup',
+            'handovers.toGroup',
+            'handovers.handedOverBy',
             'location' => function ($q) { $q->withTrashed(); }
         ])->findOrFail($id);
         return response()->json([

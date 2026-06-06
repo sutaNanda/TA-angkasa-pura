@@ -288,9 +288,9 @@
                                 @foreach($frequencies as $freq)
                                 <label class="cursor-pointer group">
                                     <input type="radio" name="frequency" value="{{ $freq['value'] }}" x-model="frequency" class="peer sr-only">
-                                    <div class="p-4 rounded-xl border-2 transition-all duration-200 text-center bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 peer-checked:border-{{ $freq['color'] }}-500 peer-checked:bg-{{ $freq['color'] }}-50/40 peer-checked:ring-1 peer-checked:ring-{{ $freq['color'] }}-500">
+                                    <div class="p-4 py-2 rounded-xl border-2 transition-all duration-200 text-center bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 peer-checked:border-{{ $freq['color'] }}-500 peer-checked:bg-{{ $freq['color'] }}-50/40 peer-checked:ring-1 peer-checked:ring-{{ $freq['color'] }}-500">
                                         <div class="w-10 h-10 mx-auto rounded-full bg-{{ $freq['color'] }}-100 text-{{ $freq['color'] }}-600 flex items-center justify-center mb-2.5 transition-transform duration-300 group-hover:scale-110">
-                                            <i class="fa-solid {{ $freq['icon'] }} text-lg"></i>
+                                            <i class="fa-solid {{ $freq['icon'] }} text-lg "></i>
                                         </div>
                                         <div class="font-bold text-gray-800 text-sm">{{ $freq['title'] }}</div>
                                         <div class="text-[11px] text-gray-500 mt-0.5">{{ $freq['desc'] }}</div>
@@ -300,47 +300,11 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {{-- Shift Selector --}}
+                        <div class="space-y-6">
+                            {{-- Input Tanggal Mulai --}}
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Shift Kerja Target <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
-                                <select name="shift_id" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none bg-white">
-                                    <option value="">— Semua Shift (Tugas Berulang di Tiap Shift) —</option>
-                                    @foreach($shifts as $shift)
-                                        <option value="{{ $shift->id }}" {{ old('shift_id') == $shift->id ? 'selected' : '' }}>
-                                            {{ $shift->name }} ({{ \Carbon\Carbon::parse($shift->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('H:i') }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <p class="text-[11px] text-gray-500 mt-2 leading-relaxed">Pilih shift jika tugas ini hanya khusus teknisi pada shift tertentu.</p>
-                            </div>
-
-                            {{-- Dynamic Date & Time Input --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal & Jam Eksekusi Target <span class="text-red-500">*</span></label>
-                                <div x-data="{ timeValue: '{{ old('start_time') }}' }">
-                                    <div class="flex flex-col sm:flex-row gap-3">
-                                        {{-- Input Tanggal --}}
-                                        <div class="flex-1">
-                                            <input type="date" name="start_date" value="{{ old('start_date', date('Y-m-d')) }}" required class="w-full rounded-xl border border-gray-300 bg-gray-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all outline-none cursor-pointer text-gray-700" title="Tanggal Mulai">
-                                        </div>
-                                        
-                                        {{-- Input Jam --}}
-                                        <div class="w-full sm:w-40 shrink-0">
-                                            <input type="time" name="start_time" x-model="timeValue" class="rounded-xl border border-gray-300 bg-gray-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all outline-none font-medium cursor-pointer text-gray-700" title="Jam Eksekusi Spesifik">
-                                        </div>
-                                    </div>
-                                    
-                                    {{-- Helper & Tombol Clear --}}
-                                    <div class="mt-2.5 flex items-center justify-between px-1">
-                                        <p class="text-[11px] text-gray-500">Kosongkan jam untuk tugas <strong>sepanjang hari</strong>.</p>
-                                        
-                                        {{-- Tombol ini hanya muncul jika jam sudah terisi --}}
-                                        <button type="button" x-show="timeValue" @click="timeValue = ''" x-transition.opacity class="text-[11px] text-red-500 hover:text-red-700 font-medium transition-colors focus:outline-none flex items-center gap-1.5 bg-red-50 px-2 py-1 rounded-md">
-                                            <i class="fa-solid fa-eraser"></i> Hapus Jam
-                                        </button>
-                                    </div>
-                                </div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Mulai Berlaku <span class="text-red-500">*</span></label>
+                                <input type="date" name="start_date" value="{{ old('start_date', date('Y-m-d')) }}" required class="w-full sm:w-1/2 rounded-xl border border-gray-300 bg-gray-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all outline-none cursor-pointer text-gray-700">
                                 
                                 {{-- Dynamic Helper Text --}}
                                 <div class="mt-3 flex gap-2.5 items-start text-[11px] text-gray-600 bg-gray-50/80 p-3 rounded-lg border border-gray-200/60">
@@ -352,6 +316,11 @@
                                         <span x-show="frequency === 'yearly'" style="display: none;">Generate pada <strong>tanggal & bulan tersebut</strong> setiap tahun.</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            {{-- Penugasan Grup & Jam (M2M Pivot) --}}
+                            <div class="pt-6 border-t border-gray-100">
+                                @include('admin.plans.partials.group_repeater', ['plan' => null])
                             </div>
                         </div>
 
