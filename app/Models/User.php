@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Contracts\Auth\MustVerifyEmail; // Implement Interface
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class User extends Authenticatable implements MustVerifyEmail // Implement Interface
+class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
@@ -24,10 +25,10 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
         'email',
         'password',
         'role',
-        'division',
+        'department_id',
         'requires_password_reset',
         'avatar',
-        'shift_id',
+        'technician_group_id', // Ganti shift_id dengan grup
     ];
 
     /**
@@ -37,7 +38,6 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
      */
     protected $hidden = [
         'password',
-        'remember_token',
     ];
 
     /**
@@ -46,25 +46,37 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
      * @var array<string, string>
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'requires_password_reset' => 'boolean',
     ];
 
-    // --- CUSTOM NOTIFICATION ---
-    public function sendEmailVerificationNotification()
+    public function getRememberTokenName()
     {
-        $this->notify(new \App\Notifications\CustomVerifyEmail);
+        return null; // Disable remember_token
+    }
+
+    // --- CUSTOM NOTIFICATION ---
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\CustomResetPassword($token));
     }
 
     // --- RELASI ---
 
-    public function shift()
+    /**
+     * Grup teknisi tempat user ini bertugas (nullable untuk Admin & Manajer).
+     */
+    public function group(): BelongsTo
     {
-        return $this->belongsTo(Shift::class);
+        return $this->belongsTo(TechnicianGroup::class, 'technician_group_id');
     }
 
-    // Divisi disimpan sebagai string sederhana (tanpa relasi ke tabel divisions)
+    // Relasi User belongsTo Department (untuk user/pelapor)
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
 
     // Teknisi bisa punya banyak riwayat pengecekan rutin
     public function maintenances()
@@ -83,8 +95,14 @@ class User extends Authenticatable implements MustVerifyEmail // Implement Inter
         return $this->hasMany(PatrolLog::class, 'technician_id');
     }
 
-    // --- HELPER FUNCTION (Opsional, biar gampang di Blade nanti) ---
-    public function isAdmin() { return $this->role === 'admin'; }
-    public function isTeknisi() { return $this->role === 'teknisi'; }
-    public function isManajer() { return $this->role === 'manajer'; }
+    // --- HELPER FUNCTION ---
+    public function isAdmin(): bool { return $this->role === 'admin'; }
+    public function isTeknisi(): bool { return $this->role === 'teknisi'; }
+    public function isManajer(): bool { return $this->role === 'manajer'; }
+
+    /** Cek apakah user ini memiliki grup aktif. */
+    public function hasGroup(): bool
+    {
+        return $this->technician_group_id !== null;
+    }
 }

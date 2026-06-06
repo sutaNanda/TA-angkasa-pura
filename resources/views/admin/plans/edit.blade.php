@@ -306,33 +306,11 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {{-- Shift Selector --}}
+                        <div class="space-y-6">
+                            {{-- Input Tanggal Mulai --}}
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Shift Kerja Target <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
-                                <select name="shift_id" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none bg-white">
-                                    <option value="">— Semua Shift (Tugas Berulang di Tiap Shift) —</option>
-                                    @foreach($shifts as $shift)
-                                        <option value="{{ $shift->id }}" {{ old('shift_id', $plan->shift_id) == $shift->id ? 'selected' : '' }}>
-                                            {{ $shift->name }} ({{ \Carbon\Carbon::parse($shift->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('H:i') }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <p class="text-[11px] text-gray-500 mt-2 leading-relaxed">Pilih shift jika tugas ini hanya khusus teknisi pada shift tertentu.</p>
-                            </div>
-
-                            {{-- Dynamic Date & Time Input --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal & Jam Eksekusi Target <span class="text-red-500">*</span></label>
-                                <div class="flex flex-col sm:flex-row gap-3">
-                                    <div class="flex-1">
-                                        <input type="date" name="start_date" value="{{ old('start_date', $plan->start_date ? $plan->start_date->format('Y-m-d') : date('Y-m-d')) }}" required class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none" title="Tanggal Mulai">
-                                    </div>
-                                    <div class="sm:w-32 shrink-0 relative">
-                                        <input type="time" name="start_time" value="{{ old('start_time', $plan->start_time ? \Carbon\Carbon::parse($plan->start_time)->format('H:i') : '') }}" class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm outline-none font-mono" title="Jam Eksekusi Spesifik">
-                                    </div>
-                                </div>
-                                <p class="text-[10px] text-gray-500 mt-1.5 ml-1">Kosongkan jam untuk tugas <b>sepanjang hari</b>.</p>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Mulai Berlaku <span class="text-red-500">*</span></label>
+                                <input type="date" name="start_date" value="{{ old('start_date', $plan->start_date ? $plan->start_date->format('Y-m-d') : date('Y-m-d')) }}" required class="w-full sm:w-1/2 rounded-xl border border-gray-300 bg-gray-50/50 px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all outline-none cursor-pointer text-gray-700" title="Tanggal Mulai">
                                 
                                 {{-- Dynamic Helper Text --}}
                                 <div class="mt-3 flex gap-2.5 items-start text-[11px] text-gray-600 bg-gray-50/80 p-3 rounded-lg border border-gray-200/60">
@@ -344,6 +322,11 @@
                                         <span x-show="frequency === 'yearly'" style="display: none;">Generate pada <strong>tanggal & bulan tersebut</strong> setiap tahun.</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            {{-- Penugasan Grup & Jam (M2M Pivot) --}}
+                            <div class="pt-6 border-t border-gray-100">
+                                @include('admin.plans.partials.group_repeater', ['plan' => $plan])
                             </div>
                         </div>
 

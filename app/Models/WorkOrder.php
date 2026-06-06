@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WorkOrder extends Model
 {
@@ -85,9 +87,34 @@ class WorkOrder extends Model
     }
 
     // Relasi ke History / Logbook Aktivitas (Vertical Timeline)
-    public function histories()
+    public function histories(): HasMany
     {
         return $this->hasMany(WorkOrderHistory::class)->orderBy('created_at', 'asc');
+    }
+
+    /**
+     * Grup yang di-assign untuk mengerjakan tiket ini.
+     * Null berarti tiket masuk ke Pool Umum.
+     */
+    public function assignedGroup(): BelongsTo
+    {
+        return $this->belongsTo(TechnicianGroup::class, 'assigned_group_id');
+    }
+
+    /**
+     * Teknisi individual yang secara aktif mengerjakan tiket ini (diisi saat claim).
+     */
+    public function executedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'executed_by_user_id');
+    }
+
+    /**
+     * Log audit trail semua handover yang pernah terjadi pada tiket ini.
+     */
+    public function handovers(): HasMany
+    {
+        return $this->hasMany(WorkOrderHandover::class)->orderBy('created_at', 'desc');
     }
 
     // ==========================================

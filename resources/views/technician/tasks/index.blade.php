@@ -21,8 +21,8 @@
             :class="tab === 'pool' ? 'bg-white text-blue-700 shadow ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'"
             class="flex-1 py-3 text-sm font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2">
             <i class="fa-solid fa-box-open"></i> Pool Tugas
-            @if($poolTasks->count() > 0)
-                <span :class="tab === 'pool' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'" class="text-[10px] px-2 py-0.5 rounded-full">{{ $poolTasks->count() }}</span>
+            @if($groupQueue->count() > 0)
+                <span :class="tab === 'pool' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'" class="text-[10px] px-2 py-0.5 rounded-full">{{ $groupQueue->count() }}</span>
             @endif
         </button>
     </div>
@@ -101,7 +101,7 @@
     {{-- TAB 2: POOL TUGAS (REDESIGN HORIZONTAL LIST) --}}
     <div x-show="tab === 'pool'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;">
         <div class="space-y-4">
-            @forelse($poolTasks as $task)
+            @forelse($groupQueue as $task)
                 {{-- KUNCI REDESIGN: flex-col di HP, flex-row di Layar Besar --}}
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col sm:flex-row group hover:shadow-md transition-all duration-300">
                     

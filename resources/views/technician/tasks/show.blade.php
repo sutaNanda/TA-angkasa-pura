@@ -111,8 +111,29 @@
             @endif
         </div>
 
-        {{-- Timeline / History (Optional, can be added later) --}}
-        {{-- ... --}}
+        {{-- Handover History --}}
+        @if($task->handovers->count() > 0)
+            <div class="bg-yellow-50 rounded-xl p-4 shadow-sm border border-yellow-100 mt-4">
+                <h3 class="font-bold text-yellow-800 mb-3 border-b border-yellow-200 pb-2 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Handover ({{ $task->handovers->count() }})</h3>
+                <div class="space-y-4">
+                    @foreach($task->handovers as $ho)
+                        <div class="bg-white rounded-lg p-3 shadow-sm border border-yellow-100 relative">
+                            <div class="absolute -left-1 top-3 w-2 h-2 rounded-full bg-yellow-400"></div>
+                            <div class="flex items-center justify-between mb-2 flex-wrap gap-2 pl-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-700">{{ $ho->fromGroup->name ?? 'Unknown' }}</span>
+                                    <i class="fa-solid fa-arrow-right text-yellow-500 text-[10px]"></i>
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">{{ $ho->toGroup->name ?? 'Unknown' }}</span>
+                                </div>
+                                <span class="text-[10px] text-gray-400">{{ $ho->created_at->format('d M Y, H:i') }}</span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mb-2 pl-2">Oleh: <strong class="text-gray-700">{{ $ho->handedOverBy->name ?? '-' }}</strong></p>
+                            <div class="bg-gray-50 p-2.5 rounded border border-gray-100 text-xs text-gray-600 italic border-l-2 border-l-yellow-400 ml-2">"{{ $ho->notes }}"</div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
     </div>
 
@@ -124,7 +145,7 @@
             <div class="max-w-7xl mx-auto w-full p-4 md:px-8 flex gap-3 md:justify-center flex-wrap">
                 
                 {{-- KONDISI 1: Tugas Handover/Pool (Belum Diambil) --}}
-                @if(in_array($task->status, ['open', 'handover']) && $task->technician_id == null)
+                @if(in_array($task->status, ['open', 'handover', 'handed_over']) && $task->executed_by_user_id == null && $task->technician_id == null)
                     <form action="{{ route('technician.tasks.claim', $task->id) }}" method="POST" class="w-full md:w-auto">
                         @csrf
                         @method('PUT')
@@ -134,7 +155,7 @@
                     </form>
 
                 {{-- KONDISI 2: Tugas Ditugaskan ke Saya (Belum Mulai) --}}
-                @elseif($task->technician_id == auth()->id() && in_array($task->status, ['assigned', 'open']))
+                @elseif(($task->technician_id == auth()->id() || $task->executed_by_user_id == auth()->id()) && in_array($task->status, ['assigned', 'open']))
                     <form action="{{ route('technician.tasks.start', $task->id) }}" method="POST" class="w-full md:w-auto">
                         @csrf
                         @method('PUT')
@@ -144,7 +165,7 @@
                     </form>
                 
                 {{-- KONDISI 3: Tugas Saya (In Progress atau Pending Part) --}}
-                @elseif($task->technician_id == auth()->id() && in_array($task->status, ['in_progress', 'pending_part']))
+                @elseif(($task->technician_id == auth()->id() || $task->executed_by_user_id == auth()->id()) && in_array($task->status, ['in_progress', 'pending_part']))
                     {{-- Tombol Handover --}}
                     <button @click="showHandoverModal = true" class="flex-1 md:flex-none md:w-auto md:px-8 bg-yellow-500 text-white font-bold py-3 rounded-xl shadow hover:bg-yellow-600 transition flex items-center justify-center gap-2 active:scale-95">
                         <i class="fa-solid fa-arrow-right-arrow-left"></i> Handover
@@ -197,8 +218,20 @@
                 @endif
 
                 <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Alasan Handover</label>
-                    <textarea name="note" rows="3" class="w-full rounded-xl border-2 border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2" placeholder="Jelaskan kendala kenapa tugas ini dihandover" required></textarea>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Pilih Grup Tujuan <span class="text-red-500">*</span></label>
+                    <select name="to_group_id" class="w-full rounded-xl border-2 border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2 bg-white" required>
+                        <option value="">-- Pilih Grup --</option>
+                        @foreach($groups as $g)
+                            @if($g->id !== auth()->user()->technician_group_id)
+                                <option value="{{ $g->id }}">{{ $g->name }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Alasan Handover <span class="text-red-500">*</span></label>
+                    <textarea name="notes" rows="3" class="w-full rounded-xl border-2 border-gray-300 focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2" placeholder="Jelaskan kendala kenapa tugas ini dihandover" required></textarea>
                 </div>
                 <div class="mb-6">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Bukti Foto (Opsional, Maks 5)</label>

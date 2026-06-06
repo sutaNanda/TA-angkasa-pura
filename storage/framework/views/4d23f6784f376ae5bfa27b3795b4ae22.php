@@ -1,0 +1,1510 @@
+
+
+<?php $__env->startSection('title', 'Manajemen Lokasi'); ?>
+<?php $__env->startSection('page-title', 'Struktur & Denah Lokasi'); ?>
+
+<?php $__env->startSection('content'); ?>
+    <div class="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-6 relative">
+
+        
+        <button onclick="toggleSidebar()" 
+                class="fixed lg:absolute top-4 left-4 z-50 bg-blue-600 text-white w-10 h-10 rounded-lg shadow-lg hover:bg-blue-700 transition flex items-center justify-center lg:hidden"
+                id="sidebarToggleBtn">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        
+        <div id="locationSidebar" 
+             class="fixed lg:relative inset-y-0 left-0 z-40 w-80 lg:w-1/3 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col h-full transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+            
+            
+            <div onclick="toggleSidebar()" 
+                 class="fixed inset-0 bg-black/50 lg:hidden hidden" 
+                 id="sidebarOverlay"></div>
+            
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl relative z-10">
+                <h3 class="font-bold text-gray-800 text-sm">Struktur Lokasi</h3>
+                <div class="flex gap-2 text-xs">
+                    <?php if(auth()->user()->role === 'manajer'): ?>
+                    <a href="<?php echo e(route('admin.locations.export')); ?>" target="_blank" class="text-green-600 hover:bg-green-100 px-3 py-1.5 rounded transition font-bold border border-green-200 bg-white flex items-center gap-1" title="Cetak Hirarki">
+                        <i class="fa-solid fa-file-pdf"></i>
+                    </a>
+                    <?php endif; ?>
+                    <?php if(!auth()->user()->isManajer()): ?>
+                    <button onclick="openLocationModal()" class="text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition font-bold border border-blue-200 bg-white flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Utama
+                    </button>
+                    <?php endif; ?>
+                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 hover:bg-gray-100 w-8 h-8 rounded transition flex items-center justify-center">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar" id="locationTreeContainer">
+                <div class="flex flex-col items-center justify-center h-40 text-gray-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-blue-500 text-2xl mb-3"></i>
+                    <span class="text-xs">Memuat struktur...</span>
+                </div>
+            </div>
+        </div>
+
+    <style>
+        /* Guide Line Hierarchy */
+        .children-container {
+            position: relative;
+            margin-left: 1.25rem; /* 20px */
+            padding-left: 0.75rem; /* 12px */
+            border-left: 1px solid #e5e7eb; /* gray-200 */
+        }
+        /* Active Node Style */
+        .tree-node-active {
+            background-color: #eff6ff; /* blue-50 */
+            color: #2563eb; /* blue-600 */
+            font-weight: 600;
+        }
+    </style>
+    <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden relative h-full">
+
+            
+            <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-start">
+                <div class="flex gap-4">
+                    <div class="w-16 h-16 bg-white p-1 rounded-lg shadow-sm border border-gray-200 shrink-0">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=DEMO" alt="QR" class="w-full h-full object-contain opacity-30 transition-opacity duration-300" id="headerQr">
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 class="text-xl font-bold text-gray-800 truncate max-w-[200px] lg:max-w-md" id="headerTitle">Pilih Lokasi</h2>
+                            <span class="bg-gray-200 text-gray-600 text-[10px] px-2 py-0.5 rounded border border-gray-300 font-bold uppercase hidden" id="headerIdBadge">ID: <span id="headerId">-</span></span>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-1 line-clamp-1" id="headerBreadcrumb">Silakan pilih lokasi di menu kiri untuk melihat aset.</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button onclick="printLocationQr()" title="Pilih lokasi terlebih dahulu" class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition group relative" id="btnPrintQr" disabled>
+                        <i class="fa-solid fa-print mr-1"></i> QR
+                        <span class="absolute hidden group-disabled:block bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg z-50">
+                            Pilih lokasi dulu
+                        </span>
+                    </button>
+                    <?php if(!auth()->user()->isManajer()): ?>
+                    <button onclick="openAssetModal()" title="Pilih lokasi terlebih dahulu" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2 group relative" id="btnAddAsset" disabled>
+                        <i class="fa-solid fa-plus"></i> Tambah Aset
+                        <span class="absolute hidden group-disabled:block bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg z-50">
+                            Pilih lokasi dulu
+                        </span>
+                    </button>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            
+            <div id="toggleSubLocationBar" class="px-6 py-3 border-b border-gray-100 bg-slate-50 flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hidden transition-all">
+                <div class="flex items-center gap-3 shrink-0">
+                    <label for="toggleIncludeSub" class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggleIncludeSub" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 transition-colors shadow-inner"></div>
+                    </label>
+                    <span class="text-sm font-bold text-gray-700">Tampilkan Aset turunan</span>
+                </div>
+                <span id="toggleSubLabel" class="text-xs px-3 py-1 rounded-full font-bold shadow-sm whitespace-normal sm:whitespace-nowrap flex-1 sm:flex-initial" style="transition: all 0.3s">
+                    <!-- Text injected by JS -->
+                </span>
+            </div>
+
+            
+            <div class="flex-1 overflow-y-auto relative flex flex-col">
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="bg-white text-gray-500 uppercase font-bold text-xs sticky top-0 z-10 border-b shadow-sm">
+                            <tr>
+                                <th class="px-6 py-4 w-12 text-center bg-gray-50">No</th>
+                                <th class="px-6 py-4 w-16 bg-gray-50">Foto</th>
+                                <th class="px-6 py-4 bg-gray-50">Nama Aset</th>
+                                <th class="px-6 py-4 bg-gray-50 sub-loc-col" style="display:none">Lokasi Detail</th>
+                                <th class="px-6 py-4 bg-gray-50">Kategori</th>
+                                <th class="px-6 py-4 bg-gray-50">Status</th>
+                                <?php if(!auth()->user()->isManajer()): ?>
+                                <th class="px-6 py-4 text-center w-32 bg-gray-50">Aksi</th>
+                                <?php endif; ?>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100" id="assetTableBody"></tbody>
+                    </table>
+
+                    
+                    <div id="emptyState" class="flex flex-col items-center justify-center h-64 text-gray-400 hidden">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa-solid fa-map-location-dot text-3xl text-gray-300"></i>
+                        </div>
+                        <p class="font-medium text-gray-600">Lokasi ini belum memiliki aset.</p>
+                        <p class="text-xs mt-1 text-gray-400 mb-4">Tambahkan aset baru untuk lokasi ini.</p>
+                        <button onclick="openAssetModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Tambah Aset
+                        </button>
+                    </div>
+                </div>
+
+                
+                <div id="paginationContainer" class="p-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center hidden">
+                    <span class="text-xs text-gray-500">
+                        Halaman <span id="pageCurrent" class="font-bold text-gray-700">1</span> dari <span id="pageTotal" class="font-bold text-gray-700">1</span>
+                    </span>
+                    <div class="flex gap-1">
+                        <button onclick="changePage('prev')" id="btnPrev" class="px-3 py-1 bg-white border rounded-md text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">Prev</button>
+                        <button onclick="changePage('next')" id="btnNext" class="px-3 py-1 bg-white border rounded-md text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    
+    
+
+    
+    <div id="locationModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal('locationModal')"></div>
+
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-md sm:w-full border-4 border-gray-400">
+                <form id="locationForm" onsubmit="submitLocationForm(event)">
+                    <input type="hidden" name="parent_id" id="locParentId">
+                    <input type="hidden" name="id" id="locId">
+
+                    <div class="bg-white px-6 py-4 border-b flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900" id="locModalTitle">Tambah Lokasi</h3>
+                        <button type="button" onclick="closeModal('locationModal')" class="text-gray-400 hover:text-gray-500 transition"></button>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        <div id="parentInfoBox" class="bg-blue-50 p-3 rounded-lg border border-blue-100 text-xs text-blue-700 hidden flex items-center gap-2">
+                            <i class="fa-solid fa-level-up-alt"></i> Sub-lokasi dari: <strong id="parentNameDisplay">-</strong>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Nama Lokasi <span class="text-red-500">*</span></label>
+                            <input type="text" name="name" id="locName" class="w-full border-2 border-gray-500 rounded-lg text-sm pl-2 py-2 " placeholder="Lokasi" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Tipe Lokasi <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <select name="type" id="locType" required
+                                    class="w-full appearance-none border-2 border-gray-500 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pr-8 bg-white py-2 pl-2">
+                                    <option value="" disabled selected>Pilih Tipe</option>
+                                    <option value="building">Gedung</option>
+                                    <option value="floor">Lantai</option>
+                                    <option value="room">Ruangan</option>
+                                    <option value="area">Area / Lainnya</option>
+                                    <option value="outdoor">Outdoor</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-gray-400 text-xs pointer-events-none"></i>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
+                            <textarea name="description" id="locDesc" rows="3" class="w-full border-2 border-gray-500 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 pl-2 py-2" placeholder="Deskripsi"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-4 flex justify-between items-center">
+                        <button type="button" id="btnDeleteLoc" onclick="deleteLocation()" class="text-red-500 hover:text-red-700 text-xs font-bold uppercase hidden transition flex items-center gap-1">
+                            <i class="fa-solid fa-trash"></i> Hapus
+                        </button>
+                        <div class="flex gap-3 justify-end w-full">
+                            <button type="button" onclick="closeModal('locationModal')" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Batal</button>
+                            <button type="submit" id="btnSaveLoc" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition">Simpan</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="assetModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal('assetModal')"></div>
+
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
+                <form id="assetForm" onsubmit="submitAssetForm(event)" enctype="multipart/form-data">
+                    <input type="hidden" name="location_id" id="modalLocationId">
+                    <input type="hidden" name="id" id="assetId">
+
+                    <div class="bg-white px-6 py-4 border-b flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-900" id="assetModalTitle">Tambah Aset Baru</h3>
+                        <button type="button" onclick="closeModal('assetModal')" class="text-gray-400 hover:text-gray-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+                    </div>
+
+                    <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 flex items-center gap-2 text-sm text-blue-800">
+                            <i class="fa-solid fa-location-dot"></i> Lokasi Penempatan: <span class="font-bold" id="modalLocationName">-</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Nama Aset <span class="text-red-500">*</span></label>
+                                <input type="text" name="name" id="assetName" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" required placeholder="UniFi AP AC Pro">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
+                                <select name="category_id" id="assetCategory" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?> <option value="<?php echo e($cat->id); ?>" data-name="<?php echo e($cat->name); ?>"><?php echo e($cat->name); ?></option> <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1" id="labelSN">Serial Number</label>
+                                <input type="text" name="serial_number" id="assetSN" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2" placeholder="SN-12345">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Status</label>
+                                <select name="status" id="assetStatus" class="w-full rounded-lg text-sm border-2 border-gray-700 pl-2 py-2">
+                                    <option value="normal">Normal</option>
+                                    <option value="rusak">Rusak</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="hilang">Hilang</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Tanggal Perolehan</label>
+                                <input type="date" name="purchase_date" id="assetDate" class="w-full border-gray-300 rounded-lg text-sm focus:ring-blue-500">
+                            </div>
+                        </div>
+
+                        
+                        <div id="parentAssetGroup" class="hidden">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">
+                                <i class="fa-solid fa-link text-purple-500 mr-1"></i> Diinstal Pada (Induk Aset) <span class="text-red-500">*</span>
+                            </label>
+                            <select name="parent_asset_id[]" id="parentAssetId" multiple class="w-full rounded-lg text-sm border-2 border-purple-400 pl-2 py-2 bg-purple-50/50 focus:ring-purple-500 focus:border-purple-500 min-h-[100px] custom-scrollbar">
+                                <option value="" disabled>-- Pilih Aset Hardware Induk --</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1 flex items-center gap-1 font-medium">
+                                <i class="fa-solid fa-keyboard text-gray-400"></i> Tahan tombol <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-[10px] font-mono mx-0.5">CTRL</kbd> (Windows) atau <kbd class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded-md shadow-sm text-[10px] font-mono mx-0.5">CMD</kbd> (Mac) untuk memilih > 1 PC sekaligus.
+                            </p>
+                            <p class="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-info text-purple-400"></i> Software/Lisensi akan mengikuti lokasi fisik aset induknya.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Foto Aset (Bisa Upload Banyak)</label>
+                            <div class="flex flex-col gap-2">
+                                <label class="block w-full">
+                                    <span class="sr-only">Choose file</span>
+                                    <input type="file" id="assetImageInput" multiple onchange="handleNewFiles(this)" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"/>
+                                </label>
+                                <!-- Edit Mode show existing image -->
+                                <p class="text-xs text-gray-400 mt-1" id="existingImagesLabel" style="display:none">Foto yang sudah ada:</p>
+                                <div id="existingImagesContainer" class="flex gap-2 flex-wrap"></div>
+                                <!-- New previews container -->
+                                <p class="text-xs text-gray-400 mt-1" id="newImagesLabel" style="display:none">Foto baru ditambahkan:</p>
+                                <div id="previewImagesContainer" class="flex gap-2 flex-wrap"></div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-100 pt-4">
+                            <div class="flex justify-between items-center mb-3">
+                                <label class="block text-sm font-bold text-gray-700">Spesifikasi Teknis</label>
+                                <button type="button" onclick="addSpecRow()" class="text-xs bg-green-50 text-green-700 px-3 py-1.5 rounded-lg border border-green-200 hover:bg-green-100 font-bold transition flex items-center gap-1">
+                                    <i class="fa-solid fa-plus"></i> Tambah
+                                </button>
+                            </div>
+                            <div id="specsContainer" class="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                <p class="text-xs text-gray-400 text-center italic" id="emptySpecMsg">Belum ada spesifikasi.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-2xl">
+                        <button type="button" onclick="closeModal('assetModal')" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Batal</button>
+                        <button type="submit" id="btnSaveAsset" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition">Simpan Aset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="detailModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black/30 bg-opacity-75 transition-opacity" onclick="closeModal('detailModal')"></div>
+
+            <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
+                <div class="relative h-56 bg-gray-200 group" id="detailImageWrapper">
+                    <img id="detailImage" src="" class="w-full h-full object-cover">
+                    
+                    <button id="detailPrevBtn" onclick="navigateDetailGallery(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center transition backdrop-blur-sm hidden"><i class="fa-solid fa-chevron-left text-sm"></i></button>
+                    <button id="detailNextBtn" onclick="navigateDetailGallery(1)" class="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center transition backdrop-blur-sm hidden"><i class="fa-solid fa-chevron-right text-sm"></i></button>
+                    
+                    <div id="detailGalleryDots" class="absolute bottom-20 left-0 right-0 flex justify-center gap-1.5 z-20"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6 z-10 pointer-events-none">
+                        <div>
+                            <span id="detailStatus" class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider mb-2 inline-block shadow-sm">-</span>
+                            <h2 class="text-3xl font-bold text-white drop-shadow-md" id="detailName">-</h2>
+                            <p class="text-white/90 text-sm font-medium flex items-center gap-1 mt-1">
+                                <i class="fa-solid fa-tag text-xs"></i> <span id="detailCategory">-</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal('detailModal')" class="absolute top-4 right-4 z-20 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 w-9 h-9 flex items-center justify-center transition backdrop-blur-sm">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <div class="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    
+                    <div id="detailParentAsset" class="hidden mb-4">
+                        <div class="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-link text-purple-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-purple-500 font-bold uppercase tracking-wider">Terinstal di</p>
+                                <p class="text-sm font-bold text-purple-800" id="detailParentName">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-6 mb-6">
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1" id="detailSNLabel">Serial Number</p>
+                            <p class="text-gray-800 font-mono font-medium text-sm border-b border-gray-100 pb-1" id="detailSN">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Lokasi</p>
+                            <p class="text-gray-800 font-medium text-sm border-b border-gray-100 pb-1">
+                                <i class="fa-solid fa-location-dot text-blue-500 mr-1"></i> <span id="detailLoc">-</span>
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider mb-1">Tanggal Pembelian</p>
+                            <p class="text-gray-800 font-medium text-sm border-b border-gray-100 pb-1" id="detailDate">-</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-4">
+                        <h3 class="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-blue-500"></i> Spesifikasi Teknis
+                        </h3>
+                        <div id="detailSpecs" class="space-y-2 text-sm text-gray-600"></div>
+                    </div>
+
+                    
+                    <div id="detailChildAssetsSection" class="hidden">
+                        <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                            <h3 class="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-microchip text-indigo-500"></i> Komponen & Software Terinstal
+                            </h3>
+                            <div id="detailChildAssets"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-4 flex justify-end">
+                    <button onclick="closeModal('detailModal')" class="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-100 transition shadow-sm">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    
+    
+    <script>
+        // GLOBAL VARS
+        let currentLocId = null;
+        let currentLocName = '';
+        let currentLocCode = ''; // Store location code for QR
+        let currentPage = 1;
+        let currentLocHasChildren = false; // Track if selected location has children
+
+        let lastPage = 1;
+        const storageUrl = "<?php echo e(asset('storage')); ?>";
+
+        // Custom Toast Mixin
+        function showToast(icon, title) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: icon,
+                title: title,
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchLocations();
+            initCategoryListener();
+
+            // Event listener: Toggle sub-lokasi
+            const toggleSub = document.getElementById('toggleIncludeSub');
+            if (toggleSub) {
+                toggleSub.addEventListener('change', () => {
+                    updateSubLocColumns();
+                    if (currentLocId) {
+                        currentPage = 1;
+                        loadAssetsByLocation(currentLocId, 1);
+                    }
+                });
+            }
+        });
+
+        // --- PARENT-CHILD ASSET LOGIC ---
+        function initCategoryListener() {
+            const categorySelect = document.getElementById('assetCategory');
+            categorySelect.addEventListener('change', async function(e) {
+                // Determine if event is triggered manually by JS editAsset (which passes detail)
+                const isEditTrigger = e.detail && e.detail.isEdit === true;
+                
+                const selectedOption = this.options[this.selectedIndex];
+                const categoryName = selectedOption.getAttribute('data-name') || '';
+                const isSoftware = categoryName.toLowerCase().includes('software') || categoryName.toLowerCase().includes('lisensi');
+
+                const labelSN = document.getElementById('labelSN');
+                const statusSelect = document.getElementById('assetStatus');
+                const parentGroup = document.getElementById('parentAssetGroup');
+                const parentSelect = document.getElementById('parentAssetId');
+
+                // Preserve current status/parent if we are editing
+                const currentStatus = statusSelect.value;
+
+                if (isSoftware) {
+                    labelSN.innerText = 'License Key / Product Key';
+                    statusSelect.innerHTML = `
+                        <option value="aktif">Aktif</option>
+                        <option value="kedaluwarsa">Kedaluwarsa (Expired)</option>
+                        <option value="ditangguhkan">Ditangguhkan</option>
+                    `;
+                    // Attempt to restore status if valid for software
+                    if (['aktif', 'kedaluwarsa', 'ditangguhkan'].includes(currentStatus)) {
+                        statusSelect.value = currentStatus;
+                    }
+                    parentGroup.classList.remove('hidden');
+                    parentSelect.required = true;
+                    
+                    // Only fetch here if it was a user click. 
+                    // If it's from editAsset, editAsset will handle the fetch to ensure correct targetLocId
+                    if (!isEditTrigger) {
+                        await fetchParentAssets(currentLocId);
+                    }
+                    
+                } else {
+                    labelSN.innerText = 'Serial Number';
+                    statusSelect.innerHTML = `
+                        <option value="normal">Normal</option>
+                        <option value="rusak">Rusak</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="hilang">Hilang</option>
+                    `;
+                    // Attempt to restore status if valid for hardware
+                    if (['normal', 'rusak', 'maintenance', 'hilang'].includes(currentStatus)) {
+                        statusSelect.value = currentStatus;
+                    }
+                    parentGroup.classList.add('hidden');
+                    parentSelect.required = false;
+                    parentSelect.innerHTML = '<option value="" disabled>-- Pilih Aset Hardware Induk --</option>';
+                }
+            });
+        }
+
+        async function fetchParentAssets(locationId) {
+            if (!locationId) return;
+            const parentSelect = document.getElementById('parentAssetId');
+            
+            // Try parse prefill as array or split by comma
+            let currentSelected = [];
+            if (parentSelect.dataset.prefill) {
+                try {
+                    currentSelected = JSON.parse(parentSelect.dataset.prefill);
+                    if (!Array.isArray(currentSelected)) currentSelected = [currentSelected];
+                } catch(e) {
+                    currentSelected = parentSelect.dataset.prefill.split(',');
+                }
+            }
+
+            parentSelect.innerHTML = '<option value="" disabled>Memuat aset induk...</option>';
+            try {
+                const res = await fetch(`/admin/assets/hardware-by-location/${locationId}`);
+                const json = await res.json();
+                parentSelect.innerHTML = '';
+                
+                if (json.status === 'success' && json.data.length > 0) {
+                    json.data.forEach(asset => {
+                        const isSelected = currentSelected.includes(asset.id.toString()) || currentSelected.includes(asset.id) ? 'selected' : '';
+                        parentSelect.innerHTML += `<option value="${asset.id}" ${isSelected}>${asset.name} (${asset.serial_number || '-'})</option>`;
+                    });
+                } else {
+                    parentSelect.innerHTML = '<option value="" disabled>-- Tidak ada hardware di lokasi ini --</option>';
+                }
+            } catch (e) {
+                parentSelect.innerHTML = '<option value="" disabled>-- Gagal memuat data --</option>';
+            }
+        }
+
+        // HELPERS
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.classList.add('hidden');
+
+            // Reset loading state on buttons when modal closes
+            const btnSaveLoc = document.getElementById('btnSaveLoc');
+            if(btnSaveLoc) { btnSaveLoc.disabled = false; btnSaveLoc.innerHTML = 'Simpan'; }
+
+            const btnSaveAsset = document.getElementById('btnSaveAsset');
+            if(btnSaveAsset) { btnSaveAsset.disabled = false; btnSaveAsset.innerHTML = 'Simpan Aset'; }
+        }
+
+        function previewFile() {
+            const preview = document.getElementById('previewImage');
+            const file = document.getElementById('assetImage').files[0];
+            const reader = new FileReader();
+            reader.onload = () => { preview.src = reader.result; preview.classList.remove('hidden'); };
+            if (file) reader.readAsDataURL(file);
+        }
+
+        function addSpecRow(key = '', value = '') {
+            const container = document.getElementById('specsContainer');
+            const emptyMsg = document.getElementById('emptySpecMsg');
+            if(emptyMsg) emptyMsg.remove(); // Remove "empty" message
+
+            const rowId = 'spec-' + Date.now();
+            const newRowHtml = `
+                <div class="flex gap-2 items-center animate-fadeIn" id="${rowId}">
+                    <input type="text" name="specs_key[]" value="${key}" placeholder="Label (ex: Warna)" class="w-1/3 border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500 border-2 border-gray-700">
+                    <input type="text" name="specs_value[]" value="${value}" placeholder="Value (ex: Merah)" class="w-full border-gray-300 rounded-lg text-xs p-2 focus:ring-blue-500 focus:border-blue-500 border-2 border-gray-700">
+                    <button type="button" onclick="document.getElementById('${rowId}').remove()" class="text-red-400 p-2 hover:bg-red-50 rounded transition"><i class="fa-solid fa-trash-can"></i></button>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', newRowHtml);
+        }
+
+        // --- TREE LOGIC ---
+        async function fetchLocations() {
+            const container = document.getElementById('locationTreeContainer');
+            try {
+                const res = await fetch("<?php echo e(route('admin.locations.tree')); ?>", { headers: {'Accept':'application/json'} });
+                const json = await res.json();
+                container.innerHTML = '';
+                if(json.data.length === 0) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-40 text-gray-400">
+                            <i class="fa-solid fa-folder-open text-3xl mb-2"></i>
+                            <span class="text-xs">Belum ada lokasi.</span>
+                        </div>`;
+                } else {
+                    json.data.forEach(loc => container.appendChild(createTreeNode(loc)));
+                }
+
+                // [NEW] Node khusus untuk Aset Tanpa Lokasi / Software
+                const unassignedNode = document.createElement('div');
+                unassignedNode.className = "mb-1 mt-4";
+                unassignedNode.innerHTML = `
+                    <div id="node-header-unassigned" class="flex items-center justify-between gap-2 px-2 py-2 rounded-lg hover:bg-gray-100 cursor-pointer transition group text-gray-500 border border-dashed border-gray-300">
+                        <div class="flex gap-2.5 items-center flex-1 overflow-hidden" onclick="selectLocation('unassigned', 'Virtual / Tanpa Lokasi', 'Aset Software atau Lisensi yang tidak memiliki lokasi fisik', 'UNASSIGNED')">
+                            <div class="w-5 shrink-0"></div>
+                            <div class="w-6 h-6 flex items-center justify-center rounded text-gray-400 shrink-0 node-icon-container">
+                                <i class="fa-solid fa-cloud text-xs"></i>
+                            </div>
+                            <span class="truncate text-sm node-text font-medium italic">Software / Tanpa Lokasi</span>
+                        </div>
+                    </div>`;
+                container.appendChild(unassignedNode);
+
+            } catch (e) {
+                container.innerHTML = '<div class="text-center text-red-500 text-xs mt-4">Gagal memuat struktur.</div>';
+            }
+        }
+
+        // HELPER: Escape quotes untuk onclick attributes
+        function escapeQuotes(str) {
+            if (!str) return '';
+            return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+        }
+
+        function createTreeNode(loc) {
+            const childrenArray = loc.children_recursive || loc.children || [];
+            const hasChildren = childrenArray.length > 0;
+            const isParent = hasChildren;
+            
+            const node = document.createElement('div');
+            node.className = "mb-1";
+            
+            const header = document.createElement('div');
+            // [NEW] Added ID for manual selection
+            header.id = `node-header-${loc.id}`; 
+            header.className = "flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-blue-50 cursor-pointer transition group text-gray-600";
+            
+            // Escape data untuk keamanan
+            const safeName = escapeQuotes(loc.name);
+            const safeDesc = escapeQuotes(loc.description || '');
+            const safeCode = escapeQuotes(loc.code || '');
+
+            
+            header.innerHTML = `
+                <div class="flex gap-2.5 items-center flex-1 overflow-hidden" onclick="selectLocation('${loc.id}', '${safeName}', '${safeDesc}', '${safeCode}')">
+                    ${hasChildren ? `
+                        <button onclick="event.stopPropagation(); toggleNode(this)" class="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition shrink-0">
+                            <i class="fa-solid fa-chevron-right text-xs chevron-icon transition-transform duration-200"></i>
+                        </button>
+                    ` : '<div class="w-5 shrink-0"></div>'}
+                    
+                    <div class="w-6 h-6 flex items-center justify-center rounded text-gray-400 shrink-0 node-icon-container">
+                        <i class="fa-solid ${loc.type === 'building' ? 'fa-building' : 'fa-location-dot text-xs'}"></i>
+                    </div>
+                    
+                    <span class="truncate text-sm node-text">${loc.name}</span>
+                </div>
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onclick="event.stopPropagation(); openLocationModal('${loc.parent_id || ''}', '${loc.id}', '${safeName}', '${safeDesc}', null, '${loc.type || ''}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                    <button onclick="event.stopPropagation(); openLocationModal('${loc.id}', null, null, null, '${safeName}', null, '${loc.type || ''}')" class="text-gray-500 w-7 h-7 hover:bg-white hover:text-green-600 hover:shadow-sm rounded transition border border-transparent hover:border-gray-200"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                </div>`;
+            node.appendChild(header);
+
+            if (hasChildren) {
+                const childContainer = document.createElement('div');
+                // [NEW] Updated class for visual hierarchy
+                childContainer.className = "children-container space-y-0.5 hidden"; 
+                childrenArray.forEach(c => childContainer.appendChild(createTreeNode(c)));
+                node.appendChild(childContainer);
+            }
+            return node;
+        }
+
+        // FUNGSI TOGGLE NODE (EXPAND/COLLAPSE)
+        function toggleNode(button) {
+            const treeNode = button.closest('.mb-1');
+            const childContainer = treeNode.querySelector('.children-container');
+            const chevron = button.querySelector('.chevron-icon');
+            
+            if (childContainer) {
+                const isHidden = childContainer.classList.contains('hidden');
+                
+                if (isHidden) {
+                    // Expand
+                    childContainer.classList.remove('hidden');
+                    chevron.style.transform = 'rotate(90deg)';
+                } else {
+                    // Collapse
+                    childContainer.classList.add('hidden');
+                    chevron.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+
+        // --- MAIN UI LOGIC ---
+        function selectLocation(id, name, desc, code) {
+            currentLocId = id; 
+            currentLocName = name;
+            currentLocCode = code || ''; 
+            currentPage = 1;
+
+            document.getElementById('headerTitle').innerText = name;
+            document.getElementById('headerId').innerText = code || id; 
+            document.getElementById('headerIdBadge').classList.remove('hidden');
+            document.getElementById('headerBreadcrumb').innerText = desc || 'Tidak ada deskripsi tambahan.';
+
+            // Set QR Code
+            const qrImg = document.getElementById('headerQr');
+            const qrData = code || `ID-${id}`; 
+            qrImg.classList.add('opacity-30'); 
+            setTimeout(() => {
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrData}`;
+                qrImg.onload = () => qrImg.classList.remove('opacity-30'); 
+            }, 200);
+
+            // Enable Buttons & Tooltips
+            ['btnAddAsset', 'btnPrintQr'].forEach(i => {
+                const btn = document.getElementById(i);
+                if (btn) {
+                    btn.disabled = false;
+                    // Update title to be standard
+                    btn.title = i === 'btnAddAsset' ? 'Tambah Aset di sini' : 'Print QR Code';
+                }
+            });
+
+            // [NEW] ACTIVE STATE LOGIC (No Fetch)
+            // 1. Remove active class from previous
+            document.querySelectorAll('.tree-node-active').forEach(el => {
+                el.classList.remove('tree-node-active', 'bg-blue-50', 'text-blue-600');
+                el.classList.add('text-gray-600');
+                
+                // Reset Icon Container
+                const iconContainer = el.querySelector('.node-icon-container');
+                if(iconContainer) {
+                    iconContainer.classList.remove('text-blue-600', 'bg-blue-100');
+                    iconContainer.classList.add('text-gray-400');
+                }
+            });
+
+            // 2. Add active to current
+            const activeNode = document.getElementById(`node-header-${id}`);
+            if(activeNode) {
+                activeNode.classList.add('tree-node-active', 'bg-blue-50', 'text-blue-600');
+                activeNode.classList.remove('text-gray-600');
+
+                const iconContainer = activeNode.querySelector('.node-icon-container');
+                if(iconContainer) {
+                    iconContainer.classList.remove('text-gray-400');
+                    iconContainer.classList.add('text-blue-600', 'bg-blue-100');
+                }
+            }
+
+            // Detect if this node has children (for showing toggle)
+            currentLocHasChildren = false;
+            if (id !== 'unassigned') {
+                const nodeEl = document.getElementById(`node-header-${id}`);
+                if (nodeEl) {
+                    const parentMb1 = nodeEl.closest('.mb-1');
+                    if (parentMb1 && parentMb1.querySelector('.children-container')) {
+                        currentLocHasChildren = true;
+                    }
+                }
+            }
+
+            // Show/hide toggle bar
+            const toggleBar = document.getElementById('toggleSubLocationBar');
+            if (currentLocHasChildren) {
+                toggleBar.style.display = 'flex';
+            } else {
+                toggleBar.style.display = 'none';
+            }
+            updateSubLocColumns();
+
+            // DO NOT FETCH TREE AGAIN implies Sidebar stays open on mobile
+
+            loadAssetsByLocation(id, 1);
+        }
+
+        /**
+         * Show/hide the 'Lokasi Detail' column based on toggle state.
+         */
+        function updateSubLocColumns() {
+            const toggle = document.getElementById('toggleIncludeSub');
+            const isOn = toggle && toggle.checked;
+            const label = document.getElementById('toggleSubLabel');
+
+            // Show/hide the extra column
+            document.querySelectorAll('.sub-loc-col').forEach(el => {
+                el.style.display = (currentLocHasChildren && isOn) ? '' : 'none';
+            });
+
+            // Update label text
+            if (label) {
+                if (isOn) {
+                    label.innerHTML = '<i class="fa-solid fa-sitemap mr-1.5 opacity-80"></i> Menampilkan aset lokasi ini & turunannya';
+                    label.className = 'text-xs px-3 py-1 rounded-full font-bold shadow-sm whitespace-normal sm:whitespace-nowrap bg-blue-100 text-blue-700 border border-blue-200 flex-1 sm:flex-initial text-center sm:text-left transition-colors';
+                } else {
+                    label.innerHTML = '<i class="fa-solid fa-location-crosshairs mr-1.5 opacity-80"></i> Hanya aset di lokasi utama';
+                    label.className = 'text-xs px-3 py-1 rounded-full font-bold shadow-sm whitespace-normal sm:whitespace-nowrap bg-slate-200 text-slate-700 border border-slate-300 flex-1 sm:flex-initial text-center sm:text-left transition-colors';
+                }
+            }
+        }
+
+        async function loadAssetsByLocation(id, page) {
+            const tbody = document.getElementById('assetTableBody');
+            const empty = document.getElementById('emptyState');
+            const pagination = document.getElementById('paginationContainer');
+            const totalCols = 7; // NO, Foto, Nama, Lokasi, Kategori, Status, Aksi
+
+            // Skeleton Loading
+            tbody.innerHTML = `
+                <tr><td colspan="${totalCols}" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>
+                <tr><td colspan="${totalCols}" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>
+                <tr><td colspan="${totalCols}" class="p-4"><div class="animate-pulse flex space-x-4"><div class="h-4 bg-gray-200 rounded w-full"></div></div></td></tr>`;
+
+            empty.classList.add('hidden');
+            pagination.classList.add('hidden');
+
+            // Build query params with toggle state
+            const toggle = document.getElementById('toggleIncludeSub');
+            const includeSub = toggle ? toggle.checked : true;
+
+            try {
+                console.log(`Fetching: /admin/assets/by-location/${id}?page=${page}&include_sub=${includeSub}`);
+                const res = await fetch(`/admin/assets/by-location/${id}?page=${page}&include_sub=${includeSub}`);
+                const json = await res.json();
+                console.log('Response JSON:', json);
+                
+                const paginatedData = json.data;
+                const assets = paginatedData.data;
+                console.log('Assets Array:', assets);
+
+                tbody.innerHTML = '';
+
+                if(assets.length === 0) {
+                    empty.classList.remove('hidden');
+                } else {
+                    currentPage = paginatedData.current_page;
+                    lastPage = paginatedData.last_page;
+                    const perPage = paginatedData.per_page;
+
+                    assets.forEach((asset, index) => {
+                        const rowNumber = (currentPage - 1) * perPage + index + 1;
+                        let statusClass = 'bg-gray-100 text-gray-600';
+                        if(asset.status === 'normal') statusClass = 'bg-green-100 text-green-700 border border-green-200';
+                        else if(asset.status === 'rusak') statusClass = 'bg-red-100 text-red-700 border border-red-200';
+                        else if(asset.status === 'maintenance') statusClass = 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+
+
+
+                        let imgUrl = asset.image_url || 'https://via.placeholder.com/150?text=No+Img';
+
+                        const catName = (asset.category && asset.category.name) ? asset.category.name : '<span class="text-gray-400 italic">Tanpa Kategori</span>';
+
+                        const isManajer = <?php echo e(auth()->user()->isManajer() ? 'true' : 'false'); ?>;
+
+                        // Location path for "Lokasi Detail" column
+                        const locPath = asset.location_path || (asset.location ? asset.location.name : '-');
+                        const showLocCol = currentLocHasChildren && (toggle ? toggle.checked : true);
+
+                        const row = `
+                            <tr class="hover:bg-blue-50/50 border-b border-gray-50 transition group">
+                                <td class="px-6 py-4 text-center text-xs font-bold text-gray-400">${rowNumber}</td>
+                                <td class="px-6 py-3">
+                                    <div class="relative w-10 h-10 rounded-lg overflow-hidden border border-gray-200 group-hover:border-blue-200 transition">
+                                        <img src="${imgUrl}" class="w-full h-full object-cover cursor-pointer hover:scale-110 transition duration-300" onclick="showAssetDetail(${asset.id})">
+                                    </div>
+                                </td>
+                                <td class="px-6 py-3">
+                                    <div class="font-bold text-gray-800 text-sm">${asset.name}</div>
+                                    <div class="text-[10px] text-gray-400 font-mono">${asset.serial_number || 'No SN'}</div>
+                                </td>
+                                <td class="px-6 py-3 sub-loc-col" style="${showLocCol ? '' : 'display:none'}">
+                                    <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                        <i class="fa-solid fa-location-dot text-blue-400 shrink-0"></i>
+                                        <span class="truncate max-w-[200px]" title="${locPath}">${locPath}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-3 text-xs text-gray-600">${catName}</td>
+                                <td class="px-6 py-3"><span class="${statusClass} px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wide shadow-sm">${asset.status}</span></td>
+                                ` + (!isManajer ? `
+                                <td class="px-6 py-3 text-center">
+                                    <div class="flex justify-center gap-1 opacity-60 group-hover:opacity-100 transition">
+                                        <button onclick="showAssetDetail(${asset.id})" class="w-8 h-8 rounded-full hover:bg-white hover:shadow-sm text-gray-500 hover:text-blue-600 transition flex items-center justify-center border border-transparent hover:border-gray-200" title="Detail"><i class="fa-solid fa-circle-info"></i></button>
+                                        <button onclick="editAsset(${asset.id})" class="w-8 h-8 rounded-full hover:bg-white hover:shadow-sm text-gray-500 hover:text-orange-500 transition flex items-center justify-center border border-transparent hover:border-gray-200" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="deleteAsset(${asset.id})" class="w-8 h-8 rounded-full hover:bg-white hover:shadow-sm text-gray-500 hover:text-red-500 transition flex items-center justify-center border border-transparent hover:border-gray-200" title="Hapus"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </td>` : '') + `
+                            </tr>`;
+                        tbody.innerHTML += row;
+                    });
+                    updatePaginationUI();
+                }
+            } catch (e) {
+                console.error("Fetch Data Error:", e);
+                tbody.innerHTML = `<tr><td colspan="${totalCols}" class="p-4 text-center text-red-500 font-medium">Terjadi kesalahan Javascript saat memuat data: ${e.message}</td></tr>`;
+            }
+        }
+
+        function updatePaginationUI() {
+            const pagination = document.getElementById('paginationContainer');
+            pagination.classList.remove('hidden');
+            document.getElementById('pageCurrent').innerText = currentPage;
+            document.getElementById('pageTotal').innerText = lastPage;
+            document.getElementById('btnPrev').disabled = currentPage <= 1;
+            document.getElementById('btnNext').disabled = currentPage >= lastPage;
+        }
+
+        function changePage(direction) {
+            if(direction === 'prev' && currentPage > 1) loadAssetsByLocation(currentLocId, currentPage - 1);
+            else if (direction === 'next' && currentPage < lastPage) loadAssetsByLocation(currentLocId, currentPage + 1);
+        }
+
+        // --- DETAIL MODAL ---
+        // --- DETAIL GALLERY STATE ---
+        let detailGalleryImages = [];
+        let detailGalleryIndex = 0;
+
+        function navigateDetailGallery(direction) {
+            detailGalleryIndex += direction;
+            if (detailGalleryIndex < 0) detailGalleryIndex = detailGalleryImages.length - 1;
+            if (detailGalleryIndex >= detailGalleryImages.length) detailGalleryIndex = 0;
+            document.getElementById('detailImage').src = detailGalleryImages[detailGalleryIndex];
+            updateDetailDots();
+        }
+
+        function updateDetailDots() {
+            const dots = document.getElementById('detailGalleryDots');
+            dots.innerHTML = '';
+            if (detailGalleryImages.length <= 1) return;
+            detailGalleryImages.forEach((_, i) => {
+                dots.innerHTML += `<button onclick="detailGalleryIndex=${i}; document.getElementById('detailImage').src=detailGalleryImages[${i}]; updateDetailDots();" class="w-2 h-2 rounded-full transition-all ${i === detailGalleryIndex ? 'bg-white scale-125 shadow' : 'bg-white/50 hover:bg-white/80'}"></button>`;
+            });
+        }
+
+        async function showAssetDetail(id) {
+            try {
+                const res = await fetch(`/admin/assets/${id}`);
+                const json = await res.json();
+                if(json.status === 'success') {
+                    const asset = json.data;
+                    
+                    // --- MULTI-IMAGE GALLERY LOGIC ---
+                    detailGalleryImages = [];
+                    detailGalleryIndex = 0;
+
+                    if (asset.image_urls && Array.isArray(asset.image_urls) && asset.image_urls.length > 0) {
+                        detailGalleryImages = asset.image_urls;
+                    } else if (asset.images && Array.isArray(asset.images) && asset.images.length > 0) {
+                        detailGalleryImages = asset.images.map(img => img.startsWith('http') ? img : `<?php echo e(asset('storage')); ?>/${img}`);
+                    }
+
+                    const mainImg = document.getElementById('detailImage');
+                    const prevBtn = document.getElementById('detailPrevBtn');
+                    const nextBtn = document.getElementById('detailNextBtn');
+
+                    if (detailGalleryImages.length > 0) {
+                        mainImg.src = detailGalleryImages[0];
+                        if (detailGalleryImages.length > 1) {
+                            prevBtn.classList.remove('hidden');
+                            nextBtn.classList.remove('hidden');
+                        } else {
+                            prevBtn.classList.add('hidden');
+                            nextBtn.classList.add('hidden');
+                        }
+                    } else {
+                        mainImg.src = 'https://via.placeholder.com/600x300?text=No+Image';
+                        prevBtn.classList.add('hidden');
+                        nextBtn.classList.add('hidden');
+                    }
+                    updateDetailDots();
+
+                    document.getElementById('detailName').innerText = asset.name;
+                    document.getElementById('detailCategory').innerText = asset.category ? asset.category.name : '-';
+                    document.getElementById('detailSN').innerText = asset.serial_number || '-';
+                    document.getElementById('detailStatus').innerText = asset.status;
+
+                    let statusClass = 'bg-gray-500';
+                    if(asset.status === 'normal') statusClass = 'bg-green-500';
+                    else if(asset.status === 'rusak') statusClass = 'bg-red-500';
+                    else if(asset.status === 'maintenance') statusClass = 'bg-yellow-500';
+
+                    document.getElementById('detailStatus').className = `px-3 py-1 text-white rounded shadow-sm text-[10px] font-bold uppercase tracking-wider mb-2 inline-block ${statusClass}`;
+
+                    if (asset.location) {
+                        document.getElementById('detailLoc').innerHTML = `<span class="text-gray-800">${asset.location.name}</span>`;
+                    } else if (asset.parent_asset) {
+                        const parentLocName = asset.parent_asset.location ? asset.parent_asset.location.name : 'Lokasi tidak diketahui';
+                        document.getElementById('detailLoc').innerHTML = `
+                            <span class="text-blue-600 font-bold">${parentLocName}</span><br>
+                            <span class="text-[11px] text-gray-500"><i class="fa-solid fa-microchip text-purple-400 mr-1"></i>Diinstal pada: ${asset.parent_asset.name}</span>
+                        `;
+                    } else {
+                        document.getElementById('detailLoc').innerHTML = `<span class="italic text-gray-400">Virtual / Tanpa Lokasi</span>`;
+                    }
+                    document.getElementById('detailDate').innerText = asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+
+                    const specBox = document.getElementById('detailSpecs');
+                    specBox.innerHTML = '';
+                    if (asset.specifications && Object.keys(asset.specifications).length > 0) {
+                        const specs = typeof asset.specifications === 'string' ? JSON.parse(asset.specifications) : asset.specifications;
+                        Object.entries(specs).forEach(([k, v]) => {
+                            specBox.innerHTML += `
+                                <div class="flex justify-between border-b border-gray-200 pb-2 last:border-0 hover:bg-white p-1 rounded transition">
+                                    <span class="font-medium text-gray-700">${k}</span>
+                                    <span class="font-bold text-gray-900">${v}</span>
+                                </div>`;
+                        });
+                    } else {
+                        specBox.innerHTML = '<p class="text-gray-400 italic text-center py-4">Tidak ada spesifikasi khusus.</p>';
+                    }
+
+                    // --- Render Parent Asset Badge (Software) ---
+                    const parentBadge = document.getElementById('detailParentAsset');
+                    if (asset.parent_asset) {
+                        parentBadge.classList.remove('hidden');
+                        document.getElementById('detailParentName').innerText = asset.parent_asset.name + (asset.parent_asset.serial_number ? ` (${asset.parent_asset.serial_number})` : '');
+                    } else {
+                        parentBadge.classList.add('hidden');
+                    }
+
+                    // --- Render Child Assets Section (Hardware) ---
+                    const childAssetsSection = document.getElementById('detailChildAssetsSection');
+                    const childAssetsContainer = document.getElementById('detailChildAssets');
+                    
+                    if (asset.child_assets && asset.child_assets.length > 0) {
+                        childAssetsSection.classList.remove('hidden');
+                        let childHtml = '<div class="space-y-3">';
+                        asset.child_assets.forEach(child => {
+                            // Tentukan warna badge status software
+                            let cStatusClass = 'bg-gray-500 text-white';
+                            if(child.status === 'aktif') cStatusClass = 'bg-green-100 text-green-700 border border-green-200';
+                            else if(child.status === 'kedaluwarsa') cStatusClass = 'bg-red-100 text-red-700 border border-red-200';
+                            else if(child.status === 'ditangguhkan') cStatusClass = 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+                            else if(child.status === 'normal') cStatusClass = 'bg-green-500 text-white'; // Fallback
+                            
+                            childHtml += `
+                                <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                                            <i class="fa-solid fa-compact-disc text-indigo-500"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm cursor-pointer hover:text-blue-600 transition" onclick="showAssetDetail(${child.id})">${child.name}</p>
+                                            <p class="text-[11px] text-gray-500 mt-0.5">Key: <span class="font-mono text-gray-700">${child.serial_number || '-'}</span></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide ${cStatusClass}">${child.status}</span>
+                                        <p class="text-[10px] text-gray-400 mt-1">${child.category ? child.category.name : 'Software'}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        childHtml += '</div>';
+                        childAssetsContainer.innerHTML = childHtml;
+                    } else {
+                        // Jika bukan software (hardware normal) dan tidak punya parent (bukan software)
+                        // Tampilkan section dengan pesan kosong agar terlihat bahwa ini hardware
+                        if (!asset.parent_asset) {
+                            childAssetsSection.classList.remove('hidden');
+                            childAssetsContainer.innerHTML = '<p class="text-xs text-gray-400 italic text-center py-4 bg-white rounded-lg border border-dashed border-gray-200">Tidak ada komponen atau software yang diinstal pada aset ini.</p>';
+                        } else {
+                            // Jika dia itu software, sembunyikan section child assets
+                            childAssetsSection.classList.add('hidden');
+                        }
+                    }
+
+                    document.getElementById('detailModal').classList.remove('hidden');
+                }
+            } catch (e) { Swal.fire('Error', 'Gagal memuat detail data.', 'error'); }
+        }
+
+        // --- ASSET FORM (Edit, Submit, Delete) ---
+        function openAssetModal() {
+            if(!currentLocId) {
+                Swal.fire({ icon: 'info', title: 'Pilih Lokasi Dulu', text: 'Silakan klik salah satu lokasi di menu kiri.' });
+                return;
+            }
+            document.getElementById('assetForm').reset();
+            document.getElementById('assetId').value = '';
+            document.getElementById('modalLocationId').value = currentLocId;
+            document.getElementById('modalLocationName').innerText = currentLocName;
+            document.getElementById('assetModalTitle').innerText = 'Tambah Aset Baru';
+            
+            // PARENT-CHILD RESET
+            const categorySelect = document.getElementById('assetCategory');
+            categorySelect.value = '';
+            document.getElementById('parentAssetId').dataset.prefill = '';
+            // Trigger change event to reset fields
+            categorySelect.dispatchEvent(new Event('change'));
+
+            document.getElementById('previewImagesContainer').innerHTML = '';
+            document.getElementById('existingImagesContainer').innerHTML = '';
+            document.getElementById('existingImagesLabel').style.display = 'none';
+            document.getElementById('newImagesLabel').style.display = 'none';
+            document.querySelectorAll('input[name="kept_images[]"]').forEach(el => el.remove());
+            pendingNewFiles = [];
+
+            const specContainer = document.getElementById('specsContainer');
+            specContainer.innerHTML = '<p class="text-xs text-gray-400 text-center italic" id="emptySpecMsg">Belum ada spesifikasi.</p>';
+
+            document.getElementById('assetModal').classList.remove('hidden');
+        }
+
+        async function editAsset(id) {
+            try {
+                const res = await fetch(`/admin/assets/${id}`);
+                const json = await res.json();
+                if(json.status === 'success') {
+                    const asset = json.data;
+                    document.getElementById('assetId').value = asset.id;
+                    document.getElementById('modalLocationId').value = asset.location_id;
+                    document.getElementById('modalLocationName').innerText = currentLocName;
+
+                    document.getElementById('assetName').value = asset.name;
+                    document.getElementById('assetCategory').value = asset.category_id;
+                    
+                    // PREFILL STATUS & PARENT ASSET FOR EVENT LISTENER
+                    document.getElementById('assetStatus').value = asset.status;
+                    if(asset.parent_asset_id) {
+                        document.getElementById('parentAssetId').dataset.prefill = asset.parent_asset_id;
+                    } else {
+                        document.getElementById('parentAssetId').dataset.prefill = '';
+                    }
+                    
+                    document.getElementById('assetSN').value = asset.serial_number || '';
+                    document.getElementById('assetDate').value = asset.purchase_date ? asset.purchase_date.split('T')[0] : '';
+                    
+                    // Trigger Event Listener untuk mengubah label & opsi status
+                    // Pass isEdit: true agar initCategoryListener tidak fetch ulang sembarangan
+                    document.getElementById('assetCategory').dispatchEvent(new CustomEvent('change', { detail: { isEdit: true } }));
+
+                    // Fetch parent assets secara eksplisit jika dia software
+                    const catSelect = document.getElementById('assetCategory');
+                    const catName = catSelect.options[catSelect.selectedIndex].getAttribute('data-name') || '';
+                    if (catName.toLowerCase().includes('software') || catName.toLowerCase().includes('lisensi')) {
+                        // Cari lokasi dari induknya jika punya, atau dari currentLocId
+                        let targetLocId = asset.parent_asset ? asset.parent_asset.location_id : currentLocId;
+                        await fetchParentAssets(targetLocId);
+                    }
+
+                    // Clear previous kept_images hidden inputs
+                    document.querySelectorAll('input[name="kept_images[]"]').forEach(el => el.remove());
+
+                    const preContainer = document.getElementById('existingImagesContainer');
+                    preContainer.innerHTML = '';
+                    document.getElementById('previewImagesContainer').innerHTML = '';
+                    document.getElementById('newImagesLabel').style.display = 'none';
+                    pendingNewFiles = [];
+
+                    // Build existing images with delete (×) button and kept_images hidden inputs
+                    const images = asset.images && Array.isArray(asset.images) ? asset.images : [];
+                    images.forEach((imgPath, idx) => {
+                        const fullUrl = imgPath.startsWith('http') ? imgPath : `<?php echo e(asset('storage')); ?>/${imgPath}`;
+                        const wrapperId = `existing-img-${idx}`;
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'relative';
+                        wrapper.id = wrapperId;
+                        wrapper.innerHTML = `
+                            <img src="${fullUrl}" class="h-16 w-16 object-cover rounded-lg border border-gray-200">
+                            <input type="hidden" name="kept_images[]" value="${imgPath}">
+                            <button type="button" 
+                                class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm transition" 
+                                title="Hapus foto ini">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>`;
+                        wrapper.querySelector('button').addEventListener('click', () => removeExistingImage(wrapperId));
+                        preContainer.appendChild(wrapper);
+                    });
+                    document.getElementById('existingImagesLabel').style.display = images.length > 0 ? 'block' : 'none';
+
+                    const container = document.getElementById('specsContainer');
+                    container.innerHTML = '';
+                    if(asset.specifications) {
+                        const specs = typeof asset.specifications === 'string' ? JSON.parse(asset.specifications) : asset.specifications;
+                        Object.entries(specs).forEach(([k, v]) => addSpecRow(k, v));
+                    }
+                    if(container.innerHTML === '') container.innerHTML = '<p class="text-xs text-gray-400 text-center italic" id="emptySpecMsg">Belum ada spesifikasi.</p>';
+
+                    document.getElementById('assetModalTitle').innerText = 'Edit Aset';
+                    document.getElementById('assetModal').classList.remove('hidden');
+                }
+            } catch (e) { Swal.fire('Error', 'Gagal memuat data aset.', 'error'); }
+        }
+
+        async function submitAssetForm(e) {
+            e.preventDefault();
+
+            // Loading State
+            const btnSave = document.getElementById('btnSaveAsset');
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...';
+
+            const id = document.getElementById('assetId').value;
+            const url = id ? `/admin/assets/${id}` : "<?php echo e(route('admin.assets.store')); ?>";
+            const formData = new FormData(document.getElementById('assetForm'));
+            if(id) formData.append('_method', 'PUT');
+
+            // Hapus file dari native input (kita pakai pendingNewFiles)
+            formData.delete('images[]');
+            // Append file dari managed array (skip null = sudah dihapus user)
+            pendingNewFiles.forEach(file => {
+                if (file) formData.append('images[]', file);
+            });
+
+            // Kasus khusus untuk Software / Tanpa Lokasi
+            if (formData.get('location_id') === 'unassigned') {
+                formData.set('location_id', '');
+            }
+
+            try {
+                const res = await fetch(url, { method: 'POST', headers: {'Accept':'application/json','X-CSRF-TOKEN':'<?php echo e(csrf_token()); ?>'}, body: formData });
+                const json = await res.json();
+                if(!res.ok) throw new Error(json.message);
+
+                closeModal('assetModal');
+                loadAssetsByLocation(currentLocId, currentPage);
+
+                showToast('success', 'Aset berhasil disimpan');
+
+            } catch (e) {
+                Swal.fire('Gagal!', e.message, 'error');
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = 'Simpan Aset';
+            }
+        }
+
+        async function deleteAsset(id) {
+            Swal.fire({
+                title: 'Hapus aset ini?',
+                text: "Aset akan dipindahkan ke sampah (Soft Delete).",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await fetch(`/admin/assets/${id}`, { method: 'DELETE', headers: {'Accept':'application/json','X-CSRF-TOKEN':'<?php echo e(csrf_token()); ?>'} });
+                        if(!res.ok) throw new Error('Gagal menghapus');
+
+                        loadAssetsByLocation(currentLocId, currentPage);
+                        // Toast.fire({ icon: 'success', title: 'Aset berhasil dihapus' });
+                        showToast('success', 'Aset berhasil dihapus');
+                    } catch (e) {
+                        Swal.fire('Error', 'Gagal menghapus aset.', 'error');
+                    }
+                }
+            });
+        }
+
+        // --- LOCATION FORM ---
+        function openLocationModal(pid, eid, ename, edesc, pname, etype, ptype) {
+            document.getElementById('locationForm').reset();
+            document.getElementById('locParentId').value = pid||'';
+            document.getElementById('locId').value = eid||'';
+            const delBtn = document.getElementById('btnDeleteLoc');
+            const pInfo = document.getElementById('parentInfoBox');
+
+            // --- Filter opsi tipe berdasarkan konteks ---
+            const select = document.getElementById('locType');
+            const allOptions = {
+                building : { value: 'building', label: '🏢  Gedung (Building)' },
+                floor    : { value: 'floor',    label: '📊  Lantai (Floor)' },
+                room     : { value: 'room',     label: '🚪  Ruangan (Room)' },
+                area     : { value: 'area',     label: '📍  Area / Lainnya' },
+                outdoor  : { value: 'outdoor',  label: '🌿  Outdoor' },
+            };
+
+            let allowedTypes;
+            if (eid) {
+                // Mode EDIT: tampilkan semua opsi
+                allowedTypes = ['building','floor','room','area','outdoor'];
+            } else if (!pid) {
+                // TAMBAH LOKASI UTAMA (root): hanya boleh Gedung, Area, Outdoor
+                allowedTypes = ['building','area','outdoor'];
+            } else if (ptype === 'building') {
+                // Sub-lokasi dari Gedung: boleh Lantai, Ruangan, Area
+                allowedTypes = ['floor','room','area'];
+            } else if (ptype === 'floor') {
+                // Sub-lokasi dari Lantai: hanya Ruangan atau Area
+                allowedTypes = ['room','area'];
+            } else {
+                // Fallback (Area/Outdoor/Room parent): Area saja
+                allowedTypes = ['area'];
+            }
+
+            select.innerHTML = '<option value="" disabled selected>Pilih Tipe</option>';
+            allowedTypes.forEach(t => {
+                const o = allOptions[t];
+                if (o) select.innerHTML += `<option value="${o.value}">${o.label}</option>`;
+            });
+
+            if(eid) {
+                document.getElementById('locModalTitle').innerText = 'Edit Lokasi';
+                document.getElementById('locName').value = ename;
+                document.getElementById('locDesc').value = edesc==='null'?'':edesc;
+                if(etype) document.getElementById('locType').value = etype;
+                delBtn.classList.remove('hidden'); pInfo.classList.add('hidden');
+            } else {
+                document.getElementById('locModalTitle').innerText = pid ? 'Tambah Sub-Lokasi' : 'Tambah Lokasi Utama';
+                delBtn.classList.add('hidden');
+                if(pid && pname) {
+                    pInfo.classList.remove('hidden');
+                    document.getElementById('parentNameDisplay').innerText = pname;
+                } else {
+                    pInfo.classList.add('hidden');
+                }
+            }
+            document.getElementById('locationModal').classList.remove('hidden');
+        }
+
+        async function submitLocationForm(e) {
+            e.preventDefault();
+
+            const btnSave = document.getElementById('btnSaveLoc');
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+
+            const id = document.getElementById('locId').value;
+            const url = id ? `/admin/api/locations/${id}` : "<?php echo e(route('admin.locations.store')); ?>";
+            const body = JSON.stringify(Object.fromEntries(new FormData(e.target)));
+
+            try {
+                const res = await fetch(url, { method: id?'PUT':'POST', headers: {'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':'<?php echo e(csrf_token()); ?>'}, body: body });
+                const json = await res.json();
+
+                if(!res.ok) throw new Error(json.message);
+
+                closeModal('locationModal');
+                fetchLocations();
+                if(id && currentLocId==id) selectLocation(id, JSON.parse(body).name, JSON.parse(body).description);
+
+                showToast('success', 'Data lokasi tersimpan');
+
+            } catch (error) {
+                Swal.fire('Gagal!', error.message, 'error');
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = 'Simpan';
+            }
+        }
+
+        async function deleteLocation() {
+            Swal.fire({
+                title: 'Hapus Lokasi?',
+                text: "Semua sub-lokasi di dalamnya juga akan terhapus.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+
+                if (result.isConfirmed) {
+                    try {
+                        const id = document.getElementById('locId').value;
+                        const res = await fetch(`/admin/api/locations/${id}`, { method: 'DELETE', headers: {'Accept':'application/json','X-CSRF-TOKEN':'<?php echo e(csrf_token()); ?>'} });
+                        const json = await res.json();
+
+                        if (!res.ok) throw new Error(json.message);
+
+                        closeModal('locationModal');
+                        fetchLocations();
+
+                        if(currentLocId == id) window.location.reload();
+                        else showToast('success', 'Lokasi berhasil dihapus');
+
+                    } catch (error) {
+                        Swal.fire('Gagal!', error.message, 'error');
+                    }
+                }
+            });
+        }
+
+        function printLocationQr() {
+            if(!currentLocId) return;
+            
+            // Use location code if available, otherwise fallback to ID
+            const qrData = currentLocCode || `ID-${currentLocId}`;
+            const displayCode = currentLocCode || `ID: ${currentLocId}`;
+            
+            const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}`;
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                    <head><title>Print QR - ${currentLocName}</title></head>
+                    <body style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif;">
+                        <h2 style="margin-bottom:10px;">${currentLocName}</h2>
+                        <img src="${url}" style="width:300px; height:300px; border:1px solid #ccc;">
+                        <p style="margin-top:10px; font-size:18px; font-weight:bold; color:#059669;">${displayCode}</p>
+                        <p style="margin-top:5px; font-size:12px; color:#666;">Scan QR code ini dari aplikasi teknisi</p>
+                        <script>
+                            window.onload = function() { window.print(); window.close(); }
+                        <\/script>
+                    </body>
+                </html>
+            `);
+            win.document.close();
+        }
+
+        // FUNGSI TOGGLE SIDEBAR
+        function toggleSidebar() {
+            const sidebar = document.getElementById('locationSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isOpen = !sidebar.classList.contains('-translate-x-full');
+            
+            if (isOpen) {
+                // Tutup sidebar
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            } else {
+                // Buka sidebar
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            }
+        }
+
+        // --- HAPUS EXISTING IMAGE DARI EDIT MODAL ---
+        function removeExistingImage(wrapperId) {
+            const wrapper = document.getElementById(wrapperId);
+            if (wrapper) {
+                wrapper.style.transition = 'opacity 0.2s, transform 0.2s';
+                wrapper.style.opacity = '0';
+                wrapper.style.transform = 'scale(0.8)';
+                setTimeout(() => wrapper.remove(), 200);
+            }
+        }
+
+        // --- MANAGED NEW FILES ---
+        let pendingNewFiles = [];
+
+        function handleNewFiles(input) {
+            if (!input.files || input.files.length === 0) return;
+            
+            Array.from(input.files).forEach(file => {
+                pendingNewFiles.push(file);
+                const idx = pendingNewFiles.length - 1;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const container = document.getElementById('previewImagesContainer');
+                    document.getElementById('newImagesLabel').style.display = 'block';
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'relative';
+                    wrapper.id = `new-img-${idx}`;
+                    wrapper.innerHTML = `
+                        <img src="${e.target.result}" class="h-16 w-16 object-cover rounded-lg border border-blue-200 shadow-sm animate-fadeIn">
+                        <button type="button" 
+                            class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm transition" 
+                            title="Hapus foto ini">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>`;
+                    wrapper.querySelector('button').addEventListener('click', () => removeNewFile(idx));
+                    container.appendChild(wrapper);
+                }
+                reader.readAsDataURL(file);
+            });
+
+            // Reset native input agar bisa pilih file lagi tanpa replace
+            input.value = '';
+        }
+
+        function removeNewFile(idx) {
+            pendingNewFiles[idx] = null; // Mark as removed (keep indices stable)
+            const wrapper = document.getElementById(`new-img-${idx}`);
+            if (wrapper) {
+                wrapper.style.transition = 'opacity 0.2s, transform 0.2s';
+                wrapper.style.opacity = '0';
+                wrapper.style.transform = 'scale(0.8)';
+                setTimeout(() => {
+                    wrapper.remove();
+                    // Hide label jika tidak ada foto baru tersisa
+                    if (pendingNewFiles.every(f => f === null)) {
+                        document.getElementById('newImagesLabel').style.display = 'none';
+                    }
+                }, 200);
+            }
+        }
+    </script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+    </style>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\User\Documents\tugas kuliah\TA\asset-monitoring\resources\views/admin/assets/index_tree.blade.php ENDPATH**/ ?>

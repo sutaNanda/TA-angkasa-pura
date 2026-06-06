@@ -19,8 +19,8 @@ class DashboardController extends Controller
 
         // 1. KARTU STATISTIK ATAS (Hari Ini)
         $stats = [
-            'patrol_total' => Maintenance::whereDate('schedule_date', $today)->count(),
-            'patrol_done'  => Maintenance::whereDate('schedule_date', $today)
+            'patrol_total' => Maintenance::whereDate('scheduled_date', $today)->count(),
+            'patrol_done'  => Maintenance::whereDate('scheduled_date', $today)
                                          ->where('status', 'completed')->count(),
 
             'lk_open'      => WorkOrder::whereIn('status', ['open', 'in_progress'])->count(),

@@ -23,7 +23,24 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
+        // Key untuk rate limiter (berdasarkan email dan IP)
+        $throttleKey = \Illuminate\Support\Str::transliterate(\Illuminate\Support\Str::lower($request->input('email')).'|'.$request->ip());
+
+        // Maksimal 5 percobaan, block selama 1 menit (60 detik)
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            
+            // Catat log jika terkena brute force
+            AuditLog::record('login_blocked', 'Authentication', "IP {$request->ip()} diblokir sementara karena terlalu banyak percobaan login untuk email: {$request->email}");
+
+            return back()->withErrors([
+                'email' => "Terlalu banyak percobaan login. Silakan coba lagi dalam {$seconds} detik.",
+            ])->onlyInput('email');
+        }
+
         if (Auth::attempt($credentials)) {
+            \Illuminate\Support\Facades\RateLimiter::clear($throttleKey); // Hapus limit jika berhasil
+            
             $request->session()->regenerate();
 
             $user = Auth::user();
@@ -44,6 +61,9 @@ class AuthController extends Controller
 
             return redirect('/');
         }
+
+        // Tambah hit ke rate limiter jika gagal
+        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 60);
 
         // Catat log gagal masuk
         AuditLog::record('login_failed', 'Authentication', "Gagal login dengan email: {$request->email} (Password salah / tidak terdaftar)");

@@ -73,15 +73,16 @@ class InspectionController extends Controller
 
                 // 1. Save Patrol Log
                 $patrolLog = PatrolLog::create([
-                    'technician_id' => Auth::id(),
-                    'asset_id' => $request->asset_id,
-                    'location_id' => $asset->location_id,
+                    'technician_id'       => Auth::id(),
+                    'asset_id'            => $request->asset_id,
+                    'location_id'         => $asset->location_id,
                     'checklist_template_id' => $request->template_id,
-                    'inspection_data' => json_encode($filteredAnswers),
-                    'status' => $request->has_issue ? 'issue_found' : 'normal',
-                    'notes' => $request->notes,
-                    'photos' => $photoPaths,
-                    'shift_id' => Auth::user()->shift_id,
+                    'inspection_data'     => json_encode($filteredAnswers),
+                    'status'              => $request->has_issue ? 'issue_found' : 'normal',
+                    'notes'               => $request->notes,
+                    'photos'              => $photoPaths,
+                    // Ganti shift_id dengan technician_group_id teknisi yang login
+                    'technician_group_id' => Auth::user()->technician_group_id,
                 ]);
                 
                 // Fix: If PatrolLog doesn't have 'photo' column, we might fail. 
@@ -98,15 +99,17 @@ class InspectionController extends Controller
                     $ticketNumber = 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid());
                     
                     $workOrder = WorkOrder::create([
-                        'ticket_number' => $ticketNumber,
-                        'asset_id' => $asset->id,
-                        'technician_id' => null, // Masuk ke Pool (agar bisa diambil siapa saja)
-                        'reported_by' => Auth::id(), // Self-reported
-                        'priority' => $request->is_critical ? 'high' : 'medium',
-                        'status' => 'open',
-                        'source' => 'patrol',
+                        'ticket_number'     => $ticketNumber,
+                        'asset_id'          => $asset->id,
+                        'technician_id'     => null,
+                        'reported_by'       => Auth::id(),
+                        'priority'          => $request->is_critical ? 'high' : 'medium',
+                        'status'            => 'open',
+                        'source'            => 'patrol',
                         'issue_description' => $request->notes ?? 'Masalah ditemukan saat patroli',
-                        'photos_before' => $photoPaths,
+                        'photos_before'     => $photoPaths,
+                        // Otomatis assign ke grup yang sama dengan teknisi yang menemukan masalah
+                        'assigned_group_id' => Auth::user()->technician_group_id,
                     ]);
 
                     $response['has_issue'] = true;

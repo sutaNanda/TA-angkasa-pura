@@ -21,10 +21,12 @@ Route::controller(AuthController::class)->group(function() {
     Route::post('/logout', 'logout')->name('logout');
 });
 
-// Registrasi Publik (Karyawan)
-Route::controller(App\Http\Controllers\Auth\RegisterController::class)->group(function() {
-    Route::get('/register', 'showRegistrationForm')->name('register');
-    Route::post('/register', 'register')->name('register.post');
+// Lupa Password (Forgot Password)
+Route::controller(App\Http\Controllers\Auth\ForgotPasswordController::class)->group(function() {
+    Route::get('/forgot-password', 'showLinkRequestForm')->middleware('guest')->name('password.request');
+    Route::post('/forgot-password', 'sendResetLinkEmail')->middleware('guest')->name('password.email');
+    Route::get('/reset-password/{token}', 'showResetForm')->middleware('guest')->name('password.reset');
+    Route::post('/reset-password', 'reset')->middleware('guest')->name('password.reset.update');
 });
 
 // Password Setup (Forced Reset)
@@ -33,25 +35,14 @@ Route::middleware(['auth'])->group(function() {
     Route::put('/password/setup', [App\Http\Controllers\Auth\PasswordSetupController::class, 'update'])->name('password.update');
 });
 
-// Email Verification Routes
+
+// Session Keep-Alive
 Route::middleware('auth')->group(function () {
-    Route::get('/email/verify', function () {
-        return view('auth.verify-email');
-    })->name('verification.notice');
-
-    Route::get('/email/verify/{id}/{hash}', function (\Illuminate\Foundation\Auth\EmailVerificationRequest $request) {
-        $request->fulfill();
-        return redirect()->route('user.tickets.index')->with('success', 'Email berhasil diverifikasi.');
-    })->middleware('signed')->name('verification.verify');
-
-    Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
-        $request->user()->sendEmailVerificationNotification();
-        return back()->with('status', 'verification-link-sent');
-    })->middleware('throttle:6,1')->name('verification.send');
     Route::post('/session/keep-alive', function () {
         return response()->json(['status' => 'success', 'message' => 'Session extended']);
     })->name('session.keep-alive');
 });
+
 
 // Redirect halaman awal berdasarkan role user
 Route::get('/', function () {
@@ -151,6 +142,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin,manajer'
     // 7. PENGATURAN & KEAMANAN
     Route::put('/profile/update', [App\Http\Controllers\Admin\UserController::class, 'updateProfile'])->name('profile.update');
     Route::resource('users', App\Http\Controllers\Admin\UserController::class)->except(['create', 'show', 'edit']);
+
+    // 8. MANAJEMEN GRUP TEKNISI & DEPARTEMEN
+    Route::resource('groups', App\Http\Controllers\Admin\TechnicianGroupController::class);
+    Route::resource('departments', App\Http\Controllers\Admin\DepartmentController::class)->except(['create', 'show', 'edit']);
     Route::get('/audit-logs', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
 
     // ===========================
@@ -263,7 +258,7 @@ Route::prefix('technician')->name('technician.')->middleware(['auth', 'role:tekn
 // ====================================================
 // GROUP ROUTE USER (PELAPOR / KARYAWAN)
 // ====================================================
-Route::prefix('user')->name('user.')->middleware(['auth', 'role:user', 'verified'])->group(function () {
+Route::prefix('user')->name('user.')->middleware(['auth', 'role:user'])->group(function () {
     
     // --- DASHBOARD & TIKET USER ---
     Route::get('/dashboard', [App\Http\Controllers\user\TicketController::class, 'index'])->name('tickets.index');

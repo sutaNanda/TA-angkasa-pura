@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Maintenance extends Model
 {
@@ -25,6 +26,7 @@ class Maintenance extends Model
         'notes',
         'result_data',
         'checklist_template_id',
+        'technician_group_id', // Grup yang dijadwalkan mengerjakan tugas ini
     ];
 
     protected $casts = [
@@ -62,9 +64,17 @@ class Maintenance extends Model
         return $this->belongsTo(MaintenancePlan::class);
     }
 
-    public function technician()
+    public function technician(): BelongsTo
     {
         return $this->belongsTo(User::class, 'technician_id');
+    }
+
+    /**
+     * Grup teknisi yang dijadwalkan mengerjakan tugas pemeliharaan ini.
+     */
+    public function technicianGroup(): BelongsTo
+    {
+        return $this->belongsTo(TechnicianGroup::class, 'technician_group_id');
     }
 
     /**

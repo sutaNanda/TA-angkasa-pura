@@ -19,7 +19,7 @@ class PatrolLog extends Model
         'notes',
         'photos',
         'work_order_id',
-        'shift_id',
+        'technician_group_id', // Grup yang melakukan inspeksi ini
     ];
 
     protected $casts = [
@@ -53,8 +53,11 @@ class PatrolLog extends Model
         return $this->belongsTo(WorkOrder::class);
     }
 
-    public function shift()
+    /**
+     * Grup teknisi yang melakukan inspeksi ini.
+     */
+    public function technicianGroup()
     {
-        return $this->belongsTo(Shift::class);
+        return $this->belongsTo(TechnicianGroup::class, 'technician_group_id');
     }
 }

@@ -36,9 +36,6 @@
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i class="fa-solid fa-user-pen text-blue-600"></i> Edit Profil Saya
                 </h3>
-                <button type="button" onclick="closeAdminProfileModal()" class="text-gray-400 hover:text-gray-600 transition focus:outline-none">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
             </div>
             
             <form action="{{ route('admin.profile.update') }}" method="POST" enctype="multipart/form-data">
@@ -86,7 +83,7 @@
                         </div>
                         
                         {{-- Ubah Password --}}
-                        <div class="pt-4 mt-2 border-t border-gray-100" x-data="{ password: '' }">
+                        <div class="pt-4 mt-2 border-t border-gray-100" x-data="{ password: '', showPassword: false }">
                             <label class="block text-sm font-medium text-gray-700 mb-1">
                                 Password Baru <span class="text-xs text-gray-400 font-normal">(Opsional)</span>
                             </label>
@@ -94,7 +91,10 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
                                 </div>
-                                <input x-model="password" type="password" name="password" class="pl-10 w-full border border-gray-300 rounded-lg text-sm px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition shadow-sm" placeholder="Min. 8 Karakter + Simbol (opsional)">
+                                <input x-model="password" :type="showPassword ? 'text' : 'password'" name="password" class="pl-10 pr-10 w-full border border-gray-300 rounded-lg text-sm px-3 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition shadow-sm" placeholder="Min. 8 Karakter + Simbol (opsional)">
+                                <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none" tabindex="-1">
+                                    <i class="fa-solid" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
                             </div>
                             
                             {{-- Realtime Password Validation Info --}}

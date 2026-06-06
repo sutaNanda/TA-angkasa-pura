@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     {{-- Favicon --}}
-    <link rel="icon" type="image/jpeg" href="{{ asset('logo.jpg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('logo.svg') }}">
 
     {{-- VITE: CSS & JS (SweetAlert) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])

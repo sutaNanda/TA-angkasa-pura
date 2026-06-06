@@ -94,9 +94,9 @@ class LocationInspectionController extends Controller
                     'checklist_template_id' => $template->id,
                     'inspection_data' => $filteredAnswers,
                     'status' => $hasIssue ? 'issue_found' : 'normal',
-                    'notes' => $notes,
-                    'photos' => $photoPaths,
-                    'shift_id' => Auth::user()->shift_id,
+                    'notes'               => $notes,
+                    'photos'              => $photoPaths,
+                    'technician_group_id' => Auth::user()->technician_group_id,
                 ]);
 
                 if ($hasIssue) {
@@ -311,9 +311,9 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                     'failed_assets' => $request->failed_asset_ids ?? []
                 ]),
                 'status' => $hasIssue ? 'issue_found' : 'normal',
-                'notes' => $request->global_notes,
-                'photos' => $photoPaths,
-                'shift_id' => Auth::user()->shift_id,
+                'notes'               => $request->global_notes,
+                'photos'              => $photoPaths,
+                'technician_group_id' => Auth::user()->technician_group_id,
             ]);
 
             // Tandai Maintenance Selesai
@@ -675,9 +675,9 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                     'failed_asset_ids' => $request->failed_asset_ids ?? [], // format lama
                 ]),
                 'status'   => $hasIssue ? 'issue_found' : 'normal',
-                'notes'    => $request->global_notes,
-                'photos'   => $photoPaths,
-                'shift_id' => Auth::user()->shift_id,
+                'notes'               => $request->global_notes,
+                'photos'              => $photoPaths,
+                'technician_group_id' => Auth::user()->technician_group_id,
             ]);
 
             // Tandai Semua Maintenance Selesai
