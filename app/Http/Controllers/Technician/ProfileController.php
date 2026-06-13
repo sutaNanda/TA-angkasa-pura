@@ -53,7 +53,7 @@ class ProfileController extends Controller
             }
 
             // Simpan yang baru
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = \App\Services\ImageCompressorService::upload($request->file('avatar'), 'avatars');
             $user->avatar = $path; // Pastikan kolom 'avatar' ada di tabel users (atau gunakan kolom 'image')
         }
 

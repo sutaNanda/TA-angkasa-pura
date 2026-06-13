@@ -160,7 +160,6 @@ class AssetController extends Controller
                 }
             }
             $data['images'] = $imagePaths;
-            $data['image'] = null;
         }
 
         // --- BULK ASSIGNMENT LOGIC ---
@@ -268,7 +267,6 @@ class AssetController extends Controller
         }
 
         $data['images'] = array_merge($keptImages, $newImagePaths);
-        $data['image'] = null;
 
         $asset->update($data);
 

@@ -50,7 +50,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: "{{ session('success') }}",
+                    text: "{!! addslashes(session('success')) !!}",
                     showConfirmButton: false,
                     timer: 3000,
                     toast: true,
@@ -62,7 +62,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
-                    text: "{{ session('error') }}",
+                    text: "{!! addslashes(session('error')) !!}",
                 });
             @endif
 
@@ -86,12 +86,14 @@
                 Swal.fire({
                     icon: 'info',
                     title: 'Info',
-                    text: "{{ session('message') }}",
+                    text: "{!! addslashes(session('message')) !!}",
                 });
             @endif
         });
     </script>
     {{-- Session Warning Component --}}
     <x-session-warning />
+    
+    @stack('scripts')
 </body>
 </html>

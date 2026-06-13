@@ -50,7 +50,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: "<?php echo e(session('success')); ?>",
+                    text: "<?php echo addslashes(session('success')); ?>",
                     showConfirmButton: false,
                     timer: 3000,
                     toast: true,
@@ -62,7 +62,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
-                    text: "<?php echo e(session('error')); ?>",
+                    text: "<?php echo addslashes(session('error')); ?>",
                 });
             <?php endif; ?>
 
@@ -86,7 +86,7 @@
                 Swal.fire({
                     icon: 'info',
                     title: 'Info',
-                    text: "<?php echo e(session('message')); ?>",
+                    text: "<?php echo addslashes(session('message')); ?>",
                 });
             <?php endif; ?>
         });
@@ -112,6 +112,8 @@
 <?php $component = $__componentOriginaleb6d0197656b14961c20e30ce418a460; ?>
 <?php unset($__componentOriginaleb6d0197656b14961c20e30ce418a460); ?>
 <?php endif; ?>
+    
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
 <?php /**PATH C:\Users\User\Documents\tugas kuliah\TA\asset-monitoring\resources\views/layouts/admin.blade.php ENDPATH**/ ?>

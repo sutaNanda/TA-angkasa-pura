@@ -57,7 +57,7 @@ class ProfileController extends Controller
             }
 
             // Simpan gambar baru ke storage/app/public/avatars
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = \App\Services\ImageCompressorService::upload($request->file('avatar'), 'avatars');
             $user->avatar = $path; 
         }
 

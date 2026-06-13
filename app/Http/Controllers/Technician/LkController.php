@@ -44,7 +44,7 @@ class LkController extends Controller
         // Handle photo upload
         $photoPath = null;
         if ($request->hasFile('initial_photo')) {
-            $photoPath = $request->file('initial_photo')->store('work-orders/initial', 'public');
+            $photoPath = \App\Services\ImageCompressorService::upload($request->file('initial_photo'), 'work-orders/initial');
         }
 
         // Generate ticket number

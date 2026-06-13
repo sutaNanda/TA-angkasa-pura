@@ -16,10 +16,24 @@
 
     {{-- TOOLBAR (Search & Actions) --}}
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
-        {{-- SEARCH FORM --}}
-        <form method="GET" action="{{ route('admin.users.index') }}" class="relative w-full xl:w-auto flex-1 max-w-md">
-            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau email..." class="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full text-sm shadow-sm transition-all text-gray-700">
+        {{-- SEARCH & FILTER FORM --}}
+        <form method="GET" action="{{ route('admin.users.index') }}" class="relative w-full xl:w-auto flex-1 max-w-2xl flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau email..." class="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-full text-sm shadow-sm transition-all text-gray-700">
+            </div>
+            <div class="relative w-full sm:w-48 shrink-0">
+                <select name="role" onchange="this.form.submit()" class="appearance-none w-full border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 pl-4 pr-10 py-2.5 outline-none shadow-sm transition bg-white text-gray-700 font-medium">
+                    <option value="">Semua Role</option>
+                    <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                    <option value="teknisi" {{ request('role') == 'teknisi' ? 'selected' : '' }}>Teknisi</option>
+                    <option value="manajer" {{ request('role') == 'manajer' ? 'selected' : '' }}>Manajer</option>
+                    <option value="user" {{ request('role') == 'user' ? 'selected' : '' }}>User (Karyawan)</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-400">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
         </form>
 
         {{-- ACTION BUTTONS --}}
