@@ -30,9 +30,9 @@ class TechnicianGroupController extends Controller
      */
     public function create(): View
     {
-        // Daftar teknisi yang belum punya grup (untuk ditambahkan ke grup baru)
-        $availableTechnicians = User::where('role', 'teknisi')
-            ->whereNull('technician_group_id')
+        // Daftar semua admin & teknisi beserta grup mereka saat ini
+        $availableTechnicians = User::whereIn('role', ['admin', 'teknisi'])
+            ->with('group')
             ->orderBy('name')
             ->get();
 
@@ -63,12 +63,15 @@ class TechnicianGroupController extends Controller
         // (One-to-Many: cukup update technician_group_id di baris users)
         if (!empty($validated['member_ids'])) {
             User::whereIn('id', $validated['member_ids'])
+                ->whereIn('role', ['admin', 'teknisi'])
                 ->update(['technician_group_id' => $group->id]);
         }
 
+        $count = empty($validated['member_ids']) ? 0 : count($validated['member_ids']);
+        
         return redirect()
             ->route('admin.groups.index')
-            ->with('success', "Grup \"{$group->name}\" berhasil dibuat.");
+            ->with('success', "Grup {$group->name} berhasil dibuat ({$count} anggota).");
     }
 
     /**
@@ -79,12 +82,9 @@ class TechnicianGroupController extends Controller
         // Muat anggota saat ini
         $group->load('members');
 
-        // Teknisi yang tidak ada di grup manapun (siap ditambah)
-        $availableTechnicians = User::where('role', 'teknisi')
-            ->where(function ($q) use ($group) {
-                $q->whereNull('technician_group_id')
-                  ->orWhere('technician_group_id', $group->id); // Termasuk anggota lama agar bisa tampil
-            })
+        // Daftar semua admin & teknisi beserta grup mereka saat ini
+        $availableTechnicians = User::whereIn('role', ['admin', 'teknisi'])
+            ->with('group')
             ->orderBy('name')
             ->get();
 
@@ -120,13 +120,15 @@ class TechnicianGroupController extends Controller
 
         if (!empty($validated['member_ids'])) {
             User::whereIn('id', $validated['member_ids'])
-                ->where('role', 'teknisi') // Guard: hanya teknisi yang bisa digrup
+                ->whereIn('role', ['admin', 'teknisi']) // Guard: admin & teknisi bisa digrup
                 ->update(['technician_group_id' => $group->id]);
         }
 
+        $count = empty($validated['member_ids']) ? 0 : count($validated['member_ids']);
+
         return redirect()
             ->route('admin.groups.index')
-            ->with('success', "Grup \"{$group->name}\" berhasil diperbarui.");
+            ->with('success', "Grup {$group->name} berhasil diperbarui ({$count} anggota).");
     }
 
     /**

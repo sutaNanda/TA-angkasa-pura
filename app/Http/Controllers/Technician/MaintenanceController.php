@@ -89,7 +89,7 @@ class MaintenanceController extends Controller
                     if (!is_array($files)) $files = [$files];
                     foreach ($files as $file) {
                         if ($file && $file->isValid()) {
-                            $photoPaths[] = $file->store('maintenance-evidence', 'public');
+                            $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
                         }
                     }
                 }

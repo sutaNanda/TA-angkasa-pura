@@ -67,7 +67,7 @@ class InspectionController extends Controller
                 $photoPaths = [];
                 if ($request->hasFile('photos')) {
                     foreach ($request->file('photos') as $file) {
-                        $photoPaths[] = $file->store('patrol-evidence', 'public');
+                        $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'patrol-evidence');
                     }
                 }
 

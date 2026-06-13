@@ -58,15 +58,40 @@
 
                 {{-- Pilih Anggota --}}
                 <div class="pt-4 border-t border-gray-100">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Pilih Anggota Teknisi <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
-                    <p class="text-xs text-gray-500 mb-3">Teknisi di bawah ini adalah mereka yang saat ini belum memiliki grup. Satu teknisi hanya dapat berada di satu grup.</p>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1.5">Pilih Anggota Tim <span class="text-gray-400 font-normal text-xs">(Opsional)</span></label>
+                    <p class="text-xs text-gray-500 mb-3">Daftar di bawah ini mencakup semua Admin dan Teknisi. Centang untuk memasukkan mereka ke grup ini.</p>
                     
+                    <div class="mb-3">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-search text-gray-400 text-sm"></i>
+                            </div>
+                            <input type="text" id="memberSearch" class="w-full border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 pl-9 pr-4 py-2 outline-none shadow-sm transition" placeholder="Cari nama atau email pengguna...">
+                        </div>
+                    </div>
+
                     <div class="bg-gray-50 border border-gray-200 rounded-xl max-h-64 overflow-y-auto p-4 space-y-2 custom-scrollbar">
                         @forelse($availableTechnicians as $technician)
-                            <label class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
-                                <input type="checkbox" name="member_ids[]" value="{{ $technician->id }}" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors member-label">
+                                <input type="checkbox" name="member_ids[]" value="{{ $technician->id }}" 
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 member-checkbox"
+                                       data-name="{{ $technician->name }}"
+                                       data-has-group="{{ $technician->technician_group_id ? 'true' : 'false' }}"
+                                       data-group-name="{{ $technician->group ? $technician->group->name : '' }}">
                                 <div class="flex-1">
-                                    <p class="text-sm font-bold text-gray-900">{{ $technician->name }}</p>
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                            {{ $technician->name }}
+                                            @if($technician->role === 'admin')
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700">Admin</span>
+                                            @endif
+                                        </p>
+                                        @if($technician->technician_group_id)
+                                            <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                                Saat ini: {{ $technician->group->name }}
+                                            </span>
+                                        @endif
+                                    </div>
                                     <p class="text-[11px] text-gray-500">{{ $technician->email }}</p>
                                 </div>
                             </label>
@@ -96,4 +121,64 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.member-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+            const isChecked = this.checked;
+            const hasGroup = this.dataset.hasGroup === 'true';
+            const groupName = this.dataset.groupName;
+            const userName = this.dataset.name;
+
+            if (isChecked && hasGroup) {
+                // Prevent default check visually until confirmed
+                this.checked = false;
+                
+                Swal.fire({
+                    title: 'Pindah Grup?',
+                    text: `${userName} saat ini sudah berada di "${groupName}". Apakah Anda yakin ingin memindahkannya ke grup baru ini?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, Pindahkan',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.checked = true;
+                    }
+                });
+            }
+        });
+    });
+
+    // Search filtering functionality
+    const searchInput = document.getElementById('memberSearch');
+    const memberLabels = document.querySelectorAll('.member-label');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            memberLabels.forEach(label => {
+                const nameElement = label.querySelector('.font-bold');
+                const emailElement = label.querySelector('.text-gray-500.text-\\[11px\\]');
+                const name = nameElement ? nameElement.textContent.toLowerCase() : '';
+                const email = emailElement ? emailElement.textContent.toLowerCase() : '';
+                
+                if (name.includes(term) || email.includes(term)) {
+                    label.style.display = 'flex';
+                } else {
+                    label.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+@endpush
 @endsection

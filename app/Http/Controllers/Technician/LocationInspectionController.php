@@ -81,7 +81,7 @@ class LocationInspectionController extends Controller
                 $photoPaths = [];
                 if ($request->hasFile("photos.{$assetId}")) {
                     foreach ($request->file("photos.{$assetId}") as $file) {
-                        $photoPaths[] = $file->store('patrol-evidence', 'public');
+                        $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'patrol-evidence');
                     }
                 }
 
@@ -241,7 +241,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = $file->store('maintenance-evidence', 'public');
+                    $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
                 }
             }
 
@@ -595,7 +595,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = $file->store('maintenance-evidence', 'public');
+                    $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
                 }
             }
 

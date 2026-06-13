@@ -162,7 +162,7 @@ class TaskController extends Controller
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = $file->store('completion-photos', 'public');
+                    $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'completion-photos');
                 }
             }
 
@@ -217,7 +217,7 @@ class TaskController extends Controller
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = $file->store('handover-photos', 'public');
+                    $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'handover-photos');
                 }
             }
 

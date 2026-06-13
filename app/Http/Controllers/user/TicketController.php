@@ -98,7 +98,7 @@ class TicketController extends Controller
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photo) {
-                    $photoPaths[] = $photo->store('tickets', 'public');
+                    $photoPaths[] = \App\Services\ImageCompressorService::upload($photo, 'tickets');
                 }
             }
 

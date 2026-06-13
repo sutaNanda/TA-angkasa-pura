@@ -25,6 +25,10 @@ class UserController extends Controller
             });
         }
 
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
         // 2. Ambil data dengan Pagination (10 per halaman)
         $users = $query->orderBy('created_at', 'desc')->paginate(10);
         // Kirim daftar grup dan departemen untuk dropdown form tambah/edit user
@@ -168,7 +172,7 @@ class UserController extends Controller
             if ($user->avatar) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
             }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = \App\Services\ImageCompressorService::upload($request->file('avatar'), 'avatars');
         }
 
         $user->save();
