@@ -139,6 +139,7 @@ class TaskController extends Controller
 
         $rules = [
             'description' => 'required|string|min:10',
+            'shift' => 'required|string',
             'photos' => 'required|array|max:5', // Wajib Foto
             'photos.*' => 'image|mimes:jpeg,png,jpg|max:5120', // Max 5MB
         ];
@@ -171,6 +172,7 @@ class TaskController extends Controller
                 $task->asset_id = $request->asset_id;
             }
             $task->status = 'completed';
+            $task->shift = $request->shift;
             $task->photos_after = $photoPaths; // Simpan array di kolom utama
             $task->save();
 

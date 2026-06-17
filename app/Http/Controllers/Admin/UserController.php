@@ -51,7 +51,7 @@ class UserController extends Controller
                 Rule::unique('users')->whereNull('deleted_at')
             ],
             'role'  => 'required|in:admin,teknisi,manajer,user',
-            // technician_group_id hanya relevan untuk role teknisi
+            // technician_group_id relevan untuk role teknisi dan admin
             'technician_group_id' => [
                 'nullable',
                 Rule::exists('technician_groups', 'id'),
@@ -78,7 +78,7 @@ class UserController extends Controller
                 'name'                    => $request->name,
                 'password'                => Hash::make($password),
                 'role'                    => $request->role,
-                'technician_group_id'     => $request->role === 'teknisi' ? $request->technician_group_id : null,
+                'technician_group_id'     => in_array($request->role, ['teknisi', 'admin']) ? $request->technician_group_id : null,
                 'department_id'           => $request->role === 'user' ? $request->department_id : null,
                 'requires_password_reset' => true,
             ]);
@@ -89,7 +89,7 @@ class UserController extends Controller
                 'email'                   => $request->email,
                 'password'                => Hash::make($password),
                 'role'                    => $request->role,
-                'technician_group_id'     => $request->role === 'teknisi' ? $request->technician_group_id : null,
+                'technician_group_id'     => in_array($request->role, ['teknisi', 'admin']) ? $request->technician_group_id : null,
                 'department_id'           => $request->role === 'user' ? $request->department_id : null,
                 'requires_password_reset' => true,
             ]);
@@ -126,8 +126,8 @@ class UserController extends Controller
             'name'  => $request->name,
             'email' => $request->email,
             'role'  => $request->role,
-            // Set grup hanya untuk role teknisi; peran lain selalu null
-            'technician_group_id' => $request->role === 'teknisi' ? $request->technician_group_id : null,
+            // Set grup untuk role teknisi dan admin; peran lain selalu null
+            'technician_group_id' => in_array($request->role, ['teknisi', 'admin']) ? $request->technician_group_id : null,
             'department_id' => $request->role === 'user' ? $request->department_id : null,
         ];
 

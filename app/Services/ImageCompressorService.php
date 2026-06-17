@@ -32,7 +32,7 @@ class ImageCompressorService
         $manager = new ImageManager(new Driver());
 
         // Membaca file gambar
-        $image = $manager->read($file->getPathname());
+        $image = $manager->decode($file->getPathname());
 
         // Ubah skala (scale down) jika lebar gambar melebihi batas maksimal,
         // dengan mempertahankan aspect ratio.
@@ -45,7 +45,7 @@ class ImageCompressorService
         $path = trim($directory, '/') . '/' . $filename;
 
         // Encode gambar ke format webp sesuai kualitas
-        $encodedImage = $image->toWebp($quality);
+        $encodedImage = $image->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: $quality));
 
         // Simpan file ke Storage disk 'public'
         Storage::disk('public')->put($path, $encodedImage->toString());

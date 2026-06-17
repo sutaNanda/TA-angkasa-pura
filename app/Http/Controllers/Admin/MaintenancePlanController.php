@@ -66,7 +66,7 @@ class MaintenancePlanController extends Controller
             // Array grup dengan jam mulai per-grup: groups[group_id] = start_time
             'groups'                => 'nullable|array',
             'groups.*.group_id'     => 'required|exists:technician_groups,id',
-            'groups.*.start_time'   => 'nullable|date_format:H:i',
+            'groups.*.start_time'   => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
             'asset_ids'             => 'nullable|array',
             'asset_ids.*'           => 'exists:assets,id',
             'location_ids'          => 'nullable|array',
@@ -136,7 +136,7 @@ class MaintenancePlanController extends Controller
             'notes'                 => 'nullable|string',
             'groups'                => 'nullable|array',
             'groups.*.group_id'     => 'required|exists:technician_groups,id',
-            'groups.*.start_time'   => 'nullable|date_format:H:i',
+            'groups.*.start_time'   => ['nullable', 'regex:/^\d{2}:\d{2}(:\d{2})?$/'],
             'asset_ids'             => 'nullable|array',
             'asset_ids.*'           => 'exists:assets,id',
             'location_ids'          => 'nullable|array',
@@ -176,13 +176,16 @@ class MaintenancePlanController extends Controller
      */
     private function syncGroupsWithPivot(MaintenancePlan $plan, array $groupRows): void
     {
-        // Bangun array dalam format yang diterima oleh sync() dengan pivot:
-        // [ group_id => ['start_time' => 'HH:MM'], ... ]
         $syncData = [];
         foreach ($groupRows as $row) {
             if (!empty($row['group_id'])) {
+                // Normalisasi: potong detik jika browser mengirim HH:MM:SS
+                $time = $row['start_time'] ?? null;
+                if ($time && strlen($time) > 5) {
+                    $time = substr($time, 0, 5); // "08:00:00" → "08:00"
+                }
                 $syncData[(int) $row['group_id']] = [
-                    'start_time' => $row['start_time'] ?? null,
+                    'start_time' => $time,
                 ];
             }
         }

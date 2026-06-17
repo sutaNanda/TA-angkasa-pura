@@ -158,8 +158,8 @@
                             
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($log->shift)
-                                    <span class="{{ $log->shift->badge_class }} px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5">
-                                        <i class="{{ $log->shift->icon_class }}"></i> {{ $log->shift->name }}
+                                    <span class="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center gap-1.5">
+                                        <i class="fa-solid fa-clock-rotate-left"></i> {{ $log->shift }}
                                     </span>
                                 @else
                                     <span class="text-gray-400 text-xs italic">—</span>
@@ -232,8 +232,11 @@
                         </div>
                         <div class="border-t border-gray-100 pt-4 md:border-t-0 md:pt-0 md:border-l md:border-gray-100 md:pl-5">
                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i class="fa-solid fa-user-check"></i> Pelaksana & Waktu</p>
-                            <p class="text-sm font-bold text-gray-900 mb-1" id="modalTechName">-</p>
-                            <p class="text-xs font-medium text-gray-500 flex items-center gap-1.5 bg-gray-50 inline-block px-2 py-1 rounded border border-gray-100">
+                            <div class="flex items-center gap-2 mb-1">
+                                <p class="text-sm font-bold text-gray-900" id="modalTechName">-</p>
+                                <span id="modalShiftTag" class="text-[9px] font-bold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded border border-blue-200 hidden"><i class="fa-solid fa-clock-rotate-left mr-1"></i><span id="modalShiftText"></span></span>
+                            </div>
+                            <p class="text-xs font-medium text-gray-500 flex items-center gap-1.5 bg-gray-50 inline-block px-2 py-1 rounded border border-gray-100 mt-1">
                                 <i class="fa-regular fa-clock text-gray-400"></i> <span id="modalTime">-</span>
                             </p>
                         </div>
@@ -346,6 +349,16 @@
                     }
 
                     document.getElementById('modalTechName').innerText = data.technician ? data.technician.name : 'Tidak diketahui';
+                    
+                    const shiftTag = document.getElementById('modalShiftTag');
+                    const shiftText = document.getElementById('modalShiftText');
+                    if (data.shift) {
+                        shiftText.innerText = data.shift;
+                        shiftTag.classList.remove('hidden');
+                    } else {
+                        shiftTag.classList.add('hidden');
+                    }
+
                     document.getElementById('modalTime').innerText = new Date(data.created_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) + ' WITA';
                     const exportBtn = document.getElementById('modalExportBtn');
                     if (exportBtn) {
