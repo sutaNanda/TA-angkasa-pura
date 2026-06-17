@@ -51,6 +51,7 @@ class LocationInspectionController extends Controller
             'answers' => 'required|array',
             'global_notes' => 'nullable|array',
             'photos' => 'nullable|array',
+            'shift' => 'required|string',
         ]);
 
         DB::beginTransaction();
@@ -97,6 +98,7 @@ class LocationInspectionController extends Controller
                     'notes'               => $notes,
                     'photos'              => $photoPaths,
                     'technician_group_id' => Auth::user()->technician_group_id,
+                    'shift'               => $request->shift,
                 ]);
 
                 if ($hasIssue) {
@@ -110,6 +112,7 @@ class LocationInspectionController extends Controller
                         'source' => 'patrol',
                         'issue_description' => $notes ?? 'Masalah ditemukan saat inspeksi area.',
                         'initial_photo' => $photoPaths[0] ?? null,
+                        'shift' => $request->shift,
                     ]);
 
                     if(\Schema::hasColumn('patrol_logs', 'work_order_id')) {
@@ -229,7 +232,8 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             'failed_asset_ids' => 'nullable|array', 
             'global_notes' => 'nullable|string', 
             'photos' => 'nullable|array',
-            'primary_template_id' => 'nullable' // Menerima ID template dari form
+            'primary_template_id' => 'nullable', // Menerima ID template dari form
+            'shift' => 'required|string'
         ]);
 
         DB::beginTransaction();
@@ -292,6 +296,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                         'issue_description' => $finalDesc,
                         'maintenance_id' => $maintenance->id,
                         'initial_photo' => $photoPaths[0] ?? null,
+                        'shift' => $request->shift,
                     ]);
                     
                     $workOrdersCreated[] = $workOrder->id;
@@ -314,12 +319,14 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                 'notes'               => $request->global_notes,
                 'photos'              => $photoPaths,
                 'technician_group_id' => Auth::user()->technician_group_id,
+                'shift'               => $request->shift,
             ]);
 
             // Tandai Maintenance Selesai
             $maintenance->update([
                 'status' => 'COMPLETED',
                 'technician_id' => Auth::id(),
+                'shift' => $request->shift,
                 'result_data' => json_encode(['answers' => $request->answers, 'notes' => $request->notes]), 
             ]);
 
@@ -581,7 +588,8 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             'global_notes' => 'nullable|string', 
             'photos' => 'nullable|array',
             'primary_template_id' => 'nullable',
-            'location_id' => 'nullable'
+            'location_id' => 'nullable',
+            'shift' => 'required|string'
         ]);
 
         $ids = explode(',', $request->maintenance_ids);
@@ -656,6 +664,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                         'issue_description' => $finalDesc,
                         'maintenance_id'    => current($ids) ?: null,
                         'initial_photo'     => $photoPaths[0] ?? null,
+                        'shift'             => $request->shift,
                     ]);
                     $workOrdersCreated[] = $workOrder->id;
                 }
@@ -678,12 +687,14 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
                 'notes'               => $request->global_notes,
                 'photos'              => $photoPaths,
                 'technician_group_id' => Auth::user()->technician_group_id,
+                'shift'               => $request->shift,
             ]);
 
             // Tandai Semua Maintenance Selesai
             Maintenance::whereIn('id', $ids)->update([
                 'status' => 'COMPLETED',
                 'technician_id' => Auth::id(),
+                'shift' => $request->shift,
                 'result_data' => json_encode(['answers' => $request->answers, 'notes' => $request->notes]), 
             ]);
 

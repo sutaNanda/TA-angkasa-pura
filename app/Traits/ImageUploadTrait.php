@@ -46,7 +46,7 @@ trait ImageUploadTrait
             new \Intervention\Image\Drivers\Gd\Driver()
         );
 
-        $image = $manager->read($file->getRealPath());
+        $image = $manager->decode($file->getRealPath());
 
         if ($image->width() > $maxWidth) {
             $image->scaleDown(width: $maxWidth);
@@ -58,7 +58,7 @@ trait ImageUploadTrait
 
         $this->ensureDirectoryExists(Storage::disk('public')->path($folderPath));
 
-        $image->toWebp(quality: $quality)->save($absolutePath);
+        $image->encode(new \Intervention\Image\Encoders\WebpEncoder(quality: $quality))->save($absolutePath);
 
         return $relativePath;
     }

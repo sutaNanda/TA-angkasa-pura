@@ -639,7 +639,10 @@
                     +   '<div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">'
                     +     '<p class="text-[10px] text-blue-600 uppercase tracking-wider font-bold mb-1.5 flex items-center gap-1.5"><i class="fa-solid fa-user-gear text-blue-400"></i> Teknisi Penanggung Jawab</p>'
                     +     '<p class="font-bold text-gray-900 text-sm mb-0.5">' + (data.executed_by ? data.executed_by.name : (data.technician ? data.technician.name : (data.assigned_group ? ('Grup ' + data.assigned_group.name + ' (Belum Diambil)') : '<span class="text-gray-500 italic">Belum Ditugaskan / Pool Umum</span>'))) + '</p>'
-                    +     '<p class="text-xs font-mono font-bold text-blue-700 bg-white inline-block px-1.5 py-0.5 rounded border border-blue-200 mt-1">' + data.ticket_number + '</p>'
+                    +     '<div class="flex items-center gap-2 mt-1">'
+                    +       '<p class="text-xs font-mono font-bold text-blue-700 bg-white inline-block px-1.5 py-0.5 rounded border border-blue-200">' + data.ticket_number + '</p>'
+                    +       (data.shift ? '<p class="text-[10px] font-bold text-blue-800 bg-blue-100 border border-blue-200 inline-block px-1.5 py-0.5 rounded"><i class="fa-solid fa-clock-rotate-left mr-1"></i>' + data.shift + '</p>' : '')
+                    +     '</div>'
                     +   '</div>'
                     + '</div>'
 

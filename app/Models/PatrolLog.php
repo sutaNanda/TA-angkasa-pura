@@ -20,6 +20,7 @@ class PatrolLog extends Model
         'photos',
         'work_order_id',
         'technician_group_id', // Grup yang melakukan inspeksi ini
+        'shift', // Shift Pagi, Siang, Malam
     ];
 
     protected $casts = [

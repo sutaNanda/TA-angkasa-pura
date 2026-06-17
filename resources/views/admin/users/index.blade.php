@@ -446,7 +446,7 @@
             if (role === 'user') {
                 divContainer.style.display = 'block';
                 groupContainer.style.display = 'none';
-            } else if (role === 'teknisi') {
+            } else if (role === 'teknisi' || role === 'admin') {
                 divContainer.style.display = 'none';
                 groupContainer.style.display = 'block';
             } else {

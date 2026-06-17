@@ -28,6 +28,19 @@
         <input type="hidden" name="primary_template_id" value="{{ $primaryTemplateId }}">
 
         {{-- WADAH TABEL UTAMA --}}
+        <div class="mb-4 bg-white p-4 rounded-xl border border-gray-100 flex items-center justify-between flex-wrap gap-4 shadow-sm">
+            <div>
+                <label class="block text-xs font-bold text-gray-800 uppercase tracking-widest mb-1"><i class="fa-solid fa-clock-rotate-left text-blue-500 mr-1"></i> Shift Anda Saat Ini <span class="text-red-500">*</span></label>
+                <p class="text-[10px] text-gray-500 mb-0 leading-tight">Pilih shift agar riwayat inspeksi tercatat sesuai shift petugas.</p>
+            </div>
+            <select name="shift" required class="w-full md:w-auto rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-sm p-2.5 bg-gray-50 text-gray-700 font-bold min-w-[200px]">
+                <option value="">-- Pilih Shift --</option>
+                <option value="Shift Pagi">Shift Pagi</option>
+                <option value="Shift Siang">Shift Siang</option>
+                <option value="Shift Malam">Shift Malam</option>
+            </select>
+        </div>
+
         <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden mb-6 inspect-wrapper">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal inspect-table">

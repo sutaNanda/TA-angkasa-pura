@@ -289,6 +289,16 @@
                 @endif
 
                 <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Shift Anda Saat Ini <span class="text-red-500">*</span></label>
+                    <select name="shift" required class="w-full rounded-xl border-2 border-gray-300 focus:border-green-500 focus:ring-green-500 text-sm p-2 bg-white">
+                        <option value="">-- Pilih Shift --</option>
+                        <option value="Shift Pagi">Shift Pagi</option>
+                        <option value="Shift Siang">Shift Siang</option>
+                        <option value="Shift Malam">Shift Malam</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Catatan Perbaikan</label>
                     <textarea name="description" rows="3" class="w-full rounded-xl border-2 border-gray-300 focus:border-green-500 focus:ring-green-500 text-sm p-2" placeholder="Apa yang sudah diperbaiki?" required></textarea>
                 </div>
