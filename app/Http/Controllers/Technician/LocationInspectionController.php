@@ -226,6 +226,9 @@ public function inspectMaintenance(Maintenance $maintenance)
 
 public function storeMaintenance(Request $request, Maintenance $maintenance)
     {
+        // Naikkan memory limit sementara untuk proses upload foto dari kamera HP
+        ini_set('memory_limit', '1024M');
+
         $request->validate([
             'answers' => 'required|array',
             'notes' => 'nullable|array', 
@@ -245,7 +248,12 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
+                    try {
+                        $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
+                    } catch (\Exception $e) {
+                        \Log::warning('Foto gagal diproses (dilewati): ' . $e->getMessage());
+                        continue;
+                    }
                 }
             }
 
@@ -580,6 +588,10 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
 
     public function storeMaintenanceGroup(Request $request)
     {
+        // Naikkan memory limit sementara untuk proses upload foto dari kamera HP
+        // GD library butuh ~4x pixel count bytes per gambar (12MP foto ≈ 48MB RAM)
+        ini_set('memory_limit', '1024M');
+
         $request->validate([
             'maintenance_ids' => 'required|string',
             'answers' => 'required|array',
@@ -603,7 +615,13 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
+                    try {
+                        $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
+                    } catch (\Exception $e) {
+                        \Log::warning('Foto gagal diproses (dilewati): ' . $e->getMessage());
+                        // Lanjutkan ke foto berikutnya, jangan gagalkan seluruh inspeksi
+                        continue;
+                    }
                 }
             }
 

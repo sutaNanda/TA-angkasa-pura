@@ -366,13 +366,78 @@ function inspectionAreaForm() {
             const files = event.target.files;
             if (!files.length) return;
             Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (e) => { 
-                    this.globalPhotos.push({ file: file, preview: e.target.result }); 
-                };
-                reader.readAsDataURL(file);
+                // Kompres gambar di browser sebelum upload untuk mencegah memory exhaustion di server
+                this.compressImage(file, 1200, 0.7).then(compressedFile => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => { 
+                        this.globalPhotos.push({ file: compressedFile, preview: e.target.result }); 
+                    };
+                    reader.readAsDataURL(compressedFile);
+                }).catch(() => {
+                    // Fallback: gunakan file asli jika kompresi gagal
+                    const reader = new FileReader();
+                    reader.onload = (e) => { 
+                        this.globalPhotos.push({ file: file, preview: e.target.result }); 
+                    };
+                    reader.readAsDataURL(file);
+                });
             });
             event.target.value = '';
+        },
+
+        /**
+         * Kompres gambar di sisi client sebelum upload.
+         * Mencegah error "Allowed memory size exhausted" di server karena GD library
+         * membutuhkan ~4x pixel count bytes untuk decode gambar (misal 12MP = ~48MB).
+         */
+        compressImage(file, maxDimension, quality) {
+            return new Promise((resolve, reject) => {
+                // Skip non-image files
+                if (!file.type.startsWith('image/')) {
+                    resolve(file);
+                    return;
+                }
+
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                img.onload = () => {
+                    let { width, height } = img;
+
+                    // Hanya resize jika lebih besar dari batas
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            resolve(compressedFile);
+                        } else {
+                            reject(new Error('Gagal mengompres gambar'));
+                        }
+                    }, 'image/jpeg', quality);
+
+                    URL.revokeObjectURL(img.src);
+                };
+
+                img.onerror = () => reject(new Error('Gagal membaca gambar'));
+                img.src = URL.createObjectURL(file);
+            });
         },
         removePhoto(index) { 
             this.globalPhotos.splice(index, 1); 
