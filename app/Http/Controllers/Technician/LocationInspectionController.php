@@ -249,7 +249,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
                     try {
-                        $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
+                        $photoPaths[] = $file->store('maintenance-evidence', 'public');
                     } catch (\Exception $e) {
                         \Log::warning('Foto gagal diproses (dilewati): ' . $e->getMessage());
                         continue;
@@ -616,7 +616,7 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
                     try {
-                        $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'maintenance-evidence');
+                        $photoPaths[] = $file->store('maintenance-evidence', 'public');
                     } catch (\Exception $e) {
                         \Log::warning('Foto gagal diproses (dilewati): ' . $e->getMessage());
                         // Lanjutkan ke foto berikutnya, jangan gagalkan seluruh inspeksi
