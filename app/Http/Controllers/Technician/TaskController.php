@@ -215,11 +215,11 @@ class TaskController extends Controller
         }
 
         DB::transaction(function () use ($task, $user, $request) {
-            // Upload foto bukti progres (opsional)
+            // Upload Foto Handover
             $photoPaths = [];
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $file) {
-                    $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'handover-photos');
+                    $photoPaths[] = $file->store('handover-photos', 'public');
                 }
             }
 
