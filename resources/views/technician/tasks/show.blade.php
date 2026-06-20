@@ -328,30 +328,86 @@
     // Managed file arrays per context
     const pendingPhotos = { handover: [], complete: [] };
 
+    /**
+     * Kompres gambar di sisi client sebelum upload.
+     * Mencegah error "Allowed memory size exhausted" di server karena GD library
+     * membutuhkan ~4x pixel count bytes untuk decode gambar (misal 12MP = ~48MB).
+     */
+    function compressImage(file, maxDimension = 1200, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            if (!file.type.startsWith('image/')) {
+                resolve(file);
+                return;
+            }
+
+            const img = new Image();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            img.onload = () => {
+                let { width, height } = img;
+
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(compressedFile);
+                    } else {
+                        resolve(file); // Fallback ke file asli
+                    }
+                }, 'image/jpeg', quality);
+
+                URL.revokeObjectURL(img.src);
+            };
+
+            img.onerror = () => resolve(file); // Fallback ke file asli
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
     function handleNewPhotos(input, context) {
         if (!input.files || input.files.length === 0) return;
 
         Array.from(input.files).forEach(file => {
-            pendingPhotos[context].push(file);
-            const idx = pendingPhotos[context].length - 1;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const container = document.getElementById(context + 'Preview');
-                const wrapper = document.createElement('div');
-                wrapper.className = 'relative';
-                wrapper.id = `${context}-photo-${idx}`;
-                const borderColor = context === 'handover' ? 'border-yellow-200' : 'border-green-200';
-                wrapper.innerHTML = `
-                    <img src="${e.target.result}" class="h-16 w-16 object-cover rounded-lg border ${borderColor} shadow-sm">
-                    <button type="button" 
-                        class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm transition" 
-                        title="Hapus foto ini">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>`;
-                wrapper.querySelector('button').addEventListener('click', () => removePhoto(context, idx));
-                container.appendChild(wrapper);
-            }
-            reader.readAsDataURL(file);
+            // Kompres dulu sebelum simpan
+            compressImage(file).then(compressedFile => {
+                pendingPhotos[context].push(compressedFile);
+                const idx = pendingPhotos[context].length - 1;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const container = document.getElementById(context + 'Preview');
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'relative';
+                    wrapper.id = `${context}-photo-${idx}`;
+                    const borderColor = context === 'handover' ? 'border-yellow-200' : 'border-green-200';
+                    wrapper.innerHTML = `
+                        <img src="${e.target.result}" class="h-16 w-16 object-cover rounded-lg border ${borderColor} shadow-sm">
+                        <button type="button" 
+                            class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] shadow-sm transition" 
+                            title="Hapus foto ini">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>`;
+                    wrapper.querySelector('button').addEventListener('click', () => removePhoto(context, idx));
+                    container.appendChild(wrapper);
+                }
+                reader.readAsDataURL(compressedFile);
+            });
         });
         input.value = '';
     }
