@@ -32,9 +32,9 @@ class ImageCompressorService
             return $file->store($directory, 'public');
         }
 
-        // Safety check: jika file terlalu besar (>15MB), simpan langsung tanpa proses GD
-        // untuk menghindari memory exhaustion di server
-        if ($file->getSize() > 15 * 1024 * 1024) {
+        // Safety check: jika file terlalu besar (>3MB), simpan langsung tanpa proses GD
+        // untuk menghindari memory exhaustion di server (karena JPG 4MB bisa beresolusi 12MP yang butuh 48MB RAM saat decode)
+        if ($file->getSize() > 3 * 1024 * 1024) {
             return $file->store($directory, 'public');
         }
 
