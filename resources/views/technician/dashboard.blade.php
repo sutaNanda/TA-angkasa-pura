@@ -187,6 +187,11 @@
                                                 <i class="{{ $shiftInfo->icon_class }}"></i> {{ $shiftInfo->name }}
                                             </span>
                                         @endif
+                                        @if($firstItem->technicianGroup)
+                                            <span class="bg-teal-50 text-teal-700 border-teal-200 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border inline-flex items-center gap-1 shadow-sm">
+                                                <i class="fa-solid fa-users"></i> {{ $firstItem->technicianGroup->name }}
+                                            </span>
+                                        @endif
                                     </div>
                                 </div>
 
