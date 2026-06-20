@@ -21,10 +21,20 @@ class ImageCompressorService
      */
     public static function upload(UploadedFile $file, string $directory, int $maxWidth = 1024, int $quality = 70): string
     {
+        // Naikkan memory limit — GD butuh ~4x pixel count bytes per gambar
+        // Contoh: foto 12MP (4000x3000) = 4000*3000*4 = ~48MB RAM hanya untuk decode
+        ini_set('memory_limit', '1024M');
+
         // Pastikan hanya file gambar yang dikompres
         $mime = $file->getMimeType();
         if (!str_starts_with($mime, 'image/')) {
             // Jika bukan gambar (misal pdf), simpan seperti biasa
+            return $file->store($directory, 'public');
+        }
+
+        // Safety check: jika file terlalu besar (>15MB), simpan langsung tanpa proses GD
+        // untuk menghindari memory exhaustion di server
+        if ($file->getSize() > 15 * 1024 * 1024) {
             return $file->store($directory, 'public');
         }
 
@@ -49,6 +59,9 @@ class ImageCompressorService
 
         // Simpan file ke Storage disk 'public'
         Storage::disk('public')->put($path, $encodedImage->toString());
+
+        // Bebaskan memori secara eksplisit
+        unset($image, $encodedImage);
 
         return $path;
     }
