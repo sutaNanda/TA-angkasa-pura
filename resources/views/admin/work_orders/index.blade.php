@@ -123,8 +123,10 @@
                                 'in_progress' => ['bg' => 'bg-blue-50', 'text' => 'text-blue-700', 'ring' => 'ring-blue-600/20', 'icon' => 'fa-spinner fa-spin', 'label' => 'Dikerjakan'],
                                 'pending_part' => ['bg' => 'bg-purple-50', 'text' => 'text-purple-700', 'ring' => 'ring-purple-600/20', 'icon' => 'fa-box-open', 'label' => 'Tunggu Part'],
                                 'handover' => ['bg' => 'bg-pink-50', 'text' => 'text-pink-700', 'ring' => 'ring-pink-600/20', 'icon' => 'fa-handshake', 'label' => 'Operan Shift'],
+                                'handed_over' => ['bg' => 'bg-pink-50', 'text' => 'text-pink-700', 'ring' => 'ring-pink-600/20', 'icon' => 'fa-handshake', 'label' => 'Operan Antar-Grup'],
                                 'completed' => ['bg' => 'bg-yellow-50', 'text' => 'text-yellow-700', 'ring' => 'ring-yellow-600/20', 'icon' => 'fa-clipboard-check', 'label' => 'Butuh Verifikasi'],
                                 'verified' => ['bg' => 'bg-emerald-50', 'text' => 'text-emerald-700', 'ring' => 'ring-emerald-600/20', 'icon' => 'fa-check-double', 'label' => 'Selesai'],
+                                default => ['bg' => 'bg-gray-100', 'text' => 'text-gray-700', 'ring' => 'ring-gray-500/20', 'icon' => 'fa-circle-question', 'label' => ucfirst($ticket->status)],
                             };
 
                             $rowHighlight = ($ticket->status == 'completed' || $ticket->status == 'open') ? 'bg-yellow-50/30' : 'hover:bg-gray-50/80';
