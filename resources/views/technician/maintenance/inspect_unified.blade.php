@@ -128,57 +128,114 @@
                                         <span class="text-sm text-gray-800 leading-snug">{{ $item->question }}</span>
                                     </td>
 
-                                    {{-- Radio: Error --}}
-                                    <td class="px-5 py-4 align-middle text-center col-error">
-                                        <input type="radio" name="answers[{{ $item->id }}]" value="fail"
-                                               id="radio-fail-{{ $item->id }}"
-                                               class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-red-500 radio-input issue-trigger"
-                                               required
-                                               @change="isError = true; checkGlobalIssue()"
-                                               data-grid="{{ $gridId }}" data-mode="error">
-                                    </td>
+                                    @if($item->type === 'pass_fail')
+                                        {{-- === TIPE: PASS/FAIL → Radio: Error / N/A / Normal === --}}
+                                        <td class="px-5 py-4 align-middle text-center col-error">
+                                            <input type="radio" name="answers[{{ $item->id }}]" value="fail"
+                                                   id="radio-fail-{{ $item->id }}"
+                                                   class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-red-500 radio-input issue-trigger"
+                                                   required
+                                                   @change="isError = true; checkGlobalIssue()"
+                                                   data-grid="{{ $gridId }}" data-mode="error">
+                                        </td>
+                                        <td class="px-5 py-4 align-middle text-center col-na">
+                                            <input type="radio" name="answers[{{ $item->id }}]" value="na"
+                                                   class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-slate-400 radio-input"
+                                                   required
+                                                   @change="isError = false; checkGlobalIssue()"
+                                                   data-grid="{{ $gridId }}" data-mode="clear">
+                                        </td>
+                                        <td class="px-5 py-4 align-middle text-center col-normal">
+                                            <input type="radio" name="answers[{{ $item->id }}]" value="pass"
+                                                   class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-emerald-500 radio-input"
+                                                   required
+                                                   @change="isError = false; checkGlobalIssue()"
+                                                   data-grid="{{ $gridId }}" data-mode="clear">
+                                        </td>
+                                        <td class="px-5 py-3.5 align-top col-notes">
+                                            <input type="text" name="notes[{{ $item->id }}]"
+                                                   class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
+                                                   placeholder="Keterangan opsional...">
+                                        </td>
 
-                                    {{-- Radio: N/A --}}
-                                    <td class="px-5 py-4 align-middle text-center col-na">
-                                        <input type="radio" name="answers[{{ $item->id }}]" value="na"
-                                               class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-slate-400 radio-input"
-                                               required
-                                               @change="isError = false; checkGlobalIssue()"
-                                               data-grid="{{ $gridId }}" data-mode="clear">
-                                    </td>
+                                    @elseif($item->type === 'checkbox')
+                                        {{-- === TIPE: CHECKBOX → Radio: Ya / Tidak (colspan 3 kolom radio) === --}}
+                                        <td colspan="3" class="px-5 py-4 align-middle text-center">
+                                            <div class="flex items-center justify-center gap-4">
+                                                <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-blue-50 transition-all">
+                                                    <input type="radio" name="answers[{{ $item->id }}]" value="Ya"
+                                                           class="w-4 h-4 cursor-pointer accent-blue-600 radio-input"
+                                                           required
+                                                           @change="isError = false; checkGlobalIssue()"
+                                                           data-grid="{{ $gridId }}" data-mode="clear">
+                                                    <span class="text-sm font-semibold text-gray-700"><i class="fa-solid fa-check text-blue-600 mr-1"></i>Ya</span>
+                                                </label>
+                                                <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-red-50 transition-all">
+                                                    <input type="radio" name="answers[{{ $item->id }}]" value="Tidak"
+                                                           id="radio-fail-{{ $item->id }}"
+                                                           class="w-4 h-4 cursor-pointer accent-red-500 radio-input issue-trigger"
+                                                           required
+                                                           @change="isError = true; checkGlobalIssue()"
+                                                           data-grid="{{ $gridId }}" data-mode="error">
+                                                    <span class="text-sm font-semibold text-gray-700"><i class="fa-solid fa-xmark text-red-500 mr-1"></i>Tidak</span>
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-3.5 align-top col-notes">
+                                            <input type="text" name="notes[{{ $item->id }}]"
+                                                   class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
+                                                   placeholder="Keterangan opsional...">
+                                        </td>
 
-                                    {{-- Radio: Normal --}}
-                                    <td class="px-5 py-4 align-middle text-center col-normal">
-                                        <input type="radio" name="answers[{{ $item->id }}]" value="pass"
-                                               class="w-5 h-5 cursor-pointer border-gray-300 focus:ring-2 focus:ring-offset-1 accent-emerald-500 radio-input"
-                                               required
-                                               @change="isError = false; checkGlobalIssue()"
-                                               data-grid="{{ $gridId }}" data-mode="clear">
-                                    </td>
-
-                                    {{-- Kolom Keterangan --}}
-                                    <td class="px-5 py-3.5 align-top col-notes">
-                                        <div class="space-y-2">
-                                            @if($item->type === 'number')
-                                                <div class="flex items-center gap-2">
-                                                    <input type="number" step="any" name="notes[{{ $item->id }}]"
-                                                           class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
-                                                           placeholder="Ketik Angka Hasil..." required>
-                                                    @if($item->unit)
-                                                        <span class="flex-shrink-0 text-xs font-medium text-gray-500 bg-gray-50 px-2.5 py-2 rounded-lg border border-gray-200">{{ $item->unit }}</span>
-                                                    @endif
-                                                </div>
-                                            @elseif($item->type === 'text')
-                                                <input type="text" name="notes[{{ $item->id }}]"
-                                                       class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
-                                                       placeholder="Ketik hasil pengecekan..." required>
-                                            @else
+                                    @elseif($item->type === 'number')
+                                        {{-- === TIPE: NUMBER → Input angka (colspan 3 kolom radio) + unit === --}}
+                                        <td colspan="3" class="px-5 py-4 align-middle text-center">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <input type="number" step="any" name="answers[{{ $item->id }}]"
+                                                       class="w-32 bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-400"
+                                                       placeholder="Nilai..." required>
+                                                @if($item->unit)
+                                                    <span class="flex-shrink-0 text-xs font-bold text-gray-500 bg-gray-100 px-2.5 py-2 rounded-lg border border-gray-200">{{ $item->unit }}</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-3.5 align-top col-notes">
+                                            <div class="space-y-2">
                                                 <input type="text" name="notes[{{ $item->id }}]"
                                                        class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
                                                        placeholder="Keterangan opsional...">
-                                            @endif
-                                        </div>
-                                    </td>
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox" class="w-4 h-4 text-red-600 focus:ring-red-500 rounded border-gray-300 issue-trigger"
+                                                           @change="isError = $el.checked; checkGlobalIssue(); if($el.checked) { $el.parentElement.querySelector('.flag-input').disabled = false; } else { $el.parentElement.querySelector('.flag-input').disabled = true; }"
+                                                           data-grid="{{ $gridId }}" data-mode="error">
+                                                    <input type="hidden" name="flagged_items[{{ $item->id }}]" value="1" disabled class="flag-input">
+                                                    <span class="text-[11px] text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Tandai jika nilai di luar standar</span>
+                                                </label>
+                                            </div>
+                                        </td>
+
+                                    @else
+                                        {{-- === TIPE: TEXT → Input teks (colspan 3 kolom radio) === --}}
+                                        <td colspan="3" class="px-5 py-4 align-middle">
+                                            <input type="text" name="answers[{{ $item->id }}]"
+                                                   class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-400"
+                                                   placeholder="Ketik hasil pengecekan..." required>
+                                        </td>
+                                        <td class="px-5 py-3.5 align-top col-notes">
+                                            <div class="space-y-2">
+                                                <input type="text" name="notes[{{ $item->id }}]"
+                                                       class="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all placeholder-gray-400"
+                                                       placeholder="Keterangan opsional...">
+                                                <label class="flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox" class="w-4 h-4 text-red-600 focus:ring-red-500 rounded border-gray-300 issue-trigger"
+                                                           @change="isError = $el.checked; checkGlobalIssue(); if($el.checked) { $el.parentElement.querySelector('.flag-input').disabled = false; } else { $el.parentElement.querySelector('.flag-input').disabled = true; }"
+                                                           data-grid="{{ $gridId }}" data-mode="error">
+                                                    <input type="hidden" name="flagged_items[{{ $item->id }}]" value="1" disabled class="flag-input">
+                                                    <span class="text-[11px] text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Tandai jika mengindikasikan kerusakan</span>
+                                                </label>
+                                            </div>
+                                        </td>
+                                    @endif
                                 </tr>
 
                                 {{-- BARIS MASS TRIAGE GRID (muncul saat Error dipilih) --}}
@@ -448,13 +505,17 @@ function inspectionAreaForm() {
 // ============================================================
 document.addEventListener('DOMContentLoaded', function () {
 
-    // --- 1. Hubungkan Radio Button dengan Triage Grid ---
-    document.querySelectorAll('input[type="radio"][data-grid]').forEach(function (radio) {
-        radio.addEventListener('change', function () {
+    // --- 1. Hubungkan Input (Radio & Checkbox) dengan Triage Grid ---
+    document.querySelectorAll('input[data-grid]').forEach(function (input) {
+        input.addEventListener('change', function () {
             const gridId  = this.dataset.grid;
-            const mode    = this.dataset.mode; // 'error' | 'clear'
+            let mode      = this.dataset.mode; // 'error' | 'clear'
             const gridRow = document.getElementById(gridId);
             if (!gridRow) return;
+
+            if (this.type === 'checkbox') {
+                mode = this.checked ? 'error' : 'clear';
+            }
 
             if (mode === 'error') {
                 // Tampilkan grid dengan animasi slide-down

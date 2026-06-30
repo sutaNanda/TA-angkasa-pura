@@ -42,7 +42,7 @@ class MaintenancePlanController extends Controller
     {
         $categories = Category::orderBy('name')->get();
         $templates  = ChecklistTemplate::orderBy('name')->get();
-        $locations  = Location::orderBy('name')->get();
+        $locations  = Location::whereHas('assets')->with('assets.category')->orderBy('name')->get();
         $groups     = TechnicianGroup::orderBy('name')->get(); // Ganti $shifts dengan $groups
 
         return view('admin.plans.create', compact('categories', 'templates', 'locations', 'groups'));
@@ -105,7 +105,7 @@ class MaintenancePlanController extends Controller
             ->findOrFail($id);
         $categories = Category::orderBy('name')->get();
         $templates  = ChecklistTemplate::orderBy('name')->get();
-        $locations  = Location::orderBy('name')->get();
+        $locations  = Location::whereHas('assets')->with('assets.category')->orderBy('name')->get();
         $groups     = TechnicianGroup::orderBy('name')->get();
 
         $categoryIds       = collect($plan->template_configs)->pluck('category_id')->unique()->toArray();

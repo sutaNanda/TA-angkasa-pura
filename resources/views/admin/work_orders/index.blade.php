@@ -161,7 +161,7 @@
                             </td>
 
                             <td class="px-6 py-4">
-                                <div class="text-gray-800 font-medium text-sm line-clamp-2 leading-relaxed" title="{{ $ticket->issue_description }}">
+                                <div class="text-gray-800 font-medium text-sm line-clamp-2 leading-relaxed whitespace-pre-line" title="{{ $ticket->issue_description }}">
                                     {{ $ticket->issue_description }}
                                 </div>
                                 <div class="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1.5">
@@ -652,7 +652,7 @@
 
                     + '<div class="mb-8">'
                     +   '<h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-red-500"></i> Masalah Dilaporkan</h4>'
-                    +   '<div class="bg-red-50/50 p-4 rounded-xl border border-red-100 text-red-900 text-sm leading-relaxed">' + data.issue_description + '</div>'
+                    +   '<div class="bg-red-50/50 p-4 rounded-xl border border-red-100 text-red-900 text-sm leading-relaxed whitespace-pre-line">' + data.issue_description + '</div>'
                     + '</div>'
                     
                     + handoverHtml
