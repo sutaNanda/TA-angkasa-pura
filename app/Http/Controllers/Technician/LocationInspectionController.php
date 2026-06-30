@@ -52,12 +52,19 @@ class LocationInspectionController extends Controller
             'global_notes' => 'nullable|array',
             'photos' => 'nullable|array',
             'shift' => 'required|string',
+            'flagged_items' => 'nullable|array',
         ]);
 
         DB::beginTransaction();
         try {
             $workOrdersCreated = [];
             $hasAnyIssue = false;
+            $allDescLines = [];
+            $primaryAssetId = null;
+            $patrolLogs = [];
+            $firstPhotoPath = null;
+            $totalFailingAssets = 0;
+            $allPhotosForWO = [];
 
             foreach ($request->answers as $assetId => $itemAnswers) {
                 $asset = Asset::findOrFail($assetId);
@@ -70,12 +77,37 @@ class LocationInspectionController extends Controller
                     return in_array($key, $headerItemIds);
                 })->toArray();
 
-                $hasIssue = false;
-                foreach ($filteredAnswers as $answer) {
-                    if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
-                        $hasIssue = true;
+                $failingSops = [];
+                $hasIssueThisAsset = false;
+                $flaggedItems = $request->input('flagged_items', []);
+                
+                foreach ($filteredAnswers as $itemKey => $answer) {
+                    $item = \App\Models\ChecklistItem::find($itemKey);
+                    $questionText = $item ? $item->question : 'Pengecekan SOP';
+                    
+                    $isFailed = false;
+                    // Deteksi issue dari jawaban langsung (pass_fail & checkbox types)
+                    if (in_array($answer, ['fail', 'broken', 'no', 'Tidak'])) {
+                        $isFailed = true;
+                    }
+                    // Deteksi issue dari flag checkbox "Tandai jika di luar standar" (number/text types)
+                    if (isset($flaggedItems[$assetId][$itemKey])) {
+                        $isFailed = true;
+                    }
+                    
+                    if ($isFailed) {
+                        $hasIssueThisAsset = true;
                         $hasAnyIssue = true;
-                        break;
+                        
+                        $formattedAnswer = $answer;
+                        if (in_array($answer, ['fail', 'broken', 'no', 'Tidak'])) {
+                            $formattedAnswer = 'Gagal / Tidak Sesuai';
+                        } elseif (in_array($answer, ['pass', 'ok', 'yes', 'Ya'])) {
+                            $formattedAnswer = 'Sesuai Standar';
+                        }
+                        $unitStr = ($item && $item->unit) ? " {$item->unit}" : "";
+                        
+                        $failingSops[] = "- {$questionText}\n  Nilai/Input: {$formattedAnswer}{$unitStr}";
                     }
                 }
 
@@ -84,6 +116,10 @@ class LocationInspectionController extends Controller
                     foreach ($request->file("photos.{$assetId}") as $file) {
                         $photoPaths[] = \App\Services\ImageCompressorService::upload($file, 'patrol-evidence');
                     }
+                }
+                
+                if (empty($firstPhotoPath) && !empty($photoPaths)) {
+                    $firstPhotoPath = $photoPaths[0];
                 }
 
                 $notes = $request->global_notes[$assetId] ?? null;
@@ -94,31 +130,64 @@ class LocationInspectionController extends Controller
                     'location_id' => $locationId == 0 ? null : $locationId,
                     'checklist_template_id' => $template->id,
                     'inspection_data' => $filteredAnswers,
-                    'status' => $hasIssue ? 'issue_found' : 'normal',
+                    'status' => $hasIssueThisAsset ? 'issue_found' : 'normal',
                     'notes'               => $notes,
                     'photos'              => $photoPaths,
                     'technician_group_id' => Auth::user()->technician_group_id,
                     'shift'               => $request->shift,
                 ]);
+                $patrolLogs[] = $patrolLog;
 
-                if ($hasIssue) {
-                    $workOrder = WorkOrder::create([
-                        'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
-                        'asset_id' => $assetId,
-                        'technician_id' => null,
-                        'reported_by' => Auth::id(),
-                        'priority' => 'medium',
-                        'status' => 'open',
-                        'source' => 'patrol',
-                        'issue_description' => $notes ?? 'Masalah ditemukan saat inspeksi area.',
-                        'initial_photo' => $photoPaths[0] ?? null,
-                        'shift' => $request->shift,
-                    ]);
-
-                    if(\Schema::hasColumn('patrol_logs', 'work_order_id')) {
-                         $patrolLog->update(['work_order_id' => $workOrder->id]);
+                if ($hasIssueThisAsset) {
+                    $totalFailingAssets++;
+                    if ($primaryAssetId === null) {
+                        $primaryAssetId = $assetId;
                     }
-                    $workOrdersCreated[] = $workOrder->id;
+                    $allDescLines[] = "[ " . $asset->name . " ]";
+                    
+                    foreach ($failingSops as $sop) {
+                         $allDescLines[] = $sop;
+                    }
+
+                    if (!empty($notes)) {
+                         $allDescLines[] = "  (Catatan: " . str_replace("\n", "\n  ", $notes) . ")";
+                    }
+                    $allDescLines[] = "";
+                    
+                    // Kumpulkan semua foto untuk tiket WO
+                    $allPhotosForWO = array_merge($allPhotosForWO, $photoPaths);
+                }
+            }
+
+            if ($hasAnyIssue) {
+                $finalDesc = "Ditemukan masalah pada " . $totalFailingAssets . " aset di lokasi ini saat inspeksi:\n\n" . trim(implode("\n", $allDescLines));
+
+                $workOrder = WorkOrder::create([
+                    'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
+                    'asset_id' => $primaryAssetId,
+                    'location_id' => $locationId == 0 ? null : $locationId,
+                    'technician_id' => null,
+                    'reported_by' => Auth::id(),
+                    'priority' => 'medium',
+                    'status' => 'open',
+                    'source' => 'patrol',
+                    'issue_description' => $finalDesc,
+                    'initial_photo' => $firstPhotoPath,
+                    'photos_before' => !empty($allPhotosForWO) ? $allPhotosForWO : null,
+                    'shift' => $request->shift,
+                ]);
+
+                $workOrdersCreated[] = $workOrder->id;
+
+                if(\Schema::hasColumn('patrol_logs', 'work_order_id')) {
+                    foreach ($patrolLogs as $log) {
+                        // Hanya bind WorkOrder ke aset yang bermasalah?
+                        // Tapi agar mudah dicari, log patroli yang normal dalam satu sesi ini bisa dibind juga (opsional).
+                        // Mengikuti sistem sebelumnya, bind ke semua yang punya masalah:
+                        if ($log->status === 'issue_found') {
+                            $log->update(['work_order_id' => $workOrder->id]);
+                        }
+                    }
                 }
             }
 
@@ -183,21 +252,26 @@ public function inspectMaintenance(Maintenance $maintenance)
                             : $maintenance->maintenancePlan->template_configs;
                 
                 if (is_array($configs)) {
-                    // Setiap template menjadi grup terpisah (bukan digabung menjadi satu list)
+                    // Dapatkan ID kategori aset yang benar-benar ada di lokasi ini
+                    $locationAssetsCategories = $maintenance->location ? $maintenance->location->assets->pluck('category_id')->unique()->toArray() : [];
+
                     $groupedTemplates = [];
                     foreach ($configs as $config) {
                         if (isset($config['template_id'])) {
                             $template = \App\Models\ChecklistTemplate::with(['items', 'category'])->find($config['template_id']);
                             if ($template && $template->items && $template->items->isNotEmpty()) {
-                                if (!$primaryTemplateId) {
-                                    $primaryTemplateId = $template->id;
+                                // Hanya render template ini jika: (1) Template ini Umum (tanpa kategori), ATAU (2) Lokasi punya aset di kategori ini
+                                if (empty($locationAssetsCategories) || is_null($template->category_id) || in_array($template->category_id, $locationAssetsCategories)) {
+                                    if (!$primaryTemplateId) {
+                                        $primaryTemplateId = $template->id;
+                                    }
+                                    $groupedTemplates[] = [
+                                        'maintenance_id' => $maintenance->id,
+                                        'template_name'  => $template->name,
+                                        'category_name'  => $template->category->name ?? 'Umum',
+                                        'items'          => $template->items,
+                                    ];
                                 }
-                                $groupedTemplates[] = [
-                                    'maintenance_id' => $maintenance->id,
-                                    'template_name'  => $template->name,
-                                    'category_name'  => $template->category->name ?? 'Umum',
-                                    'items'          => $template->items,
-                                ];
                             }
                         }
                     }
@@ -236,7 +310,8 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             'global_notes' => 'nullable|string', 
             'photos' => 'nullable|array',
             'primary_template_id' => 'nullable', // Menerima ID template dari form
-            'shift' => 'required|string'
+            'shift' => 'required|string',
+            'flagged_items' => 'nullable|array',
         ]);
 
         DB::beginTransaction();
@@ -260,8 +335,10 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             $issuesByAsset = [];
 
             // Loop mengecek jawaban
+            $flaggedItems = $request->input('flagged_items', []);
             foreach ($request->answers as $itemId => $answer) {
-                if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
+                $isFlagged = isset($flaggedItems[$itemId]);
+                if ($answer === 'fail' || $answer === 'broken' || $answer === 'no' || $answer === 'Tidak' || $isFlagged) {
                     $hasIssue = true;
                     
                     $selectedAssetId = $request->failed_asset_ids[$itemId] ?? 'area_general';
@@ -274,41 +351,65 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
 
                     // Logic Teks Deskripsi
                     $specificNote = !empty($request->notes[$itemId]) ? $request->notes[$itemId] : 'Tidak ada keterangan spesifik';
-                    $baseDesc = "- SOP: {$questionText}\n  Keterangan: {$specificNote}";
+                    
+                    $formattedAnswer = $answer;
+                    if (in_array($answer, ['fail', 'broken', 'no', 'Tidak'])) {
+                        $formattedAnswer = 'Gagal / Tidak Sesuai';
+                    } elseif (in_array($answer, ['pass', 'ok', 'yes', 'Ya'])) {
+                        $formattedAnswer = 'Sesuai Standar';
+                    }
+                    $unitStr = ($item && $item->unit) ? " {$item->unit}" : "";
+                    
+                    $baseDesc = "- {$questionText}\n  Nilai/Input: {$formattedAnswer}{$unitStr}\n  (Keterangan: {$specificNote})";
 
                     $issuesByAsset[$selectedAssetId][] = $baseDesc;
                 }
             }
 
             if ($hasIssue && !empty($issuesByAsset)) {
+                $allDescLines = [];
+                $primaryAssetId = null;
+                $totalIssues = 0;
+
                 foreach ($issuesByAsset as $aId => $descLines) {
-                    $selectedAssetId = ($aId === 'area_general') ? null : $aId;
-                    
-                    $finalDesc = count($descLines) > 1 
-                        ? "Ditemukan " . count($descLines) . " masalah saat inspeksi:\n" . implode("\n", $descLines)
-                        : implode("\n", $descLines);
-
-                    if (!empty($request->global_notes)) {
-                         $finalDesc .= "\n\nCatatan Global Laporan: " . $request->global_notes;
+                    $totalIssues += count($descLines);
+                    if ($aId === 'area_general') {
+                        $allDescLines[] = "[ Area General / Umum ]";
+                    } else {
+                        $assetName = \App\Models\Asset::find($aId)->name ?? 'Aset Tidak Diketahui';
+                        $allDescLines[] = "[ " . $assetName . " ]";
+                        if ($primaryAssetId === null) {
+                            $primaryAssetId = $aId;
+                        }
                     }
-
-                    $workOrder = \App\Models\WorkOrder::create([
-                        'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
-                        'asset_id' => $selectedAssetId, 
-                        'location_id' => $maintenance->location_id,
-                        'technician_id' => null,
-                        'reporter_id' => Auth::id(),
-                        'priority' => 'medium',
-                        'status' => 'open',
-                        'source' => 'patrol',
-                        'issue_description' => $finalDesc,
-                        'maintenance_id' => $maintenance->id,
-                        'initial_photo' => $photoPaths[0] ?? null,
-                        'shift' => $request->shift,
-                    ]);
-                    
-                    $workOrdersCreated[] = $workOrder->id;
+                    foreach ($descLines as $line) {
+                        $allDescLines[] = $line;
+                    }
+                    $allDescLines[] = ""; // Spacing
                 }
+                
+                $finalDesc = "Ditemukan " . $totalIssues . " masalah saat inspeksi:\n\n" . trim(implode("\n", $allDescLines));
+
+                if (!empty($request->global_notes)) {
+                     $finalDesc .= "\n\nCatatan Global Laporan: " . $request->global_notes;
+                }
+
+                $workOrder = \App\Models\WorkOrder::create([
+                    'ticket_number' => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
+                    'asset_id' => $primaryAssetId, 
+                    'location_id' => $maintenance->location_id,
+                    'technician_id' => null,
+                    'reporter_id' => Auth::id(),
+                    'priority' => 'medium',
+                    'status' => 'open',
+                    'source' => 'patrol',
+                    'issue_description' => $finalDesc,
+                    'maintenance_id' => $maintenance->id,
+                    'initial_photo' => $photoPaths[0] ?? null,
+                    'photos_before' => !empty($photoPaths) ? $photoPaths : null,
+                    'shift' => $request->shift,
+                ]);
+                $workOrdersCreated[] = $workOrder->id;
             }
 
             // Buat 1 Log Patroli
@@ -601,7 +702,8 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             'photos' => 'nullable|array',
             'primary_template_id' => 'nullable',
             'location_id' => 'nullable',
-            'shift' => 'required|string'
+            'shift' => 'required|string',
+            'flagged_items' => 'nullable|array',
         ]);
 
         $ids = explode(',', $request->maintenance_ids);
@@ -628,8 +730,10 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             $issuesByAsset = [];
 
             // Loop mengecek jawaban
+            $flaggedItems = $request->input('flagged_items', []);
             foreach ($request->answers as $itemId => $answer) {
-                if ($answer === 'fail' || $answer === 'broken' || $answer === 'no') {
+                $isFlagged = isset($flaggedItems[$itemId]);
+                if ($answer === 'fail' || $answer === 'broken' || $answer === 'no' || $answer === 'Tidak' || $isFlagged) {
                     $hasIssue = true;
 
                     // --- FORMAT BARU: failed_assets[item_id][] = multiple asset_ids (Mass Triage) ---
@@ -644,7 +748,16 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
 
                     // Logic Teks Deskripsi
                     $specificNote = !empty($request->notes[$itemId]) ? $request->notes[$itemId] : 'Tidak ada keterangan spesifik';
-                    $baseDesc = "- SOP: {$questionText}\n  Keterangan: {$specificNote}";
+                    
+                    $formattedAnswer = $answer;
+                    if (in_array($answer, ['fail', 'broken', 'no', 'Tidak'])) {
+                        $formattedAnswer = 'Gagal / Tidak Sesuai';
+                    } elseif (in_array($answer, ['pass', 'ok', 'yes', 'Ya'])) {
+                        $formattedAnswer = 'Sesuai Standar';
+                    }
+                    $unitStr = ($item && $item->unit) ? " {$item->unit}" : "";
+                    
+                    $baseDesc = "- {$questionText}\n  Nilai/Input: {$formattedAnswer}{$unitStr}\n  (Keterangan: {$specificNote})";
 
                     if (!empty($failedAssetIds) && is_array($failedAssetIds)) {
                         foreach ($failedAssetIds as $selectedAssetId) {
@@ -659,33 +772,49 @@ public function storeMaintenance(Request $request, Maintenance $maintenance)
             }
 
             if ($hasIssue && !empty($issuesByAsset)) {
+                $allDescLines = [];
+                $primaryAssetId = null;
+                $totalIssues = 0;
+
                 foreach ($issuesByAsset as $aId => $descLines) {
-                    $selectedAssetId = ($aId === 'area_general') ? null : $aId;
-                    
-                    $finalDesc = count($descLines) > 1 
-                        ? "Ditemukan " . count($descLines) . " masalah pada unit ini:\n" . implode("\n", $descLines)
-                        : implode("\n", $descLines);
-
-                    if (!empty($request->global_notes)) {
-                         $finalDesc .= "\n\nCatatan Global Laporan: " . $request->global_notes;
+                    $totalIssues += count($descLines);
+                    if ($aId === 'area_general') {
+                        $allDescLines[] = "[ Area General / Umum ]";
+                    } else {
+                        $assetName = \App\Models\Asset::find($aId)->name ?? 'Aset Tidak Diketahui';
+                        $allDescLines[] = "[ " . $assetName . " ]";
+                        if ($primaryAssetId === null) {
+                            $primaryAssetId = $aId;
+                        }
                     }
-
-                    $workOrder = \App\Models\WorkOrder::create([
-                        'ticket_number'     => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
-                        'asset_id'          => $selectedAssetId,
-                        'location_id'       => $request->location_id,
-                        'technician_id'     => null,
-                        'reporter_id'       => Auth::id(),
-                        'priority'          => 'medium',
-                        'status'            => 'open',
-                        'source'            => 'patrol',
-                        'issue_description' => $finalDesc,
-                        'maintenance_id'    => current($ids) ?: null,
-                        'initial_photo'     => $photoPaths[0] ?? null,
-                        'shift'             => $request->shift,
-                    ]);
-                    $workOrdersCreated[] = $workOrder->id;
+                    foreach ($descLines as $line) {
+                        $allDescLines[] = $line;
+                    }
+                    $allDescLines[] = ""; // Spacing
                 }
+                
+                $finalDesc = "Ditemukan " . $totalIssues . " masalah saat inspeksi:\n\n" . trim(implode("\n", $allDescLines));
+
+                if (!empty($request->global_notes)) {
+                     $finalDesc .= "\n\nCatatan Global Laporan: " . $request->global_notes;
+                }
+
+                $workOrder = \App\Models\WorkOrder::create([
+                    'ticket_number'     => 'WO-' . now()->format('Ymd') . '-' . strtoupper(uniqid()),
+                    'asset_id'          => $primaryAssetId,
+                    'location_id'       => $request->location_id,
+                    'technician_id'     => null,
+                    'reporter_id'       => Auth::id(),
+                    'priority'          => 'medium',
+                    'status'            => 'open',
+                    'source'            => 'patrol',
+                    'issue_description' => $finalDesc,
+                    'maintenance_id'    => current($ids) ?: null,
+                    'initial_photo'     => $photoPaths[0] ?? null,
+                    'photos_before'     => !empty($photoPaths) ? $photoPaths : null,
+                    'shift'             => $request->shift,
+                ]);
+                $workOrdersCreated[] = $workOrder->id;
             }
 
             // Buat 1 Log Patroli

@@ -65,15 +65,17 @@ class HistoryController extends Controller
         // Ambil WO yang Selesai oleh User INI
         // ATAU yang pernah di-Handover oleh User INI
         $workOrders = WorkOrder::with(['asset.location', 'histories', 'location'])
-            ->where(function($q) use ($user) {
-                // Completed by me
-                $q->where('technician_id', $user->id)
-                  ->where('status', 'completed');
-            })
-            ->orWhereHas('histories', function($q) use ($user) {
-                // Pernah melakukan handover
-                $q->where('user_id', $user->id)
-                  ->where('action', 'handover');
+            ->where(function ($query) use ($user) {
+                $query->where(function($q) use ($user) {
+                    // Completed by me
+                    $q->where('executed_by_user_id', $user->id)
+                      ->where('status', 'completed');
+                })
+                ->orWhereHas('histories', function($q) use ($user) {
+                    // Pernah melakukan handover
+                    $q->where('user_id', $user->id)
+                      ->where('action', 'handover');
+                });
             })
             ->whereMonth('updated_at', $month) // Gunakan updated_at untuk tanggal penyelesaian/handover
             ->whereYear('updated_at', $year)

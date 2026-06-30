@@ -241,6 +241,13 @@
                                                 </div>
                                                 <div class="flex-1">
                                                     <span class="font-semibold text-sm text-gray-900 group-hover:text-purple-700 transition-colors" x-text="location.name"></span>
+                                                    <div class="text-[10px] text-gray-500 mt-0.5 flex flex-wrap items-center gap-1.5">
+                                                        <span class="bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded font-bold text-gray-600">
+                                                            <i class="fa-solid fa-box mr-1"></i> <span x-text="location.assets ? location.assets.length + ' Aset' : '0 Aset'"></span>
+                                                        </span>
+                                                        <span x-show="location.assets && location.assets.length > 0" class="text-gray-400">|</span>
+                                                        <span x-show="location.assets && location.assets.length > 0" x-text="[...new Set(location.assets.map(a => a.category ? a.category.name : 'Umum'))].join(', ')" class="italic"></span>
+                                                    </div>
                                                 </div>
                                             </label>
                                         </li>

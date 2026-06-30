@@ -110,8 +110,8 @@
                 {{-- TENGAH: Deskripsi Masalah --}}
                 <div class="lg:w-2/5 flex flex-col justify-center">
                     <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5"><i class="fa-solid fa-comment-dots mr-1"></i> Laporan Anda</p>
-                    <p class="font-medium text-gray-700 text-sm line-clamp-2 md:line-clamp-3 leading-relaxed" title="{{ $ticket->issue_description }}">
-                        "{{ $ticket->issue_description }}"
+                    <p class="font-medium text-gray-700 text-sm line-clamp-2 md:line-clamp-3 leading-relaxed whitespace-pre-line" title="{{ $ticket->issue_description }}">
+                        {{ $ticket->issue_description }}
                     </p>
                 </div>
 
@@ -162,7 +162,7 @@
                             'completed_date' => in_array($ticket->status, ['completed', 'verified']) ? $ticket->updated_at->format('d M Y, H:i') : null,
                             'photos_before_urls' => $photoBeforeUrls,
                             'photos_after_urls' => $photoAfterUrls,
-                            'technician_name' => $ticket->technician ? $ticket->technician->name : 'Tim Teknisi',
+                            'technician_name' => $ticket->executedBy ? $ticket->executedBy->name : ($ticket->technician ? $ticket->technician->name : 'Tim Teknisi'),
                             'completed_note' => $completedHistory ? $completedHistory->description : 'Perbaikan telah diselesaikan oleh teknisi.',
                         ];
                     @endphp
@@ -200,7 +200,7 @@
          x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         
         {{-- Backdrop Blur --}}
-        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showModal = false"></div>
+        <div class="absolute inset-0 bg-gray-900/60" @click="showModal = false"></div>
         
         {{-- Modal Content --}}
         <div class="bg-white w-full max-w-lg sm:max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] relative z-10 transform transition-all"
@@ -266,9 +266,12 @@
                                 <p class="text-sm text-emerald-900 font-medium leading-relaxed italic" x-html="`&quot;${selectedTicket?.completed_note}&quot;`"></p>
                             </div>
                             
-                            <div class="flex items-center gap-2 mb-4">
+                            <div class="flex flex-wrap items-center gap-2 mb-4">
                                 <div class="bg-white text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm border border-emerald-100 flex items-center gap-1.5">
                                     <i class="fa-regular fa-circle-check"></i> Selesai pada: <span x-text="selectedTicket?.completed_date"></span>
+                                </div>
+                                <div class="bg-white text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm border border-emerald-100 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-user-gear"></i> Teknisi: <span x-text="selectedTicket?.technician_name"></span>
                                 </div>
                             </div>
 
@@ -302,7 +305,7 @@
                     <div class="mt-4 p-5 rounded-2xl border border-dashed border-gray-300 bg-transparent text-center flex flex-col items-center justify-center text-gray-500">
                         <i class="fa-solid fa-spinner fa-spin-pulse text-2xl text-blue-400 mb-2"></i>
                         <p class="text-sm font-bold text-gray-700">Dalam Proses Penanganan</p>
-                        <p class="text-[11px] mt-1">Laporan Anda telah masuk dan sedang ditindaklanjuti oleh tim <span x-text="selectedTicket?.technician_name"></span>.</p>
+                        <p class="text-[11px] mt-1">Laporan Anda telah masuk dan sedang ditindaklanjuti oleh teknisi: <span x-text="selectedTicket?.technician_name" class="font-bold text-blue-600"></span>.</p>
                     </div>
                 </template>
 

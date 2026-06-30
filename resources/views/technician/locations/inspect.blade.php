@@ -89,29 +89,85 @@
                                             <td class="p-2 text-gray-800 font-medium whitespace-normal border-r border-gray-200 col-question">
                                                 {{ $item->question }}
                                             </td>
-                                            
-                                            {{-- KOLOM ERROR --}}
-                                            <td class="p-2 text-center border-r border-gray-200 bg-red-50/30 hover:bg-red-50/80 transition-colors col-error">
-                                                <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="{{ $item->type === 'pass_fail' ? 'fail' : 'no' }}" 
-                                                       class="w-5 h-5 text-red-600 border-gray-400 focus:ring-red-500 cursor-pointer radio-input issue-trigger" 
-                                                       required @change="checkIssue">
-                                            </td>
-                                            
-                                            {{-- KOLOM NORMAL --}}
-                                            <td class="p-2 text-center border-r border-gray-200 bg-green-50/30 hover:bg-green-50/80 transition-colors col-normal">
-                                                <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="{{ $item->type === 'pass_fail' ? 'pass' : 'yes' }}" 
-                                                       class="w-5 h-5 text-green-600 border-gray-400 focus:ring-green-500 cursor-pointer radio-input" 
-                                                       required @change="checkIssue">
-                                            </td>
-                                            
-                                            {{-- KOLOM KETERANGAN --}}
-                                            <td class="p-2 col-notes">
-                                                @if($item->type === 'number')
-                                                    <input type="number" step="any" name="notes[{{ $asset->id }}][{{ $item->id }}]" class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500" placeholder="Masukkan Angka..." required>
-                                                @else
+                                            @if($item->type === 'pass_fail')
+                                                {{-- === TIPE: PASS/FAIL → Radio: Error / Normal === --}}
+                                                <td class="p-2 text-center border-r border-gray-200 bg-red-50/30 hover:bg-red-50/80 transition-colors col-error">
+                                                    <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="fail" 
+                                                           class="w-5 h-5 text-red-600 border-gray-400 focus:ring-red-500 cursor-pointer radio-input issue-trigger" 
+                                                           required @change="checkIssue">
+                                                </td>
+                                                <td class="p-2 text-center border-r border-gray-200 bg-green-50/30 hover:bg-green-50/80 transition-colors col-normal">
+                                                    <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="pass" 
+                                                           class="w-5 h-5 text-green-600 border-gray-400 focus:ring-green-500 cursor-pointer radio-input" 
+                                                           required @change="checkIssue">
+                                                </td>
+                                                <td class="p-2 col-notes">
                                                     <input type="text" name="notes[{{ $asset->id }}][{{ $item->id }}]" class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500" placeholder="Keterangan (Opsional)...">
-                                                @endif
-                                            </td>
+                                                </td>
+
+                                            @elseif($item->type === 'checkbox')
+                                                {{-- === TIPE: CHECKBOX → Radio: Ya / Tidak === --}}
+                                                <td colspan="2" class="p-2 text-center border-r border-gray-200">
+                                                    <div class="flex items-center justify-center gap-3">
+                                                        <label class="flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-blue-50 transition-all">
+                                                            <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="Ya"
+                                                                   class="w-4 h-4 text-blue-600 focus:ring-blue-500 cursor-pointer radio-input"
+                                                                   required @change="checkIssue">
+                                                            <span class="text-xs font-semibold text-gray-700"><i class="fa-solid fa-check text-blue-600 mr-0.5"></i>Ya</span>
+                                                        </label>
+                                                        <label class="flex items-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-red-50 transition-all">
+                                                            <input type="radio" name="answers[{{ $asset->id }}][{{ $item->id }}]" value="Tidak"
+                                                                   class="w-4 h-4 text-red-600 focus:ring-red-500 cursor-pointer radio-input issue-trigger"
+                                                                   required @change="checkIssue">
+                                                            <span class="text-xs font-semibold text-gray-700"><i class="fa-solid fa-xmark text-red-500 mr-0.5"></i>Tidak</span>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                                <td class="p-2 col-notes">
+                                                    <input type="text" name="notes[{{ $asset->id }}][{{ $item->id }}]" class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500" placeholder="Keterangan (Opsional)...">
+                                                </td>
+
+                                            @elseif($item->type === 'number')
+                                                {{-- === TIPE: NUMBER → Input angka === --}}
+                                                <td colspan="2" class="p-2 text-center border-r border-gray-200">
+                                                    <div class="flex items-center justify-center gap-2">
+                                                        <input type="number" step="any" name="answers[{{ $asset->id }}][{{ $item->id }}]" 
+                                                               class="w-28 text-xs px-2 py-1.5 border border-gray-300 rounded focus:ring-blue-500 text-center bg-white" 
+                                                               placeholder="Nilai..." required>
+                                                        @if($item->unit)
+                                                            <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">{{ $item->unit }}</span>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                                <td class="p-2 col-notes">
+                                                    <div class="space-y-1">
+                                                        <input type="text" name="notes[{{ $asset->id }}][{{ $item->id }}]" class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500" placeholder="Keterangan (Opsional)...">
+                                                        <label class="flex items-center gap-1.5 cursor-pointer">
+                                                            <input type="checkbox" class="w-3.5 h-3.5 text-red-600 focus:ring-red-500 rounded border-gray-300 issue-trigger" @change="checkIssue; if($el.checked) { $el.parentElement.querySelector('.flag-input').disabled = false; } else { $el.parentElement.querySelector('.flag-input').disabled = true; }">
+                                                            <input type="hidden" name="flagged_items[{{ $asset->id }}][{{ $item->id }}]" value="1" disabled class="flag-input">
+                                                            <span class="text-[10px] text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>Nilai di luar standar</span>
+                                                        </label>
+                                                    </div>
+                                                </td>
+
+                                            @else
+                                                {{-- === TIPE: TEXT → Input teks === --}}
+                                                <td colspan="2" class="p-2 border-r border-gray-200">
+                                                    <input type="text" name="answers[{{ $asset->id }}][{{ $item->id }}]" 
+                                                           class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500 bg-white" 
+                                                           placeholder="Ketik hasil pengecekan..." required>
+                                                </td>
+                                                <td class="p-2 col-notes">
+                                                    <div class="space-y-1">
+                                                        <input type="text" name="notes[{{ $asset->id }}][{{ $item->id }}]" class="w-full text-xs px-2 py-1.5 md:py-1.5 py-3 border border-gray-300 rounded focus:ring-blue-500" placeholder="Keterangan (Opsional)...">
+                                                        <label class="flex items-center gap-1.5 cursor-pointer">
+                                                            <input type="checkbox" class="w-3.5 h-3.5 text-red-600 focus:ring-red-500 rounded border-gray-300 issue-trigger" @change="checkIssue; if($el.checked) { $el.parentElement.querySelector('.flag-input').disabled = false; } else { $el.parentElement.querySelector('.flag-input').disabled = true; }">
+                                                            <input type="hidden" name="flagged_items[{{ $asset->id }}][{{ $item->id }}]" value="1" disabled class="flag-input">
+                                                            <span class="text-[10px] text-red-600 font-bold"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>Tandai kerusakan</span>
+                                                        </label>
+                                                    </div>
+                                                </td>
+                                            @endif
                                         </tr>
                                         @php $itemCount++; @endphp
                                     @endif

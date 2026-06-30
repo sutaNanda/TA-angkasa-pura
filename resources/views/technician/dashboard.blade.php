@@ -247,7 +247,7 @@
                                             <span class="text-[9px] text-gray-400 font-mono bg-white px-1.5 py-0.5 rounded border border-gray-100 shadow-sm">#{{ $task->ticket_number }}</span>
                                         </div>
                                         
-                                        <h4 class="font-bold text-gray-900 text-sm mb-3 leading-snug line-clamp-2">{{ $task->issue_description }}</h4>
+                                        <h4 class="font-bold text-gray-900 text-sm mb-3 leading-snug line-clamp-2 whitespace-pre-line">{{ $task->issue_description }}</h4>
                                         
                                         <div class="flex items-center gap-3 text-[10px] text-gray-500 font-semibold border-t border-amber-100/50 pt-3">
                                             <span class="flex items-center gap-1.5 truncate">
@@ -283,7 +283,7 @@
                                         <span class="text-[9px] text-gray-400 font-mono bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">#{{ $task->ticket_number }}</span>
                                     </div>
                                     
-                                    <h4 class="font-bold text-gray-900 text-sm mb-3 leading-snug line-clamp-2 h-10">{{ $task->issue_description }}</h4>
+                                    <h4 class="font-bold text-gray-900 text-sm mb-3 leading-snug line-clamp-2 h-10 whitespace-pre-line">{{ $task->issue_description }}</h4>
                                     
                                     <div class="flex items-center gap-3 text-[10px] text-gray-500 font-semibold border-t border-gray-50 pt-3">
                                         <span class="flex items-center gap-1.5 truncate">
