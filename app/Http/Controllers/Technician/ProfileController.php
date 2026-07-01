@@ -52,8 +52,8 @@ class ProfileController extends Controller
                 Storage::disk('public')->delete($user->avatar);
             }
 
-            // Simpan yang baru
-            $path = \App\Services\ImageCompressorService::upload($request->file('avatar'), 'avatars');
+            // Simpan yang baru seperti biasa tanpa kompresi
+            $path = $request->file('avatar')->store('avatars', 'public');
             $user->avatar = $path; // Pastikan kolom 'avatar' ada di tabel users (atau gunakan kolom 'image')
         }
 
