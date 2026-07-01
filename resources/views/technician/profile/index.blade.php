@@ -162,17 +162,24 @@
 
                 <div class="flex justify-center mb-5">
                     <div class="relative w-24 h-24">
-                        @if($user->avatar)
-                            <img src="{{ asset('storage/' . $user->avatar) }}" id="preview-avatar" class="w-full h-full rounded-full object-cover border-4 border-gray-100 shadow-sm">
-                        @else
-                            <div class="w-full h-full rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-3xl font-bold border-4 border-gray-100 shadow-sm">
+                        <img src="{{ $user->avatar ? asset('storage/' . $user->avatar) : '' }}" 
+                             id="preview-avatar" 
+                             class="w-full h-full rounded-full object-cover border-4 border-gray-100 shadow-sm {{ $user->avatar ? '' : 'hidden' }}">
+                        @if(!$user->avatar)
+                            <div id="default-avatar" class="w-full h-full rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-3xl font-bold border-4 border-gray-100 shadow-sm">
                                 {{ substr($user->name, 0, 1) }}
                             </div>
                         @endif
                         <label for="avatar-upload" class="absolute bottom-0 right-0 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition shadow-md border-2 border-white">
                             <i class="fa-solid fa-camera text-xs"></i>
                         </label>
-                        <input type="file" id="avatar-upload" name="avatar" class="hidden" accept="image/*" onchange="document.getElementById('preview-avatar').src = window.URL.createObjectURL(this.files[0])">
+                        <input type="file" id="avatar-upload" name="avatar" class="hidden" accept="image/*" onchange="
+                            let preview = document.getElementById('preview-avatar');
+                            let def = document.getElementById('default-avatar');
+                            if(def) def.style.display = 'none';
+                            preview.src = window.URL.createObjectURL(this.files[0]);
+                            preview.classList.remove('hidden');
+                        ">
                     </div>
                 </div>
 
