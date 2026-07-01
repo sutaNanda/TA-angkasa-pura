@@ -127,7 +127,7 @@
             </nav>
 
             <div class="p-4 border-t border-slate-700">
-                <div class="flex items-center gap-3 mb-4 px-2">
+                <a href="{{ route('user.profile.index') }}" class="flex items-center gap-3 mb-4 px-2 hover:opacity-80 transition-opacity cursor-pointer">
                     @if(Auth::user()->avatar)
                         <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="w-8 h-8 rounded-full object-cover">
                     @else
@@ -136,10 +136,10 @@
                         </div>
                     @endif
                     <div class="overflow-hidden">
-                        <p class="text-sm font-bold truncate">{{ Auth::user()->name ?? 'User' }}</p>
+                        <p class="text-sm font-bold text-white truncate">{{ Auth::user()->name ?? 'User' }}</p>
                         <p class="text-xs text-slate-400 truncate">Karyawan</p>
                     </div>
-                </div>
+                </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition">
@@ -174,19 +174,19 @@
                 </div>
                 
                 <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-3 pl-6 border-l border-gray-200">
+                    <a href="{{ route('user.profile.index') }}" class="flex items-center gap-3 pl-6 border-l border-gray-200 hover:opacity-80 transition-opacity cursor-pointer">
                         <div class="text-right">
                             <p class="text-sm font-bold text-gray-900 leading-none mb-1">{{ Auth::user()->name ?? 'User' }}</p>
                             <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Karyawan</p>
                         </div>
                         @if(Auth::user()->avatar)
-                            <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                            <img src="{{ asset('storage/' . Auth::user()->avatar) }}" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
                         @else
-                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold shadow-sm border border-blue-200">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm shadow-sm border-2 border-white">
                                 {{ substr(Auth::user()->name ?? 'U', 0, 1) }}
                             </div>
                         @endif
-                    </div>
+                    </a>
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
