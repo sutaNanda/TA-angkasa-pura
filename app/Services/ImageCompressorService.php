@@ -38,6 +38,19 @@ class ImageCompressorService
             return $file->store($directory, 'public');
         }
 
+        // Cek dimensi gambar menggunakan getimagesize (hanya baca header, sangat hemat memori)
+        // untuk mencegah dekompresi gambar beresolusi raksasa (meski ukuran filenya kecil)
+        $imageInfo = @getimagesize($file->getPathname());
+        if ($imageInfo !== false) {
+            $width = $imageInfo[0];
+            $height = $imageInfo[1];
+            // Jika resolusi lebih dari 12 Megapixels (misal 4000x3000), lewati proses GD
+            // 12MP membutuhkan memori ~48MB hanya untuk base decode, belum proses lainnya.
+            if ($width * $height > 12000000) {
+                return $file->store($directory, 'public');
+            }
+        }
+
         // Inisialisasi ImageManager dengan GD Driver
         $manager = new ImageManager(new Driver());
 
