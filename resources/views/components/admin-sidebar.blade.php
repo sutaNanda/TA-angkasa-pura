@@ -1,6 +1,6 @@
 <aside class="w-64 bg-slate-800 text-white flex flex-col transition-all duration-300">
     <div class="h-20 flex items-center border-b border-slate-700 bg-slate-900 px-4">
-        <div class="flex items-center gap-3 font-bold text-lg tracking-tight">
+        <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 font-bold text-lg tracking-tight hover:opacity-80 transition-opacity">
             <div class="w-12 h-12 bg-white rounded-lg p-1.5 flex-shrink-0">
                 <img src="{{ asset('logo.svg') }}" alt="Logo" class="w-full h-full object-contain">
             </div>
@@ -12,7 +12,7 @@
                     <span class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Manajer Panel</span>
                 @endif
             </div>
-        </div>
+        </a>
     </div>
 
     <nav class="flex-1 overflow-y-auto py-4 scrollbar-hide" style="scrollbar-width: none; -ms-overflow-style: none;">
