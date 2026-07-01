@@ -55,7 +55,7 @@ class ImageCompressorService
         $manager = new ImageManager(new Driver());
 
         // Membaca file gambar
-        $image = $manager->decode($file->getPathname());
+        $image = $manager->read($file->getPathname());
 
         // Ubah skala (scale down) jika lebar gambar melebihi batas maksimal,
         // dengan mempertahankan aspect ratio.
