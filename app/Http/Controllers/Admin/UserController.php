@@ -172,7 +172,7 @@ class UserController extends Controller
             if ($user->avatar) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
             }
-            $user->avatar = \App\Services\ImageCompressorService::upload($request->file('avatar'), 'avatars');
+            $user->avatar = $request->file('avatar')->store('avatars', 'public');
         }
 
         $user->save();
